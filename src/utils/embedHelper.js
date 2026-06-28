@@ -19,11 +19,10 @@ function createBaseEmbed() {
     .setColor(EMBED_COLORS.CYBER)
     .setTimestamp()
     .setAuthor({
-      name: 'ArcadiaMC Network',
-      iconURL: 'https://i.imgur.com/mOzk9Eb.png', // Thematic server logo placeholder
+      name: 'ArcadiaMC Network Bot',
     })
     .setFooter({
-      text: 'ArcadiaMC Community  ·  play.arcadiamc.net',
+      text: 'ArcadiaMC Community bot By _webdevkin · play.arcadiamc.net',
     });
 }
 

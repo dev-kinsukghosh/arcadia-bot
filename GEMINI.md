@@ -26,11 +26,12 @@ The following rules MUST be followed at all times:
 
 1. ⚠️ **Ask Before Installing**: Always consult the user and ask for explicit permission before running any package installs (`npm install` / `npm i`).
 2. 💡 **Suggest Alternatives**: If a package or technical implementation is requested, suggest better/optimized alternatives if they exist.
-3. 📝 **Directory Mapping (`fs.md`)**: Maintain [fs.md](file:///C:/Users/kinsu/Documents/webdevkin/Arc-community-bot/fs.md) up-to-date. Every time a new file is added, moved, or deleted, update the directory mapping.
+3. 📝 **Directory Mapping (`fs.md`)**: Maintain [fs.md](./fs.md) up-to-date. Every time a new file is added, moved, or deleted, update the directory mapping.
 4. 📄 **Chat Completion Updates**:
    - Update `fs.md` if any file structures changed.
    - Update `GEMINI.md` at the end of every chat session to document the latest changes.
 5. 📂 **Exclusions**: Always ignore the `node_modules/` and `logs/` folders from documentation lookups and directories list references.
+6. 🚫 **No Direct Ephemeral Options**: Never supply `ephemeral: true` directly in Discord interaction response options (deprecated). Always utilize `flags: MessageFlags.Ephemeral` instead.
 
 ---
 
@@ -95,7 +96,7 @@ The following rules MUST be followed at all times:
   - Executed codebase-wide formatting and lint resolution to clean up all warnings.
   - Removed unused `winston` `{ log }` import from `src/config.js` to fix ESLint warnings.
 - **Context Mapping**:
-  - Created [fs.md](file:///C:/Users/kinsu/Documents/webdevkin/Arc-community-bot/fs.md) and [GEMINI.md](file:///C:/Users/kinsu/Documents/webdevkin/Arc-community-bot/GEMINI.md) files to preserve context and developer rules.
+  - Created [fs.md](./fs.md) and [GEMINI.md](./GEMINI.md) files to preserve context and developer rules.
 - **Health Checks**:
   - Created `env.test.js` at the project root to check environment variables, Redis pings, and MySQL connection pool health.
 - **Slash Commands — `/cstock`**:
@@ -116,3 +117,23 @@ The following rules MUST be followed at all times:
   - Created a dedicated `tests/` directory and moved `env.test.js` to `tests/env.test.js`.
   - Created `tests/api.test.js`, `tests/database.test.js`, and `tests/runner.js` to test APIs, Database query mappings, and environment config variables. Added process exits to prevent hanging connection handles.
   - Updated `package.json` scripts (`npm test`, `npm run test:env`, `npm run test:api`, `npm run test:db`, `npm run dev`).
+- **Atomic Convoy Synchronization**:
+  - Restructured `syncConvoy` in `./src/services/convoySync.js` to eliminate pre-sync table/Redis resets.
+  - Used in-place upsert checks comparing against `existing.current_p` to accurately increment `timesSeen` only on true rotations.
+  - Set all absent items to `current_p = false` at the very end of the sync iteration.
+  - Optimized execution speed using concurrent `Promise.all()` queries to process convoy items in parallel instead of sequentially.
+- **Global Embed Branded Theme**:
+  - Configured `setAuthor` and `setFooter` globally inside `./src/utils/embedHelper.js`'s `createBaseEmbed` to unify styling.
+- **Slash Commands & Developer Utilities**:
+  - Created `/forcesync` (`./src/commands/general/forcesync.js`) to trigger manual synchronization from the API (developer only).
+  - Created `/healthz` (`./src/commands/general/healthz.js`) to view bot uptime, OS platform, memory allocation, and connection health states (developer only).
+  - Created `/dev-slist` (`./src/commands/general/dev-slist.js`) to list all guilds the bot is currently in with paginated navigation (10 per page, max 10 pages) showing server name and ID (developer only).
+  - Created `/stats-dev` (`./src/commands/general/stats-dev.js`) to monitor command usage statistics retrieved from Redis (lifetime commands, most used command, active guilds count) (developer only).
+  - Created `/invite-bd` (`./src/commands/general/invite-bd.js`) to dynamically generate single-use, 24-hour instant invite links for servers the bot is in by name/ID search, allowing the developer to join any server (developer only).
+  - Added command usage tracking inside `./src/events/interactionCreate.js` using Redis keys `stats:commands:total` (counter) and `stats:commands:usage` (hash map per command name).
+- **Security & Deprecation Resolutions**:
+  - Replaced all instances of deprecated `ephemeral: true` in interaction responses with the safer `flags: MessageFlags.Ephemeral` format.
+  - Created a developer rule to prohibit `ephemeral: true` usage.
+  - Replaced absolute Windows directory links inside `./fs.md` and `./GEMINI.md` with relative links to support Linux portability.
+  - Replaced the Mermaid diagram in `./fs.md` with a text-based tree block.
+  - Fixed hanging Node processes during command deployment by adding `process.exit(0)` to `./src/deploy-commands.js`.

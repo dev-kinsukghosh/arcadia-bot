@@ -77,7 +77,10 @@ const rest = new REST({ version: '10' }).setToken(token);
       const data = await rest.put(Routes.applicationCommands(clientId), { body: commands });
       logger.info(`Successfully reloaded ${data.length} global application (/) commands.`);
     }
+    logger.success('Deployment completed successfully.');
+    process.exit(0);
   } catch (error) {
     logger.error('Failed to deploy application commands:', error);
+    process.exit(1);
   }
 })();

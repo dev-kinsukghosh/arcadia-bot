@@ -31,8 +31,8 @@ async function syncConvoy() {
     let updatedPriceSeen = 0;
     let updatedStockOnly = 0;
 
-    for (const trade of data.trades) {
-      if (!trade.item) continue;
+    const syncPromises = data.trades.map(async (trade) => {
+      if (!trade.item) return;
 
       // Query database for existing item
       const existingRecords = await db
@@ -129,7 +129,9 @@ async function syncConvoy() {
           logger.error(`Failed to sync item ${trade.item} to Redis:`, err);
         }
       }
-    }
+    });
+
+    await Promise.all(syncPromises);
 
     // 3. Mark items not present in this API response as inactive (current_p = false)
     const activeItemNames = data.trades.map((t) => t.item).filter(Boolean);
