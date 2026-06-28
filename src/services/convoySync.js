@@ -1,6 +1,6 @@
 const { db } = require('../utils/db.js');
 const { convoyItems } = require('../db/schema.js');
-const { eq } = require('drizzle-orm');
+const { eq, notInArray } = require('drizzle-orm');
 const { arcadiaApi } = require('../utils/apiClient.js');
 const logger = require('../utils/logger.js');
 const pc = require('picocolors');
@@ -23,39 +23,9 @@ async function syncConvoy() {
       return;
     }
 
-    // Cache the list of items that were active before this sync started
-    const previouslyActive = new Set();
-    try {
-      const activeRows = await db
-        .select({ item: convoyItems.item })
-        .from(convoyItems)
-        .where(eq(convoyItems.current_p, true));
-      for (const row of activeRows) {
-        previouslyActive.add(row.item);
-      }
-    } catch (err) {
-      logger.error('Failed to query previously active items:', err);
-    }
-
-    // 1. Reset current_p to false for all items in the MySQL database
-    await db.update(convoyItems).set({ current_p: false });
-
-    // 2. Reset current_p to false for all items in Redis-OM
     const { convoyItemRepository } = require('../db/redisSchema.js');
     const { getIsOmReady } = require('../utils/redisOm.js');
     const isOmReady = getIsOmReady();
-
-    if (isOmReady) {
-      try {
-        const allRedisItems = await convoyItemRepository.fetchAll();
-        for (const item of allRedisItems) {
-          item.current_p = false;
-          await convoyItemRepository.save(item);
-        }
-      } catch (err) {
-        logger.error('Failed to reset current_p status in Redis:', err);
-      }
-    }
 
     let inserted = 0;
     let updatedPriceSeen = 0;
@@ -87,8 +57,8 @@ async function syncConvoy() {
         });
         inserted++;
       } else {
-        // If it was not active before this sync started, the item was absent last rotation -> new convoy rotation -> +1
-        const wasAbsent = !previouslyActive.has(trade.item);
+        // If it was not active before this sync started, it was absent last rotation -> new convoy rotation -> +1
+        const wasAbsent = !existing.current_p;
 
         currentTimesSeen = wasAbsent ? existing.timesSeen + 1 : existing.timesSeen;
 
@@ -161,10 +131,36 @@ async function syncConvoy() {
       }
     }
 
+    // 3. Mark items not present in this API response as inactive (current_p = false)
+    const activeItemNames = data.trades.map((t) => t.item).filter(Boolean);
+
+    if (activeItemNames.length > 0) {
+      await db
+        .update(convoyItems)
+        .set({ current_p: false })
+        .where(notInArray(convoyItems.item, activeItemNames));
+    } else {
+      await db.update(convoyItems).set({ current_p: false });
+    }
+
+    // 4. Mark items not present in this API response as inactive in Redis-OM
+    if (isOmReady) {
+      try {
+        const allRedisItems = await convoyItemRepository.fetchAll();
+        for (const item of allRedisItems) {
+          if (!activeItemNames.includes(item.item)) {
+            item.current_p = false;
+            await convoyItemRepository.save(item);
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to reset current_p status in Redis:', err);
+      }
+    }
+
     // Scan and download missing block/item icons
     const { downloadMissingIcons } = require('../utils/iconDownloader.js');
-    const itemNames = data.trades.map((t) => t.item).filter(Boolean);
-    downloadMissingIcons(itemNames);
+    downloadMissingIcons(activeItemNames);
 
     logger.success(
       `Convoy sync complete: ${pc.bold(pc.green(inserted))} inserted, ` +

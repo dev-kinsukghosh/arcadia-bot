@@ -163,7 +163,9 @@ function buildPage(rarity, items, pageIndex, totalPages, subPage, subTotal, head
   );
 
   container.addTextDisplayComponents(
-    new TextDisplayBuilder().setContent(`-# Prices refresh every 5 minutes  ·  ArcadiaMC Convoy`)
+    new TextDisplayBuilder().setContent(
+      `-# Prices refresh every 5 minutes  ·  ArcadiaMC Community Bot By _webdevkin`
+    )
   );
 
   return { container, attachments };

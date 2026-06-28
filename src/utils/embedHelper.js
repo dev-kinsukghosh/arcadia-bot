@@ -11,14 +11,20 @@ const EMBED_COLORS = {
 };
 
 /**
- * Creates a base embed with default brand styling (timestamp, color)
+ * Creates a base embed with default brand styling (timestamp, color, global header/footer)
  * @returns {EmbedBuilder}
  */
 function createBaseEmbed() {
   return new EmbedBuilder()
     .setColor(EMBED_COLORS.CYBER)
     .setTimestamp()
-    .setFooter({ text: 'ArcadiaMC Community Bot By _webdevkin' });
+    .setAuthor({
+      name: 'ArcadiaMC Network',
+      iconURL: 'https://i.imgur.com/mOzk9Eb.png', // Thematic server logo placeholder
+    })
+    .setFooter({
+      text: 'ArcadiaMC Community  ·  play.arcadiamc.net',
+    });
 }
 
 /**
