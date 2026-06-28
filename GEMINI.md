@@ -1,0 +1,118 @@
+# Project Context & Rules
+
+This file documents the core project context, custom development rules defined by the user, and a log of updates for the **Arcadia Community Bot**.
+
+---
+
+## 📋 Project Context
+
+- **Project Name**: Arcadia Community Bot
+- **Purpose**: Discord bot for the ArcadiaMC server community.
+- **Stack**:
+  - **Runtime**: Node.js (CommonJS format)
+  - **Discord Wrapper**: `discord.js` (v14)
+  - **Database ORM**: Drizzle ORM (MySQL driver utilizing `mysql2` connection pools)
+  - **Caching**: Redis client powered by `ioredis`
+  - **HTTP Client**: `axios` for fetching ArcadiaMC APIs
+  - **Graphics**: `@napi-rs/canvas` for premium glassmorphic Welcome Card image generation
+  - **Logger**: Custom cyber-style logger powered by `dayjs`, `picocolors`, and `gradient-string`
+  - **Linter & Formatter**: ESLint (v9 flat config) + Prettier
+
+---
+
+## ⚖️ Custom Developer Rules
+
+The following rules MUST be followed at all times:
+
+1. ⚠️ **Ask Before Installing**: Always consult the user and ask for explicit permission before running any package installs (`npm install` / `npm i`).
+2. 💡 **Suggest Alternatives**: If a package or technical implementation is requested, suggest better/optimized alternatives if they exist.
+3. 📝 **Directory Mapping (`fs.md`)**: Maintain [fs.md](file:///C:/Users/kinsu/Documents/webdevkin/Arc-community-bot/fs.md) up-to-date. Every time a new file is added, moved, or deleted, update the directory mapping.
+4. 📄 **Chat Completion Updates**:
+   - Update `fs.md` if any file structures changed.
+   - Update `GEMINI.md` at the end of every chat session to document the latest changes.
+5. 📂 **Exclusions**: Always ignore the `node_modules/` and `logs/` folders from documentation lookups and directories list references.
+
+---
+
+## 🪵 Daily Change Log
+
+### 28-06-2026
+
+- **Initial Setup**:
+  - Initialized package environment. Installed core dependencies (`discord.js`, `dotenv`, `axios`, `picocolors`, `@napi-rs/canvas`, `ioredis`, `mysql2`, `winston`) and devDependencies (`eslint`, `prettier`, `drizzle-kit`).
+  - Created `bot.js` root entrypoint.
+  - Added configuration manager, Axios API client wrapper for ArcadiaMC endpoints, Redis connection client, and Winston colored logger.
+  - Created event handler/command loader systems.
+- **Database (Drizzle Integration)**:
+  - Added Drizzle ORM schema mappings inside `src/db/schema.js`.
+  - Created a safe, programmatic schema migrator inside `scripts/migrate-safe.js`.
+  - Updated database client to return Drizzle connections.
+  - Configured `convoy_items` table schema mapping fields to the ArcadiaMC API properties.
+  - Added `current_p` boolean column to track which items are currently in the shop.
+- **Redis-OM Integration**:
+  - Installed `redis-om` dependency for ORM-like object mapping wrapper in Redis.
+  - Created `src/utils/redisOm.js` to initialize the client wrapper by wrapping the active ioredis connection pool.
+  - Created a custom standard-hash repository wrapper inside `src/db/redisSchema.js` to bypass RediSearch server requirements (preventing `FT.SEARCH` command crashes).
+  - Configured `bot.js` to load `redisOm.js` module automatically during startup.
+- **Convoy Synchronization Worker**:
+  - Created `src/services/convoySync.js` to handle fetching and tracking convoy shop items.
+  - Configured price comparison logic to update `times_seen` (+1) only when price or rarity changes, and update only stock values if identical.
+  - Scheduled the sync worker to execute immediately on bot startup and recur every 5 minutes.
+  - Integrated the synchronization routine inside the `bot.js` startup lifecycle.
+  - Configured indefinite auto-reconnection backoff retryStrategy for Redis to keep connections active and prevent packet drops.
+  - Added an application-level ping heartbeat every 2 minutes to keep the Redis connection active and prevent server-side idle timeouts (ECONNRESET).
+  - Programmed automated `current_p` status resets before each API scan to flag present items as `true` and missing items as `false` in both MySQL and Redis.
+- **Minecraft Asset Icon Downloader**:
+  - Created `src/utils/iconDownloader.js` to automatically download missing item/block texture icons from `assets.mcasset.cloud`.
+  - Configured rate-limited download scheduling utilizing a 5-second queue delay to avoid rate-limits or server overhead.
+  - Programmed a double-path lookup (tries block/ path first, falling back to item/ path on 404) and suffix variants (tries _top, _front, _side, _bottom, _empty suffixes) to support block, item, and double tall textures (e.g., peony_top).
+  - Linked the icon check scan to execute automatically at the end of each convoy synchronization run.
+- **Canvas Welcome Cards**:
+  - Programmed custom canvas generator inside `src/utils/canvasHelper.js`.
+  - Linked generator to the `guildMemberAdd` event handler and added a testing slash command `/welcome-test`.
+- **Ready Event & Interaction Deprecation Resolutions**:
+  - Renamed the `ready` event handler to `clientReady` inside `src/events/ready.js` to resolve the Discord.js v14 deprecation warning.
+  - Replaced the deprecated `fetchReply` options property inside `src/commands/general/ping.js` with a separate `interaction.fetchReply()` call.
+- **Custom Cyber Logger**:
+  - Installed `dayjs` and `gradient-string` dependencies after getting user confirmation.
+  - Configured the new cyber-style gradient logger inside `src/utils/logger.js`.
+  - Dereferenced the `.default` property on the `gradient-string` CommonJS import to resolve type execution errors.
+  - Updated API client logger calls in `src/utils/apiClient.js` to log requests under the new `.system()` logger level.
+  - Added robust case-insensitive parsing and safety fallbacks for the `LOG_LEVEL` environment variable.
+- **Global Error Handler**:
+  - Created `src/utils/errorHandler.js` to catch global exceptions and promise rejections (preventing bot crashes) and dispatch alert embeds to a Discord channel.
+  - Integrated `reportError` tracking into command execution, guild joins, and convoy synchronization workflows.
+  - Replaced inline listeners in `bot.js` with the global error handler.
+- **Central Embed Helper Utility**:
+  - Created `src/utils/embedHelper.js` central helper module to build uniform styled Discord Embeds (success, error, info, and brand cyber layouts).
+  - Updated `src/commands/general/ping.js` to use the central embed helper for standard latency results.
+  - Refactored `src/utils/errorHandler.js` to dispatch warning alerts using the new embed helper.
+- **Commands & Schema Cleanup**:
+  - Removed all slash commands except `/ping` per user instructions.
+  - Cleared all predefined database tables in `src/db/schema.js` to allow the user to build their custom schema.
+- **Linting & Formatting**:
+  - Created Prettier configuration `.prettierrc` and ESLint flat configuration `eslint.config.js`.
+  - Executed codebase-wide formatting and lint resolution to clean up all warnings.
+  - Removed unused `winston` `{ log }` import from `src/config.js` to fix ESLint warnings.
+- **Context Mapping**:
+  - Created [fs.md](file:///C:/Users/kinsu/Documents/webdevkin/Arc-community-bot/fs.md) and [GEMINI.md](file:///C:/Users/kinsu/Documents/webdevkin/Arc-community-bot/GEMINI.md) files to preserve context and developer rules.
+- **Health Checks**:
+  - Created `env.test.js` at the project root to check environment variables, Redis pings, and MySQL connection pool health.
+- **Slash Commands — `/cstock`**:
+  - Created `src/commands/general/cstock.js` to display current Convoy shop stock via a Components V2 paginated Container with ₳ currency, separators, and buttons.
+  - Queries the `convoy_items` MySQL table for items with `current_p = true` and groups them by rarity.
+  - Limits items to 5 per sub-page to strictly adhere to Discord's 40-component limits (e.g., Common 1/2, 2/2).
+  - Programmed custom nearest-neighbor upscaling inside `src/utils/iconDownloader.js` (using `@napi-rs/canvas` pixel loop) to upscale raw textures to crisp 128x128px.
+  - Swapped texture download priority to attempt `item/` textures before `block/` textures.
+  - Deduplicated page assets in `src/commands/general/cstock.js` so each PNG is attached exactly once.
+  - Registered `/cstock` alongside `/ping` in the Velaris development guild.
+  - Programmed a hybrid 3D Render API + flat texture fallback downloader inside `src/utils/iconDownloader.js` to retrieve high-res 3D inventory renders of blocks/items from `api.minecraftitems.xyz`.
+  - Added self-healing asset recovery block directly inside the `/cstock` slash command to automatically detect and download any missing icons from the cache before serving the response.
+  - Configured thematic chest boat icons (`OAK_CHEST_BOAT`, `SPRUCE_CHEST_BOAT`, `BIRCH_CHEST_BOAT`, `JUNGLE_CHEST_BOAT`, `ACACIA_CHEST_BOAT`) to serve as page headers for the 5 rarity pages of `/cstock`.
+  - Allowed rendering inline icons for all items on page (including the first item on index 0), since header icons are now chest boats and no longer duplicate.
+- **TimesSeen Bug Resolution**:
+  - Fixed a logic bug in `src/services/convoySync.js` where `timesSeen` was incrementing on every scan due to the database `current_p` reset query running before the selection lookup query. Cached previously active items in a memory `Set` before reset.
+- **Restructured Testing Suite**:
+  - Created a dedicated `tests/` directory and moved `env.test.js` to `tests/env.test.js`.
+  - Created `tests/api.test.js`, `tests/database.test.js`, and `tests/runner.js` to test APIs, Database query mappings, and environment config variables. Added process exits to prevent hanging connection handles.
+  - Updated `package.json` scripts (`npm test`, `npm run test:env`, `npm run test:api`, `npm run test:db`, `npm run dev`).
