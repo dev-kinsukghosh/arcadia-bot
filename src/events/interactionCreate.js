@@ -2,6 +2,8 @@ const logger = require('../utils/logger.js');
 const redis = require('../utils/redis.js');
 const { MessageFlags } = require('discord.js');
 
+const cooldowns = new Map();
+
 module.exports = {
   name: 'interactionCreate',
   once: false,
@@ -27,6 +29,32 @@ module.exports = {
       logger.warn(`No command matching ${interaction.commandName} was found.`);
       return;
     }
+
+    // Cooldown check system to prevent Discord/API rate limits
+    const now = Date.now();
+    const cooldownAmount = (command.cooldown || 3) * 1000;
+
+    if (!cooldowns.has(command.data.name)) {
+      cooldowns.set(command.data.name, new Map());
+    }
+
+    const timestamps = cooldowns.get(command.data.name);
+    const userId = interaction.user.id;
+
+    if (timestamps.has(userId)) {
+      const expirationTime = timestamps.get(userId) + cooldownAmount;
+
+      if (now < expirationTime) {
+        const timeLeft = ((expirationTime - now) / 1000).toFixed(1);
+        return interaction.reply({
+          content: `⚠️ Please wait **${timeLeft}s** before using the \`/${interaction.commandName}\` command again.`,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    }
+
+    timestamps.set(userId, now);
+    setTimeout(() => timestamps.delete(userId), cooldownAmount);
 
     // Track statistics in Redis
     if (redis && redis.status === 'ready') {

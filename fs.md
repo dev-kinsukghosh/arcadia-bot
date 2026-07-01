@@ -6,13 +6,17 @@ This file serves as a reference guide for the directory structure and file respo
 
 ```text
 .
+├── .agents/
+│   └── AGENTS.md
 ├── scripts/
 │   ├── setup.js
-│   └── migrate-safe.js
+│   ├── migrate-safe.js
+│   └── upload-emojis.js
 ├── src/
 │   ├── deploy-commands.js
 │   ├── commands/
 │   │   └── general/
+│   │       ├── cis-info.js
 │   │       ├── cstock.js
 │   │       ├── dev-slist.js
 │   │       ├── forcesync.js
@@ -69,17 +73,20 @@ This file serves as a reference guide for the directory structure and file respo
 - [Api.enpoints.md](./Api.enpoints.md): API endpoint mapping documentation for the ArcadiaMC server.
 - [fs.md](./fs.md): _(This file)_ File system reference guide.
 - [GEMINI.md](./GEMINI.md): Development rule book, project context, and daily change-log repository.
+- [.agents/AGENTS.md](./.agents/AGENTS.md): Project-scoped customization rules for Antigravity developer agent.
 
 ### 📂 scripts/
 
 - [scripts/setup.js](./scripts/setup.js): Assistant script to bootstrap directories and setup the `.env` template config.
 - [scripts/migrate-safe.js](./scripts/migrate-safe.js): Programmatic schema migrator for Drizzle ORM.
+- [scripts/upload-emojis.js](./scripts/upload-emojis.js): Utility script to upload cached item icon PNGs to Discord Application Emojis.
 
 ### 📂 src/
 
 - [src/deploy-commands.js](./src/deploy-commands.js): Slash Command deployment script utilizing the Discord REST API.
   - 📂 **src/commands/**: Contains category subfolders containing Discord Slash Commands.
     - 📂 **src/commands/general/**:
+      - [src/commands/general/cis-info.js](./src/commands/general/cis-info.js): `/cis-info` — Displays historical, rarity, and frequency telemetry for convoy items.
       - [src/commands/general/cstock.js](./src/commands/general/cstock.js): `/cstock` — Displays current Convoy shop stock grouped by rarity.
       - [src/commands/general/forcesync.js](./src/commands/general/forcesync.js): `/forcesync` — Forces manual convoy data synchronization from the API (Developer Only).
       - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Lists all guilds the bot is currently in (Developer Only).

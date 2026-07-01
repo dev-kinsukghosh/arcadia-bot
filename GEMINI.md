@@ -32,6 +32,8 @@ The following rules MUST be followed at all times:
    - Update `GEMINI.md` at the end of every chat session to document the latest changes.
 5. 📂 **Exclusions**: Always ignore the `node_modules/` and `logs/` folders from documentation lookups and directories list references.
 6. 🚫 **No Direct Ephemeral Options**: Never supply `ephemeral: true` directly in Discord interaction response options (deprecated). Always utilize `flags: MessageFlags.Ephemeral` instead.
+7. 📂 **Relative Project Links**: Never use absolute Windows paths (e.g., `C:/...` or `file:///C:/...`) or `file:///src` link schemes in chat responses, logs, or documentation. Always refer to files using relative text paths (e.g. `src/commands/general/cis-info.js`) or simple code formatting (e.g. `cis-info.js`). When explaining file changes or structural additions, use a tree-like text structure to outline the directories, followed by a list of files with their descriptions next to them, avoiding any inline link syntax.
+8. ⚠️ **Emoji URL Deprecation**: Never use `Emoji.url` (deprecated in Discord.js v14). Always utilize `Emoji.imageURL()` instead to prevent console deprecation warning logs.
 
 ---
 
@@ -137,3 +139,25 @@ The following rules MUST be followed at all times:
   - Replaced absolute Windows directory links inside `./fs.md` and `./GEMINI.md` with relative links to support Linux portability.
   - Replaced the Mermaid diagram in `./fs.md` with a text-based tree block.
   - Fixed hanging Node processes during command deployment by adding `process.exit(0)` to `./src/deploy-commands.js`.
+
+### 01-07-2026
+
+- **Slash Commands — `/cis-info`**:
+  - Created `src/commands/general/cis-info.js` to display detailed convoy rotation information for items.
+  - Implemented autocomplete for the optional `item` string option, querying the database and listing items with formatted names showing their rarities.
+  - Formatted individual item queries with an advanced embed displaying rarity, frequency rank, times seen, shop active status, buy/sell prices, stock configuration, and last rotated timestamp.
+  - Implemented automatic Minecraft icon retrieval and on-the-fly upscaling using `downloadItemIcon` if a queried item's texture is missing.
+  - Built a comprehensive overview page when run without options, showing total unique items tracked, currently active items count, top 5 most frequent items, top 5 rarest items, and rarity distribution.
+  - Added full interactive navigation components allowing users to switch from the overview page to a paginated tabular catalog of all convoy items.
+  - Integrated dynamic Discord **Application Emojis** support: Prefixes catalog names in the paginated lists and title names in specific searches with the uploaded custom emoji. Automatically sets the embed thumbnail to the emoji's CDN URL, bypassing file reads/uploads and accelerating response speeds. Fallbacks safely to local upscaled attachments if the emoji is not found.
+- **Minecraft Custom Emoji Uploader & Automation**:
+  - Refactored `scripts/upload-emojis.js` to programmatically scan local `src/icons/*.png` textures, check existing application-owned emojis, and upload missing ones. Includes a 3-second rate-limit spacing delay to prevent API timeouts.
+  - Integrated the uploader to **autorun automatically** on bot startup (inside `src/events/ready.js`) and after manual sync triggers (inside `src/commands/general/forcesync.js`).
+  - Registered `npm run upload:emojis` task script inside `package.json` for manual execution.
+- **Directory Mapping**:
+  - Registered `src/commands/general/cis-info.js` and `scripts/upload-emojis.js` inside `fs.md`.
+- **Rate-Limiting & Timers Cleanup**:
+  - Removed the recurring background `setInterval` schedule in `src/services/convoySync.js` so the synchronization worker only runs once upon startup, eliminating background API calls.
+  - Implemented a robust client-side cooldown manager in `src/events/interactionCreate.js` to prevent bot rate-limits on Discord and the API. Configured a default 3-second cooldown on general commands, a 10-second cooldown on `/cstock` (`src/commands/general/cstock.js`), and a 60-second cooldown on `/forcesync` (`src/commands/general/forcesync.js`).
+- **Rotation Detection Bug Fix**:
+  - Programmed automated API response `updatedAt` tracking in `src/services/convoySync.js` (persisting the state across bot restarts via Redis or in-memory variables) to accurately detect true rotation changes. Ensures that when the same item appears across consecutive rotations, its `timesSeen` increments correctly while ignoring identical scan runs.

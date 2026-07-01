@@ -195,6 +195,7 @@ function buildNavRow(pageIndex, totalPages, interactionId) {
 }
 
 module.exports = {
+  cooldown: 10,
   data: new SlashCommandBuilder()
     .setName('cstock')
     .setDescription('View the current Convoy shop stock and prices'),

@@ -21,5 +21,15 @@ module.exports = {
     client.guilds.cache.forEach((guild) => {
       logger.info(` - ${guild.name} (${guild.id}) - ${guild.memberCount} members`);
     });
+
+    // Auto-upload missing item icons to application emojis asynchronously
+    const { checkAndUploadEmojis } = require('../../scripts/upload-emojis.js');
+    checkAndUploadEmojis(client).catch(() => {});
+
+    // Initialize autocomplete suggestions cache for cis-info command
+    const cisInfoCommand = client.commands.get('cis-info');
+    if (cisInfoCommand && typeof cisInfoCommand.initCache === 'function') {
+      cisInfoCommand.initCache();
+    }
   },
 };

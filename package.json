@@ -1,6 +1,6 @@
 {
   "name": "arc-community-bot",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "bot.js",
   "scripts": {
@@ -19,7 +19,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:safe": "node scripts/migrate-safe.js",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "upload:emojis": "node scripts/upload-emojis.js"
   },
   "keywords": [],
   "author": "",

@@ -4,6 +4,9 @@ const { eq, notInArray } = require('drizzle-orm');
 const { arcadiaApi } = require('../utils/apiClient.js');
 const logger = require('../utils/logger.js');
 const pc = require('picocolors');
+const redis = require('../utils/redis.js');
+
+let lastApiUpdatedAt = null;
 
 /**
  * Fetch convoy data from API and sync with the MySQL database
@@ -21,6 +24,32 @@ async function syncConvoy() {
     if (!data || !Array.isArray(data.trades)) {
       logger.error('Invalid convoy API response format (expected trades array).');
       return;
+    }
+
+    const apiUpdatedAt = data.updatedAt ? String(data.updatedAt) : null;
+    let isNewRotation = false;
+
+    if (apiUpdatedAt) {
+      let storedLastUpdated = lastApiUpdatedAt;
+      if (!storedLastUpdated && redis && redis.status === 'ready') {
+        try {
+          storedLastUpdated = await redis.get('convoy:last_api_updated_at');
+        } catch {
+          // Ignore errors
+        }
+      }
+
+      if (!storedLastUpdated || storedLastUpdated !== apiUpdatedAt) {
+        isNewRotation = true;
+        lastApiUpdatedAt = apiUpdatedAt;
+        if (redis && redis.status === 'ready') {
+          try {
+            await redis.set('convoy:last_api_updated_at', apiUpdatedAt);
+          } catch {
+            // Ignore errors
+          }
+        }
+      }
     }
 
     const { convoyItemRepository } = require('../db/redisSchema.js');
@@ -57,10 +86,9 @@ async function syncConvoy() {
         });
         inserted++;
       } else {
-        // If it was not active before this sync started, it was absent last rotation -> new convoy rotation -> +1
-        const wasAbsent = !existing.current_p;
-
-        currentTimesSeen = wasAbsent ? existing.timesSeen + 1 : existing.timesSeen;
+        // If it's a new rotation OR was absent, increment timesSeen
+        const shouldIncrement = isNewRotation || !existing.current_p;
+        currentTimesSeen = shouldIncrement ? existing.timesSeen + 1 : existing.timesSeen;
 
         const oldBuy = parseFloat(existing.buyPrice);
         const oldSell = parseFloat(existing.sellPrice);
@@ -69,8 +97,8 @@ async function syncConvoy() {
         const priceOrRarityChanged =
           oldBuy !== newBuy || oldSell !== newSell || existing.rarity !== trade.rarity;
 
-        if (wasAbsent || priceOrRarityChanged) {
-          // Full update: price/rarity may have changed, or item is back after being absent
+        if (shouldIncrement || priceOrRarityChanged) {
+          // Full update: rotation occurred, price/rarity changed, or item returned from absence
           await db
             .update(convoyItems)
             .set({
@@ -176,19 +204,12 @@ async function syncConvoy() {
 }
 
 /**
- * Start the recurring convoy synchronization job (every 5 minutes)
+ * Start the convoy synchronization worker (run once on startup)
  */
 function startConvoySync() {
-  // 1. Run immediately on bot startup
+  // Run once immediately on bot startup
   syncConvoy();
-
-  // 2. Set interval for every 5 minutes (5 * 60 * 1000 ms)
-  const INTERVAL_MS = 5 * 60 * 1000;
-  setInterval(() => {
-    syncConvoy();
-  }, INTERVAL_MS);
-
-  logger.info('Scheduled Convoy Sync job to run every 5 minutes.');
+  logger.info('Initialized Convoy Sync once on startup.');
 }
 
 module.exports = {

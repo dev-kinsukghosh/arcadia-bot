@@ -5,6 +5,7 @@ const logger = require('../../utils/logger.js');
 const pc = require('picocolors');
 
 module.exports = {
+  cooldown: 60,
   data: new SlashCommandBuilder()
     .setName('forcesync')
     .setDescription('Force sync all Convoy shop items from the ArcadiaMC API (Developer Only)'),
@@ -37,6 +38,11 @@ module.exports = {
       await syncConvoy();
 
       logger.success('Manual forced synchronization complete.');
+
+      // Check for newly downloaded icons and upload them in the background
+      const { checkAndUploadEmojis } = require('../../../scripts/upload-emojis.js');
+      checkAndUploadEmojis(interaction.client).catch(() => {});
+
       return interaction.editReply({
         embeds: [
           successEmbed(
