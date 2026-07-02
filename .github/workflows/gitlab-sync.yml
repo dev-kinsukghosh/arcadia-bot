@@ -1,0 +1,33 @@
+name: Gitlab mirror sync
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'dev'
+      - 'master'
+    tags:
+      - '**'
+
+jobs:
+  execute-mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Initialize SSH Key Agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GIT_SSH_KEY }}
+
+      - name: Trust GitHub and GitLab Host Fingerprints
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+
+      - name: SSH into github repo and clone
+        run: git clone --bare git@github.com:${{ github.repository }}.git source-repo
+
+      - name: push to gitlab
+        run: |
+          cd source-repo
+          git push --mirror git@gitlab.com:${{ github.repository }}.git

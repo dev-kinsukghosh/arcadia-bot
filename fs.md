@@ -8,6 +8,10 @@ This file serves as a reference guide for the directory structure and file respo
 .
 ├── .agents/
 │   └── AGENTS.md
+├── .github/
+│   ├── workflows/
+│   │   └── deploy.yml
+│   └── gitlab-sync.yml
 ├── scripts/
 │   ├── setup.js
 │   ├── migrate-safe.js
@@ -63,7 +67,9 @@ This file serves as a reference guide for the directory structure and file respo
 │   └── notify.test.js
 ├── .env
 ├── .env.example
+├── .dockerignore
 ├── .gitignore
+├── Dockerfile
 ├── drizzle.config.js
 ├── eslint.config.js
 ├── .prettierrc
@@ -80,10 +86,17 @@ This file serves as a reference guide for the directory structure and file respo
 - [.prettierrc](./.prettierrc): Settings for the Prettier formatter.
 - [package.json](./package.json): Workspace script targets (`npm start`, `npm run dev`, `npm run deploy`, `npm run lint`, etc.) and dependencies listing.
 - [.env.example](./.env.example): Template configuration containing environment variable keys.
+- [.dockerignore](./.dockerignore): Excludes non-essential files (node_modules, tests, docs, logs, git) from Docker build context.
+- [Dockerfile](./Dockerfile): Multi-stage production Docker image — installs only production deps in a slim Node 22 base with a non-root user.
 - [Api.enpoints.md](./Api.enpoints.md): API endpoint mapping documentation for the ArcadiaMC server.
 - [fs.md](./fs.md): _(This file)_ File system reference guide.
 - [GEMINI.md](./GEMINI.md): Development rule book, project context, and daily change-log repository.
 - [.agents/AGENTS.md](./.agents/AGENTS.md): Project-scoped customization rules for Antigravity developer agent.
+
+### 📂 .github/
+
+- [.github/gitlab-sync.yml](./.github/gitlab-sync.yml): Mirror synchronization workflow for GitLab.
+- [.github/workflows/deploy.yml](./.github/workflows/deploy.yml): CI/CD deployment pipeline for building and publishing Docker image to GHCR, connecting to server via SSH, deploying with secrets/vars, and pruning unused images.
 
 ### 📂 scripts/
 

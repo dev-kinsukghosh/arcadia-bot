@@ -230,7 +230,23 @@ The following rules MUST be followed at all times:
   - Created `src/commands/general/exchange.js` to calculate conversions between any two nation currencies.
   - Set up a three-parameter command requiring `amount`, `from`, and `to`.
   - Configured debounced autocompletion matching on search inputs.
-
-
-
-
+  - Modified decimal formatting across input, output, and exchange rate values to exactly 3 decimal places using standard rounding.
+- **Convoy Stock Price Conversion Math (`/cstock` & `/cis-info`)**:
+  - Configured active guild currency checking inside `/cstock` and `/cis-info`.
+  - Converts base ARC prices by dividing them by the live exchange rate of the configured guild currency.
+  - Implemented standard rounding (`Math.round`) and strict 2 decimal place limits for all convoy outputs to ensure alignment with in-game calculations.
+- **Rotation Detection Resolution (`src/services/convoySync.js`)**:
+  - Restructured rotation detection to compare active convoy item names in the database against the current API response.
+  - Prevents mock rotations and duplicate timesSeen increments/notifications during standard 5-minute backup checks when items haven't rotated.
+- **Currency-Aware Stock Notifications (`notifyiic`)**:
+  - Updated convoy sync notifications to dynamically fetch the recipient channel's guild currency configuration.
+  - Formats stock notification pricing fields using the target server's selected currency.
+- **Docker Containerization**:
+  - Created `Dockerfile` with a multi-stage build: Stage 1 installs production-only dependencies (`npm ci --omit=dev`), Stage 2 copies them into a `node:22-slim` runtime image with a non-root `arcadia` user.
+  - Created `.dockerignore` to exclude `node_modules/`, `.env`, `.git/`, tests, dev configs, docs, and logs from the build context.
+  - Environment variables are injected via Docker `environment:` / `env_file:` — no `.env` file needed inside the container.
+  - Registered `Dockerfile` and `.dockerignore` inside `fs.md`.
+- **GitHub Actions CI/CD Pipeline**:
+  - Created `.github/workflows/deploy.yml` to automate builds, publishing to GHCR, SSH-based remote deployments, and automatic image pruning.
+  - Configured pipeline to inject variables and secrets securely from GitHub repository settings.
+  - Updated `fs.md` codebase tree and directory mappings to document the pipeline workflow.

@@ -1,0 +1,39 @@
+# Dependencies (reinstalled inside container)
+node_modules/
+
+# Environment files (injected via Docker env vars)
+.env
+.env.*
+
+# Git & IDE
+.git/
+.github/
+.gitignore
+.agents/
+.vscode/
+
+# Dev configs & docs
+eslint.config.js
+.prettierrc
+GEMINI.md
+fs.md
+Api.enpoints.md
+todo.md
+*.md
+!README.md
+
+# Logs
+logs/
+*.log
+
+# Tests (not needed in production)
+tests/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Docker itself
+Dockerfile
+.dockerignore
+docker-compose*.yml
