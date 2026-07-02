@@ -53,6 +53,9 @@ async function main() {
   const { startConvoySync } = require('./src/services/convoySync.js');
   startConvoySync(client);
 
+  const { startCurrencySync } = require('./src/services/currencySync.js');
+  startCurrencySync(client);
+
   // 3. Login to Discord
   logger.info('Logging in to Discord...');
   try {

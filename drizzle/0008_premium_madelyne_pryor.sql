@@ -1,0 +1,1 @@
+ALTER TABLE `nguild_data` DROP COLUMN `standard_item`;

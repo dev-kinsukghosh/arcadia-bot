@@ -19,10 +19,13 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── blacklist.js
 │   │       ├── cis-info.js
 │   │       ├── cstock.js
+│   │       ├── currencies.js
 │   │       ├── dev-slist.js
+│   │       ├── exchange.js
 │   │       ├── forcesync.js
 │   │       ├── healthz.js
 │   │       ├── invite-bd.js
+│   │       ├── ncurrency.js
 │   │       ├── notifyiic.js
 │   │       ├── ping.js
 │   │       ├── stats-dev.js
@@ -38,7 +41,8 @@ This file serves as a reference guide for the directory structure and file respo
 │   │   ├── commandHandler.js
 │   │   └── eventHandler.js
 │   ├── services/
-│   │   └── convoySync.js
+│   │   ├── convoySync.js
+│   │   └── currencySync.js
 │   └── utils/
 │       ├── apiClient.js
 │       ├── blacklistHelper.js
@@ -95,10 +99,13 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/blacklist.js](./src/commands/general/blacklist.js): `/blacklist` — Manage user blacklist add, remove, and list (Developer Only).
       - [src/commands/general/cis-info.js](./src/commands/general/cis-info.js): `/cis-info` — Displays historical, rarity, and frequency telemetry for convoy items.
       - [src/commands/general/cstock.js](./src/commands/general/cstock.js): `/cstock` — Displays current Convoy shop stock grouped by rarity.
+      - [src/commands/general/currencies.js](./src/commands/general/currencies.js): `/currencies` — Displays active list of nation currencies and their rates.
+      - [src/commands/general/exchange.js](./src/commands/general/exchange.js): `/exchange` — Calculates conversions and exchange rates between nation currencies.
       - [src/commands/general/forcesync.js](./src/commands/general/forcesync.js): `/forcesync` — Forces manual convoy data synchronization from the API (Developer Only).
       - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Lists all guilds the bot is currently in (Developer Only).
       - [src/commands/general/healthz.js](./src/commands/general/healthz.js): `/healthz` — Displays bot status, connection states, and server resources (Developer Only).
       - [src/commands/general/invite-bd.js](./src/commands/general/invite-bd.js): `/invite-bd` — Generates a single-use invite to join a server the bot is in (Developer Only).
+      - [src/commands/general/ncurrency.js](./src/commands/general/ncurrency.js): `/ncurrency` — Set this server's nation currency config (Admin Only).
       - [src/commands/general/notifyiic.js](./src/commands/general/notifyiic.js): `/notifyiic` — Subscribe to item stock notifications in a specific channel.
       - [src/commands/general/ping.js](./src/commands/general/ping.js): Ping/latency check.
       - [src/commands/general/stats-dev.js](./src/commands/general/stats-dev.js): `/stats-dev` — Displays command execution telemetry and active servers count (Developer Only).
@@ -116,6 +123,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/handlers/eventHandler.js](./src/handlers/eventHandler.js): Imports and registers bot listeners dynamically.
 - 📂 **src/services/**: Background synchronization services.
   - [src/services/convoySync.js](./src/services/convoySync.js): Synchronization worker to fetch and track convoy shop items.
+  - [src/services/currencySync.js](./src/services/currencySync.js): Synchronization worker to fetch, track, and cache currencies.
 - 📂 **src/utils/**: Helper modules.
   - [src/utils/apiClient.js](./src/utils/apiClient.js): Axios HTTP wrapper configured for ArcadiaMC.
   - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.

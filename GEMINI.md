@@ -207,3 +207,30 @@ The following rules MUST be followed at all times:
   - Hooked the Discord Application Emojis uploader to auto-trigger 3 seconds after the final block/item texture icon completes downloading in the background.
 - **Dependency Reconfiguration**:
   - Re-installed `axios-retry` and `ms` to handle network retries and durations, and upgraded `@napi-rs/canvas` to the latest `1.0.2` release version. Removed unused `chalk-animation`, `boxen`, and `bullmq` packages.
+- **Database Restructuring (Currencies & Guild Data)**:
+  - Created `nguild_data` table mapping `guild_id` and `currency` columns for nation guild data.
+  - Restructured currency storage into three distinct tables: `currencies` for the latest API state, `currency_history` for daily average and final live/base rate data, and `internal` as a generic key-value store to track daily scan counts (`currency_scans`) with an auto-reset mechanism.
+  - Successfully generated and applied safe migrations (`0005_red_dagger.sql`, `0007_chunky_yellow_claw.sql`, and `0008_premium_madelyne_pryor.sql`) in database.
+- **Currency Synchronization Worker**:
+  - Created `src/services/currencySync.js` to handle pulling currency metadata and live rates every 30 minutes.
+  - Configured daily running average calculation using the incremental average formula based on scan counters.
+  - Configured automated pruning to delete history rows older than 90 days in safe batches of 5.
+  - Hooked up `standardItem` icon checks to download textures automatically into `src/icons/` and upload them to Discord Application Emojis upon completion.
+  - Standardized all time stamps and comparison checks to use UTC format.
+  - Integrated worker initialization into `bot.js` startup sequence.
+- **Slash Commands — `/currencies`**:
+  - Created `src/commands/general/currencies.js` displaying active nation currencies.
+  - Configured 10 items per page pagination layout using base custom emojis mapped to standard backing item textures.
+  - Added user validation checks on buttons, and error fallbacks for DB states.
+- **Slash Commands — `/ncurrency`**:
+  - Created `src/commands/general/ncurrency.js` to configure active guild settings.
+  - Implemented `/ncurrency set [id]` subcommand to assign active guild currency inside the `nguild_data` MySQL database table.
+  - Integrated autocomplete matching on search inputs with a 500ms debounce buffer to reduce server load.
+- **Slash Commands — `/exchange`**:
+  - Created `src/commands/general/exchange.js` to calculate conversions between any two nation currencies.
+  - Set up a three-parameter command requiring `amount`, `from`, and `to`.
+  - Configured debounced autocompletion matching on search inputs.
+
+
+
+

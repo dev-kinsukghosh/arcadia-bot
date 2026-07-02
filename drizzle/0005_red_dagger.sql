@@ -1,0 +1,1 @@
+ALTER TABLE `nguild_data` ADD `standard_item` varchar(100) NOT NULL;

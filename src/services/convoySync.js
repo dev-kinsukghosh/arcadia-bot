@@ -37,29 +37,43 @@ async function syncConvoy(force = false) {
     }
 
     const apiUpdatedAt = data.updatedAt ? String(data.updatedAt) : null;
-    let isNewRotation = false;
-
     if (apiUpdatedAt) {
-      let storedLastUpdated = lastApiUpdatedAt;
-      if (!storedLastUpdated && redis && redis.status === 'ready') {
+      lastApiUpdatedAt = apiUpdatedAt;
+      if (redis && redis.status === 'ready') {
         try {
-          storedLastUpdated = await redis.get('convoy:last_api_updated_at');
+          await redis.set('convoy:last_api_updated_at', apiUpdatedAt);
         } catch {
           // Ignore errors
         }
       }
+    }
 
-      if (!storedLastUpdated || storedLastUpdated !== apiUpdatedAt) {
+    // Determine if this is a new rotation by comparing items returned from API
+    // with currently active items in the database.
+    const currentlyActive = await db
+      .select({ item: convoyItems.item })
+      .from(convoyItems)
+      .where(eq(convoyItems.current_p, true));
+    const activeDbNames = currentlyActive.map((r) => r.item);
+
+    const apiItemNames = data.trades.map((t) => t.item).filter(Boolean);
+
+    let isNewRotation = false;
+    if (activeDbNames.length > 0) {
+      if (activeDbNames.length !== apiItemNames.length) {
         isNewRotation = true;
-        lastApiUpdatedAt = apiUpdatedAt;
-        if (redis && redis.status === 'ready') {
-          try {
-            await redis.set('convoy:last_api_updated_at', apiUpdatedAt);
-          } catch {
-            // Ignore errors
+      } else {
+        const activeDbSet = new Set(activeDbNames);
+        for (const name of apiItemNames) {
+          if (!activeDbSet.has(name)) {
+            isNewRotation = true;
+            break;
           }
         }
       }
+    } else {
+      // First sync / empty DB active state - treat as new rotation
+      isNewRotation = true;
     }
 
     const { convoyItemRepository } = require('../db/redisSchema.js');
@@ -245,8 +259,11 @@ async function syncConvoy(force = false) {
           };
 
           const formatPriceLocal = (price) => {
-            return parseFloat(price).toLocaleString('en-US', {
-              minimumFractionDigits: 0,
+            const n = parseFloat(price);
+            if (isNaN(n)) return '0.00';
+            const rounded = Math.round(n * 100) / 100;
+            return rounded.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             });
           };
@@ -258,6 +275,48 @@ async function syncConvoy(force = false) {
 
               const tradeDetails = data.trades.find((t) => t.item === notif.item);
               if (!tradeDetails) continue;
+
+              // Resolve guild currency for this channel
+              const guildId = channel.guild?.id;
+              let activeCurrency = 'arc';
+              let conversion = { prefix: '₳', suffix: '', rate: 1.0 };
+
+              if (guildId) {
+                try {
+                  const { nguildData } = require('../db/schema.js');
+                  const { eq } = require('drizzle-orm');
+                  const configRow = await db
+                    .select()
+                    .from(nguildData)
+                    .where(eq(nguildData.guildId, guildId));
+
+                  if (configRow.length > 0 && configRow[0].currency) {
+                    activeCurrency = configRow[0].currency.toLowerCase();
+                  }
+                } catch (err) {
+                  logger.debug(
+                    `Failed to fetch guild currency config for notification: ${err.message}`
+                  );
+                }
+              }
+
+              if (activeCurrency !== 'arc') {
+                const { getCurrencyCache } = require('./currencySync.js');
+                const cache = getCurrencyCache();
+                const currenciesList = cache.currencies || [];
+                const matched = currenciesList.find((c) => c.id?.toLowerCase() === activeCurrency);
+                if (matched) {
+                  const rate = parseFloat(matched.arcPerUnitLive) || 1.0;
+                  conversion = {
+                    prefix: '',
+                    suffix: ` ${matched.name || matched.id}`,
+                    rate,
+                  };
+                }
+              }
+
+              const convertedBuy = parseFloat(tradeDetails.buyPrice) / conversion.rate;
+              const convertedSell = parseFloat(tradeDetails.sellPrice) / conversion.rate;
 
               const targetEmojiName = notif.item.substring(0, 32);
               const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
@@ -300,12 +359,12 @@ async function syncConvoy(force = false) {
                   },
                   {
                     name: '💰 Buy Price',
-                    value: `\`₳${formatPriceLocal(tradeDetails.buyPrice)}\``,
+                    value: `\`${conversion.prefix}${formatPriceLocal(convertedBuy)}${conversion.suffix}\``,
                     inline: true,
                   },
                   {
                     name: '💰 Sell Price',
-                    value: `\`₳${formatPriceLocal(tradeDetails.sellPrice)}\``,
+                    value: `\`${conversion.prefix}${formatPriceLocal(convertedSell)}${conversion.suffix}\``,
                     inline: true,
                   }
                 );

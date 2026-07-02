@@ -7,8 +7,10 @@ const {
   MessageFlags,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
-const { convoyItems } = require('../../db/schema.js');
+const { convoyItems, nguildData } = require('../../db/schema.js');
+const { eq } = require('drizzle-orm');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
+const { getCurrencyCache } = require('../../services/currencySync.js');
 const path = require('path');
 const fs = require('fs');
 const redis = require('../../utils/redis.js');
@@ -89,7 +91,9 @@ function ensureCacheInitialized() {
 
 function formatPrice(price) {
   const n = parseFloat(price);
-  return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  if (isNaN(n)) return '0.00';
+  const rounded = Math.round(n * 100) / 100;
+  return rounded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatItemName(name) {
@@ -184,6 +188,39 @@ module.exports = {
           ),
         ],
       });
+    }
+
+    // Load guild's configured currency
+    let activeCurrency = 'arc';
+    let conversion = { prefix: '₳', suffix: '', rate: 1.0 };
+
+    if (interaction.guildId) {
+      try {
+        const configRow = await db
+          .select()
+          .from(nguildData)
+          .where(eq(nguildData.guildId, interaction.guildId));
+
+        if (configRow.length > 0 && configRow[0].currency) {
+          activeCurrency = configRow[0].currency.toLowerCase();
+        }
+      } catch {
+        // Ignore DB issues, default to 'arc'
+      }
+    }
+
+    if (activeCurrency !== 'arc') {
+      const cache = getCurrencyCache();
+      const currenciesList = cache.currencies || [];
+      const matched = currenciesList.find((c) => c.id?.toLowerCase() === activeCurrency);
+      if (matched) {
+        const rate = parseFloat(matched.arcPerUnitLive) || 1.0;
+        conversion = {
+          prefix: '',
+          suffix: ` ${matched.name || matched.id}`,
+          rate,
+        };
+      }
     }
 
     const itemArg = interaction.options.getString('item');
@@ -300,10 +337,14 @@ module.exports = {
             value: itemRecord.current_p ? '🟢 **Active in Shop**' : '🔴 **Rotated Out**',
             inline: true,
           },
-          { name: '💰 Buy Price', value: `\`₳${formatPrice(itemRecord.buyPrice)}\``, inline: true },
+          {
+            name: '💰 Buy Price',
+            value: `\`${conversion.prefix}${formatPrice(parseFloat(itemRecord.buyPrice) / conversion.rate)}${conversion.suffix}\``,
+            inline: true,
+          },
           {
             name: '💰 Sell Price',
-            value: `\`₳${formatPrice(itemRecord.sellPrice)}\``,
+            value: `\`${conversion.prefix}${formatPrice(parseFloat(itemRecord.sellPrice) / conversion.rate)}${conversion.suffix}\``,
             inline: true,
           },
           {
@@ -481,9 +522,11 @@ module.exports = {
         const targetEmojiName = it.item.substring(0, 32);
         const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
         const emojiStr = appEmoji ? `<:${appEmoji.name}:${appEmoji.id}> ` : '';
+        const convertedBuy = parseFloat(it.buyPrice) / conversion.rate;
+        const convertedSell = parseFloat(it.sellPrice) / conversion.rate;
         return (
           `${statusStr} ${emojiStr}**${formatItemName(it.item)}** (${cfg.emoji} ${cfg.label})\n` +
-          `└ Seen **${it.timesSeen}** times · Buy: \`₳${formatPrice(it.buyPrice)}\` · Sell: \`₳${formatPrice(it.sellPrice)}\``
+          `└ Seen **${it.timesSeen}** times · Buy: \`${conversion.prefix}${formatPrice(convertedBuy)}${conversion.suffix}\` · Sell: \`${conversion.prefix}${formatPrice(convertedSell)}${conversion.suffix}\``
         );
       });
 

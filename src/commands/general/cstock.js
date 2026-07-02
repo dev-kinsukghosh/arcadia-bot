@@ -13,9 +13,10 @@ const {
   MessageFlags,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
-const { convoyItems } = require('../../db/schema.js');
+const { convoyItems, nguildData } = require('../../db/schema.js');
 const { eq } = require('drizzle-orm');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
+const { getCurrencyCache } = require('../../services/currencySync.js');
 const path = require('path');
 const fs = require('fs');
 
@@ -62,7 +63,9 @@ const RARITY_ORDER = ['LEGENDARY', 'EPIC', 'RARE', 'UNCOMMON', 'COMMON'];
 
 function formatPrice(price) {
   const n = parseFloat(price);
-  return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  if (isNaN(n)) return '0.00';
+  const rounded = Math.round(n * 100) / 100;
+  return rounded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatItemName(name) {
@@ -90,7 +93,16 @@ function getItemIcon(itemName) {
  * @param {number} subPage - Sub-page index within this rarity (0-based)
  * @param {number} subTotal - Total sub-pages for this rarity
  */
-function buildPage(rarity, items, pageIndex, totalPages, subPage, subTotal, headerIconName) {
+function buildPage(
+  rarity,
+  items,
+  pageIndex,
+  totalPages,
+  subPage,
+  subTotal,
+  headerIconName,
+  conversion
+) {
   const cfg = RARITY_CONFIG[rarity] || { emoji: '🔘', color: EMBED_COLORS.DEFAULT, label: rarity };
 
   // Deduplicate attachments by filename — Discord only needs each file once per message
@@ -130,9 +142,12 @@ function buildPage(rarity, items, pageIndex, totalPages, subPage, subTotal, head
     const stockBar = it.maxStock > 0 ? `${it.stock}/${it.maxStock}` : `${it.stock}`;
     const itemIcon = getItemIcon(it.item);
 
+    const convertedBuy = parseFloat(it.buyPrice) / conversion.rate;
+    const convertedSell = parseFloat(it.sellPrice) / conversion.rate;
+
     const itemText = new TextDisplayBuilder().setContent(
       `### ${formatItemName(it.item)}\n` +
-        `💰 **Buy** \`₳${formatPrice(it.buyPrice)}\`  ·  **Sell** \`₳${formatPrice(it.sellPrice)}\`\n` +
+        `💰 **Buy** \`${conversion.prefix}${formatPrice(convertedBuy)}${conversion.suffix}\`  ·  **Sell** \`${conversion.prefix}${formatPrice(convertedSell)}${conversion.suffix}\`\n` +
         `-# 📦 Stock: ${stockBar}`
     );
 
@@ -147,7 +162,7 @@ function buildPage(rarity, items, pageIndex, totalPages, subPage, subTotal, head
           .setThumbnailAccessory(new ThumbnailBuilder().setURL(`attachment://${itemIcon.filename}`))
       );
     } else {
-      container.addTextDisplayComponents(itemText);
+      container.addSectionComponents(new SectionBuilder().addTextDisplayComponents(itemText));
     }
 
     // Separator between items (not after last)
@@ -212,6 +227,39 @@ module.exports = {
           ),
         ],
       });
+    }
+
+    // Load guild's configured currency
+    let activeCurrency = 'arc';
+    let conversion = { prefix: '₳', suffix: '', rate: 1.0 };
+
+    if (interaction.guildId) {
+      try {
+        const configRow = await db
+          .select()
+          .from(nguildData)
+          .where(eq(nguildData.guildId, interaction.guildId));
+
+        if (configRow.length > 0 && configRow[0].currency) {
+          activeCurrency = configRow[0].currency.toLowerCase();
+        }
+      } catch {
+        // Ignore DB issues, default to 'arc'
+      }
+    }
+
+    if (activeCurrency !== 'arc') {
+      const cache = getCurrencyCache();
+      const currenciesList = cache.currencies || [];
+      const matched = currenciesList.find((c) => c.id?.toLowerCase() === activeCurrency);
+      if (matched) {
+        const rate = parseFloat(matched.arcPerUnitLive) || 1.0;
+        conversion = {
+          prefix: '',
+          suffix: ` ${matched.name || matched.id}`,
+          rate,
+        };
+      }
     }
 
     const items = await db.select().from(convoyItems).where(eq(convoyItems.current_p, true));
@@ -306,7 +354,8 @@ module.exports = {
       totalPages,
       pages[0].subPage,
       pages[0].subTotal,
-      pages[0].headerIcon
+      pages[0].headerIcon,
+      conversion
     );
 
     const navRow = buildNavRow(0, totalPages, interaction.id);
@@ -344,7 +393,8 @@ module.exports = {
         totalPages,
         pg.subPage,
         pg.subTotal,
-        pg.headerIcon
+        pg.headerIcon,
+        conversion
       );
       const newRow = buildNavRow(currentPage, totalPages, interaction.id);
 
@@ -383,7 +433,8 @@ module.exports = {
           totalPages,
           pg.subPage,
           pg.subTotal,
-          pg.headerIcon
+          pg.headerIcon,
+          conversion
         );
 
         await interaction.editReply({

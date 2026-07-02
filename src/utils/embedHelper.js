@@ -7,7 +7,7 @@ const EMBED_COLORS = {
   INFO: 0x3498db, // Cyber Blue
   WARNING: 0xf1c40f, // Amber Yellow
   ERROR: 0xe74c3c, // Crimson Red
-  CYBER: 0xbb86fc, // Neon Purple
+  CYBER: 0x4f1f7d, // Neon Purple
 };
 
 /**
