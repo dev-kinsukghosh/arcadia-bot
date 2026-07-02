@@ -258,6 +258,6 @@ The following rules MUST be followed at all times:
   - Updated `fs.md` codebase tree and directory mappings to remove all welcome card references.
 - **Slash Commands & Developer Utilities**:
   - Restructured `/invite-bd` autocomplete handler to restrict guild suggestions to developers configured in `DEV_ID`, preventing unauthorized exposure of server lists.
-
-
-
+- **Command Deployment Duplication Safeguards & CLI Options (`src/deploy-commands.js`)**:
+  - Prevented duplicate command loading from local files by introducing a tracking `Set` of loaded command names.
+  - Added command-line arguments `--clear-global`, `--clear-guild`, and `--clear-all` to programmatically purge commands in various scopes using the Discord REST API to resolve command registration duplication issues.

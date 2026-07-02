@@ -23,45 +23,77 @@ if (!clientId) {
   process.exit(1);
 }
 
-const commands = [];
-const commandsPath = path.join(__dirname, 'commands');
-
-if (!fs.existsSync(commandsPath)) {
-  logger.error(`Commands directory not found at ${commandsPath}`);
-  process.exit(1);
-}
-
-const categories = fs.readdirSync(commandsPath);
-
-for (const category of categories) {
-  const categoryPath = path.join(commandsPath, category);
-  const stat = fs.statSync(categoryPath);
-
-  if (stat.isDirectory()) {
-    const commandFiles = fs.readdirSync(categoryPath).filter((file) => file.endsWith('.js'));
-    for (const file of commandFiles) {
-      loadCommand(path.join(categoryPath, file));
-    }
-  } else if (category.endsWith('.js')) {
-    loadCommand(categoryPath);
-  }
-}
-
-function loadCommand(filePath) {
-  try {
-    const command = require(filePath);
-    if (command && command.data && typeof command.execute === 'function') {
-      commands.push(command.data.toJSON());
-    }
-  } catch (error) {
-    logger.error(`Error reading command ${filePath} for deployment:`, error);
-  }
-}
+const args = process.argv.slice(2);
+const shouldClearGlobal = args.includes('--clear-global');
+const shouldClearGuild = args.includes('--clear-guild');
+const shouldClearAll = args.includes('--clear-all');
 
 const rest = new REST({ version: '10' }).setToken(token);
 
 (async () => {
   try {
+    if (shouldClearAll || shouldClearGlobal || shouldClearGuild) {
+      if (shouldClearAll || shouldClearGlobal) {
+        logger.info('Clearing all global application (/) commands...');
+        await rest.put(Routes.applicationCommands(clientId), { body: [] });
+        logger.success('Successfully cleared all global application (/) commands.');
+      }
+      if (shouldClearAll || shouldClearGuild) {
+        if (!guildId) {
+          logger.warn('No DISCORD_GUILD_ID specified in .env, skipping clearing guild commands.');
+        } else {
+          logger.info(`Clearing all guild-specific commands for guild: ${guildId}`);
+          await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] });
+          logger.success(`Successfully cleared all guild-specific commands for guild ${guildId}.`);
+        }
+      }
+      process.exit(0);
+    }
+
+    const commands = [];
+    const commandsPath = path.join(__dirname, 'commands');
+
+    if (!fs.existsSync(commandsPath)) {
+      logger.error(`Commands directory not found at ${commandsPath}`);
+      process.exit(1);
+    }
+
+    const categories = fs.readdirSync(commandsPath);
+    const loadedNames = new Set();
+
+    const loadCommand = (filePath) => {
+      try {
+        const command = require(filePath);
+        if (command && command.data && typeof command.execute === 'function') {
+          const commandName = command.data.name;
+          if (loadedNames.has(commandName)) {
+            logger.warn(
+              `Duplicate command name detected and skipped: ${commandName} in ${filePath}`
+            );
+            return;
+          }
+          loadedNames.add(commandName);
+          commands.push(command.data.toJSON());
+        }
+      } catch (error) {
+        logger.error(`Error reading command ${filePath} for deployment:`, error);
+      }
+    };
+
+    for (const category of categories) {
+      const categoryPath = path.join(commandsPath, category);
+      const stat = fs.statSync(categoryPath);
+
+      if (stat.isDirectory()) {
+        const commandFiles = fs.readdirSync(categoryPath).filter((file) => file.endsWith('.js'));
+        for (const file of commandFiles) {
+          loadCommand(path.join(categoryPath, file));
+        }
+      } else if (category.endsWith('.js')) {
+        loadCommand(categoryPath);
+      }
+    }
+
     logger.info(`Started refreshing ${commands.length} application (/) commands.`);
 
     if (guildId) {

@@ -80,9 +80,7 @@
       "compositePrimaryKeys": {
         "convoy_items_item": {
           "name": "convoy_items_item",
-          "columns": [
-            "item"
-          ]
+          "columns": ["item"]
         }
       },
       "uniqueConstraints": {},
@@ -126,9 +124,7 @@
       "compositePrimaryKeys": {
         "blacklist_user_id": {
           "name": "blacklist_user_id",
-          "columns": [
-            "user_id"
-          ]
+          "columns": ["user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -172,10 +168,7 @@
       "compositePrimaryKeys": {
         "item_notifications_user_id_item_pk": {
           "name": "item_notifications_user_id_item_pk",
-          "columns": [
-            "user_id",
-            "item"
-          ]
+          "columns": ["user_id", "item"]
         }
       },
       "uniqueConstraints": {},
@@ -211,9 +204,7 @@
       "compositePrimaryKeys": {
         "nguild_data_guild_id": {
           "name": "nguild_data_guild_id",
-          "columns": [
-            "guild_id"
-          ]
+          "columns": ["guild_id"]
         }
       },
       "uniqueConstraints": {},
@@ -286,9 +277,7 @@
       "compositePrimaryKeys": {
         "currencies_id": {
           "name": "currencies_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -354,10 +343,7 @@
       "compositePrimaryKeys": {
         "currency_history_currency_id_date_pk": {
           "name": "currency_history_currency_id_date_pk",
-          "columns": [
-            "currency_id",
-            "date"
-          ]
+          "columns": ["currency_id", "date"]
         }
       },
       "uniqueConstraints": {},
@@ -386,9 +372,7 @@
       "compositePrimaryKeys": {
         "internal_id": {
           "name": "internal_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
