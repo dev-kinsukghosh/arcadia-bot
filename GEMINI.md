@@ -250,3 +250,14 @@ The following rules MUST be followed at all times:
   - Created `.github/workflows/deploy.yml` to automate builds, publishing to GHCR, SSH-based remote deployments, and automatic image pruning.
   - Configured pipeline to inject variables and secrets securely from GitHub repository settings.
   - Updated `fs.md` codebase tree and directory mappings to document the pipeline workflow.
+  - Documented repository secrets and variables required for the workflow.
+  - Removed `DISCORD_GUILD_ID` from the production deployment run step as commands are registered globally in production.
+- **Welcome Feature Removal**:
+  - Deleted `src/utils/canvasHelper.js` which handled custom welcome card canvas generation.
+  - Removed `WELCOME_CHANNEL_ID` from `.env.example`.
+  - Updated `fs.md` codebase tree and directory mappings to remove all welcome card references.
+- **Slash Commands & Developer Utilities**:
+  - Restructured `/invite-bd` autocomplete handler to restrict guild suggestions to developers configured in `DEV_ID`, preventing unauthorized exposure of server lists.
+
+
+

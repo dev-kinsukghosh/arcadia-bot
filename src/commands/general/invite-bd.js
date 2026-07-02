@@ -16,6 +16,11 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
+    const devIds = (process.env.DEV_ID || '').split(',').map((id) => id.trim());
+    if (!devIds.includes(interaction.user.id)) {
+      return interaction.respond([]);
+    }
+
     const focused = interaction.options.getFocused().toLowerCase();
     const guilds = interaction.client.guilds.cache
       .filter((g) => g.name.toLowerCase().includes(focused) || g.id.includes(focused))

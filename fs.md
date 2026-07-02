@@ -50,7 +50,6 @@ This file serves as a reference guide for the directory structure and file respo
 │   └── utils/
 │       ├── apiClient.js
 │       ├── blacklistHelper.js
-│       ├── canvasHelper.js
 │       ├── db.js
 │       ├── embedHelper.js
 │       ├── errorHandler.js
@@ -130,7 +129,6 @@ This file serves as a reference guide for the directory structure and file respo
   - 📂 **src/events/**: Discord event handlers.
   - [src/events/ready.js](./src/events/ready.js): Triggered on client login success.
   - [src/events/interactionCreate.js](./src/events/interactionCreate.js): Command execution event router.
-  - [src/events/guildMemberAdd.js](./src/events/guildMemberAdd.js): Automatically runs and posts the Canvas-rendered welcome card when a user joins the server.
 - 📂 **src/handlers/**: Dynamic modules loaders.
   - [src/handlers/commandHandler.js](./src/handlers/commandHandler.js): Registers and maps command files category-wise.
   - [src/handlers/eventHandler.js](./src/handlers/eventHandler.js): Imports and registers bot listeners dynamically.
@@ -140,7 +138,6 @@ This file serves as a reference guide for the directory structure and file respo
 - 📂 **src/utils/**: Helper modules.
   - [src/utils/apiClient.js](./src/utils/apiClient.js): Axios HTTP wrapper configured for ArcadiaMC.
   - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.
-  - [src/utils/canvasHelper.js](./src/utils/canvasHelper.js): Renders premium welcome cards using `@napi-rs/canvas`.
   - [src/utils/db.js](./src/utils/db.js): Drizzle ORM database instance client.
   - [src/utils/embedHelper.js](./src/utils/embedHelper.js): Central helper module to build styled, uniform Discord embeds.
   - [src/utils/errorHandler.js](./src/utils/errorHandler.js): Exception wrapper to prevent process crashes and route alerts.
