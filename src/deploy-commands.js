@@ -96,19 +96,44 @@ const rest = new REST({ version: '10' }).setToken(token);
 
     logger.info(`Started refreshing ${commands.length} application (/) commands.`);
 
-    if (guildId) {
-      logger.info(`Deploying commands to development guild: ${guildId}`);
-      const data = await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-        body: commands,
-      });
-      logger.info(
-        `Successfully reloaded ${data.length} application (/) commands for guild ${guildId}.`
-      );
+    const mode = (process.env.MODE || 'PROD').toUpperCase();
+    logger.info(`Deployment mode: ${mode}`);
+
+    if (mode === 'DEV') {
+      if (guildId) {
+        logger.info(`[DEV MODE] Deploying commands to development guild: ${guildId}`);
+        const data = await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+          body: commands,
+        });
+        logger.success(
+          `[DEV MODE] Successfully reloaded ${data.length} application (/) commands for guild ${guildId}.`
+        );
+      } else {
+        logger.warn(
+          '[DEV MODE] DISCORD_GUILD_ID is not specified in .env. Falling back to global deployment.'
+        );
+        const data = await rest.put(Routes.applicationCommands(clientId), { body: commands });
+        logger.success(
+          `[DEV MODE] Successfully reloaded ${data.length} global application (/) commands.`
+        );
+      }
     } else {
-      logger.info('Deploying commands globally (this can take up to 1 hour to propagate).');
+      // PROD Mode
+      logger.info('[PROD MODE] Deploying commands globally...');
       const data = await rest.put(Routes.applicationCommands(clientId), { body: commands });
-      logger.info(`Successfully reloaded ${data.length} global application (/) commands.`);
+      logger.success(
+        `[PROD MODE] Successfully reloaded ${data.length} global application (/) commands.`
+      );
+
+      if (guildId) {
+        logger.info(`[PROD MODE] Clearing old guild-specific commands for guild: ${guildId}...`);
+        await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] });
+        logger.success(
+          `[PROD MODE] Successfully cleared guild-specific commands for guild ${guildId}.`
+        );
+      }
     }
+
     logger.success('Deployment completed successfully.');
     process.exit(0);
   } catch (error) {

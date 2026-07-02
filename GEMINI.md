@@ -261,3 +261,4 @@ The following rules MUST be followed at all times:
 - **Command Deployment Duplication Safeguards & CLI Options (`src/deploy-commands.js`)**:
   - Prevented duplicate command loading from local files by introducing a tracking `Set` of loaded command names.
   - Added command-line arguments `--clear-global`, `--clear-guild`, and `--clear-all` to programmatically purge commands in various scopes using the Discord REST API to resolve command registration duplication issues.
+  - Configured conditional command deployment based on the `MODE` environment variable. In `DEV` mode, the script registers commands to the development guild (`DISCORD_GUILD_ID`). In `PROD` mode, the script deploys commands globally and automatically purges old guild-specific commands for `DISCORD_GUILD_ID` to avoid duplicate listings on test guilds.
