@@ -1,6 +1,8 @@
 const logger = require('../utils/logger.js');
 const redis = require('../utils/redis.js');
 const { MessageFlags } = require('discord.js');
+const { isBlacklisted, getBlacklistReason } = require('../utils/blacklistHelper.js');
+const { errorEmbed } = require('../utils/embedHelper.js');
 
 const cooldowns = new Map();
 
@@ -8,6 +10,27 @@ module.exports = {
   name: 'interactionCreate',
   once: false,
   async execute(interaction) {
+    // Check if the user is blacklisted
+    if (isBlacklisted(interaction.user.id)) {
+      if (interaction.isRepliable()) {
+        try {
+          const reason = getBlacklistReason(interaction.user.id);
+          await interaction.reply({
+            embeds: [
+              errorEmbed(
+                'Access Denied',
+                `You are blacklisted from using this bot.\n\n**Reason:** ${reason}`
+              ),
+            ],
+            flags: MessageFlags.Ephemeral,
+          });
+        } catch {
+          // Ignore
+        }
+      }
+      return;
+    }
+
     // Handle autocomplete interactions
     if (interaction.isAutocomplete()) {
       const command = interaction.client.commands.get(interaction.commandName);
@@ -30,31 +53,36 @@ module.exports = {
       return;
     }
 
-    // Cooldown check system to prevent Discord/API rate limits
-    const now = Date.now();
-    const cooldownAmount = (command.cooldown || 3) * 1000;
+    // Cooldown check system to prevent Discord/API rate limits (Bypassed for Developers)
+    const devIds = (process.env.DEV_ID || '').split(',').map((id) => id.trim());
+    const isDev = devIds.includes(interaction.user.id);
 
-    if (!cooldowns.has(command.data.name)) {
-      cooldowns.set(command.data.name, new Map());
-    }
+    if (!isDev) {
+      const now = Date.now();
+      const cooldownAmount = (command.cooldown || 3) * 1000;
 
-    const timestamps = cooldowns.get(command.data.name);
-    const userId = interaction.user.id;
-
-    if (timestamps.has(userId)) {
-      const expirationTime = timestamps.get(userId) + cooldownAmount;
-
-      if (now < expirationTime) {
-        const timeLeft = ((expirationTime - now) / 1000).toFixed(1);
-        return interaction.reply({
-          content: `⚠️ Please wait **${timeLeft}s** before using the \`/${interaction.commandName}\` command again.`,
-          flags: MessageFlags.Ephemeral,
-        });
+      if (!cooldowns.has(command.data.name)) {
+        cooldowns.set(command.data.name, new Map());
       }
-    }
 
-    timestamps.set(userId, now);
-    setTimeout(() => timestamps.delete(userId), cooldownAmount);
+      const timestamps = cooldowns.get(command.data.name);
+      const userId = interaction.user.id;
+
+      if (timestamps.has(userId)) {
+        const expirationTime = timestamps.get(userId) + cooldownAmount;
+
+        if (now < expirationTime) {
+          const timeLeft = ((expirationTime - now) / 1000).toFixed(1);
+          return interaction.reply({
+            content: `⚠️ Please wait **${timeLeft}s** before using the \`/${interaction.commandName}\` command again.`,
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+      }
+
+      timestamps.set(userId, now);
+      setTimeout(() => timestamps.delete(userId), cooldownAmount);
+    }
 
     // Track statistics in Redis
     if (redis && redis.status === 'ready') {

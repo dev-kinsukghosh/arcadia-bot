@@ -9,6 +9,8 @@ const suites = [
   { name: 'Environment Connection Suite', cmd: 'node tests/env.test.js' },
   { name: 'ArcadiaMC API Connection Suite', cmd: 'node tests/api.test.js' },
   { name: 'Database Query Suite', cmd: 'node tests/database.test.js' },
+  { name: 'Blacklist Functionality Suite', cmd: 'node tests/blacklist.test.js' },
+  { name: 'Item Notifications Suite', cmd: 'node tests/notify.test.js' },
 ];
 
 let failed = 0;

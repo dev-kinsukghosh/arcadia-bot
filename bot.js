@@ -4,6 +4,7 @@ const logger = require('./src/utils/logger.js');
 const { loadEvents } = require('./src/handlers/eventHandler.js');
 const { loadCommands } = require('./src/handlers/commandHandler.js');
 const { initErrorHandler } = require('./src/utils/errorHandler.js');
+const { loadBlacklist } = require('./src/utils/blacklistHelper.js');
 const pc = require('picocolors');
 
 // Import services to trigger their initialization and logging
@@ -35,6 +36,10 @@ async function main() {
     process.exit(1);
   }
 
+  // Load blacklist cache from DB
+  logger.info('Loading blacklist cache...');
+  await loadBlacklist();
+
   // 1. Load Event handlers
   logger.info('Initializing event handlers...');
   loadEvents(client);
@@ -46,7 +51,7 @@ async function main() {
   // 3. Start background sync services
   logger.info('Starting background sync services...');
   const { startConvoySync } = require('./src/services/convoySync.js');
-  startConvoySync();
+  startConvoySync(client);
 
   // 3. Login to Discord
   logger.info('Logging in to Discord...');

@@ -7,6 +7,7 @@ const pc = require('picocolors');
 const redis = require('../utils/redis.js');
 
 let lastApiUpdatedAt = null;
+let discordClient = null;
 
 /**
  * Fetch convoy data from API and sync with the MySQL database
@@ -192,6 +193,136 @@ async function syncConvoy() {
     const { downloadMissingIcons } = require('../utils/iconDownloader.js');
     downloadMissingIcons(activeItemNames);
 
+    // Dispatch item stock notifications if this is a new rotation
+    if (isNewRotation && discordClient && activeItemNames.length > 0) {
+      try {
+        const { itemNotifications } = require('../db/schema.js');
+        const { inArray } = require('drizzle-orm');
+
+        const matchedNotifications = await db
+          .select()
+          .from(itemNotifications)
+          .where(inArray(itemNotifications.item, activeItemNames));
+
+        if (matchedNotifications.length > 0) {
+          logger.info(`Dispatching ${matchedNotifications.length} stock notifications...`);
+
+          let appEmojis = null;
+          try {
+            appEmojis = await discordClient.application.emojis.fetch();
+          } catch {
+            // Ignore fetch errors
+          }
+
+          const { createBaseEmbed, EMBED_COLORS } = require('../utils/embedHelper.js');
+          const { AttachmentBuilder } = require('discord.js');
+          const fs = require('fs');
+          const path = require('path');
+
+          const ICONS_DIR = path.join(process.cwd(), 'src', 'icons');
+          const RARITY_CONFIG = {
+            LEGENDARY: { emoji: '🟨', color: 0xf1c40f, label: 'Legendary' },
+            EPIC: { emoji: '🟪', color: 0xbb86fc, label: 'Epic' },
+            RARE: { emoji: '🟦', color: 0x3498db, label: 'Rare' },
+            UNCOMMON: { emoji: '🟩', color: 0x2ecc71, label: 'Uncommon' },
+            COMMON: { emoji: '⬜', color: 0x95a5a6, label: 'Common' },
+          };
+
+          const formatItemNameLocal = (name) => {
+            return name
+              .toLowerCase()
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, (l) => l.toUpperCase());
+          };
+
+          const formatPriceLocal = (price) => {
+            return parseFloat(price).toLocaleString('en-US', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            });
+          };
+
+          for (const notif of matchedNotifications) {
+            try {
+              const channel = await discordClient.channels.fetch(notif.channelId);
+              if (!channel || !channel.isTextBased()) continue;
+
+              const tradeDetails = data.trades.find((t) => t.item === notif.item);
+              if (!tradeDetails) continue;
+
+              const targetEmojiName = notif.item.substring(0, 32);
+              const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
+              let thumbnailUrl = null;
+              const files = [];
+
+              if (appEmoji) {
+                thumbnailUrl = appEmoji.imageURL();
+              } else {
+                const iconPath = path.join(ICONS_DIR, `${notif.item}.png`);
+                if (fs.existsSync(iconPath)) {
+                  thumbnailUrl = `attachment://${notif.item}.png`;
+                  files.push(new AttachmentBuilder(iconPath, { name: `${notif.item}.png` }));
+                }
+              }
+
+              const rKey = (tradeDetails.rarity || 'COMMON').toUpperCase();
+              const cfg = RARITY_CONFIG[rKey] || {
+                emoji: '🔘',
+                color: EMBED_COLORS.CYBER,
+                label: tradeDetails.rarity,
+              };
+
+              const titlePrefix = appEmoji
+                ? `<:${appEmoji.name}:${appEmoji.id}> `
+                : `${cfg.emoji} `;
+
+              const embed = createBaseEmbed()
+                .setColor(cfg.color)
+                .setTitle(`${titlePrefix}${formatItemNameLocal(notif.item)} In Stock!`)
+                .setDescription(
+                  `The item **${formatItemNameLocal(notif.item)}** is now available in the Convoy shop!`
+                )
+                .addFields(
+                  { name: '✨ Rarity Tier', value: `${cfg.emoji} **${cfg.label}**`, inline: true },
+                  {
+                    name: '📦 Current Stock',
+                    value: `**${tradeDetails.stock}** / **${tradeDetails.maxStock}**`,
+                    inline: true,
+                  },
+                  {
+                    name: '💰 Buy Price',
+                    value: `\`₳${formatPriceLocal(tradeDetails.buyPrice)}\``,
+                    inline: true,
+                  },
+                  {
+                    name: '💰 Sell Price',
+                    value: `\`₳${formatPriceLocal(tradeDetails.sellPrice)}\``,
+                    inline: true,
+                  }
+                );
+
+              if (thumbnailUrl) {
+                embed.setThumbnail(thumbnailUrl);
+              }
+
+              await channel.send({
+                content: `🔔 **Attention** <@${notif.userId}>! **${formatItemNameLocal(notif.item)}** is now in stock!`,
+                embeds: [embed],
+                files,
+              });
+            } catch (notifErr) {
+              logger.error(
+                `Failed to send stock notification to user ${notif.userId} in channel ${notif.channelId}:`,
+                notifErr
+              );
+            }
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to process stock notifications:', err);
+      }
+    }
+
     logger.success(
       `Convoy sync complete: ${pc.bold(pc.green(inserted))} inserted, ` +
         `${pc.bold(pc.yellow(updatedPriceSeen))} returned in new rotation (+1 timesSeen), ` +
@@ -205,8 +336,10 @@ async function syncConvoy() {
 
 /**
  * Start the convoy synchronization worker (run once on startup)
+ * @param {Client} client - The Discord Client instance
  */
-function startConvoySync() {
+function startConvoySync(client) {
+  discordClient = client;
   // Run once immediately on bot startup
   syncConvoy();
   logger.info('Initialized Convoy Sync once on startup.');

@@ -8,6 +8,20 @@
       "when": 1782629609776,
       "tag": "0000_hesitant_doctor_octopus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1782969509135,
+      "tag": "0001_special_mister_fear",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1782971146483,
+      "tag": "0002_boring_marvel_zombies",
+      "breakpoints": true
     }
   ]
 }

@@ -161,3 +161,38 @@ The following rules MUST be followed at all times:
   - Implemented a robust client-side cooldown manager in `src/events/interactionCreate.js` to prevent bot rate-limits on Discord and the API. Configured a default 3-second cooldown on general commands, a 10-second cooldown on `/cstock` (`src/commands/general/cstock.js`), and a 60-second cooldown on `/forcesync` (`src/commands/general/forcesync.js`).
 - **Rotation Detection Bug Fix**:
   - Programmed automated API response `updatedAt` tracking in `src/services/convoySync.js` (persisting the state across bot restarts via Redis or in-memory variables) to accurately detect true rotation changes. Ensures that when the same item appears across consecutive rotations, its `timesSeen` increments correctly while ignoring identical scan runs.
+
+### 02-07-2026
+
+- **Database (Blacklist Integration)**:
+  - Added `blacklist` table schema definition inside `src/db/schema.js`.
+  - Generated and safely executed schema migration using `npm run db:generate` and `npm run db:migrate:safe` after resolving duplicate column issues.
+- **Blacklist Helper & State Management**:
+  - Created `src/utils/blacklistHelper.js` to manage the blacklist state via memory caching, database synchronization, and Redis.
+  - Linked the blacklist loader inside `bot.js` startup to populate cache on boot for fast O(1) checks.
+- **Interaction & Event Interception**:
+  - Integrated blacklist checks at the start of the `interactionCreate` event to block blacklisted users from running commands, autocompletes, or other component interactions.
+  - Added blacklist check in `guildMemberAdd` event to skip generating and sending welcome cards for blacklisted users.
+- **Slash Commands — `/blacklist`**:
+  - Created developer-only slash command `src/commands/general/blacklist.js` with subcommands:
+    - `/blacklist add [user] [reason]`: Validates and adds user to blacklist with developer check, self/dev block protection, and user resolution.
+    - `/blacklist remove [user]`: Removes user from the blacklist.
+    - `/blacklist list`: Displays list of blacklisted users, resolving Discord tags with parallelized cache fallbacks.
+- **Testing & Formatting**:
+  - Created `tests/blacklist.test.js` to execute integration tests verifying blacklist caching, database operations, and removal functions.
+  - Integrated blacklist suite into the main master test runner `tests/runner.js`.
+  - Resolved codebase-wide flat-config ESLint errors and executed Prettier formatting.
+  - Updated `fs.md` mapping records.
+- **Stock Notification System (`notifyiic`)**:
+  - Defined the `item_notifications` Drizzle table structure inside `src/db/schema.js` with columns: `user_id`, `item`, and `channel_id`.
+  - Generated and safely executed database migrations (`npm run db:generate` & `npm run db:migrate:safe`).
+  - Created the `/notifyiic` Slash Command (`src/commands/general/notifyiic.js`) supporting:
+    - `/notifyiic add [item]`: Subscribes to stock notifications for an item in the active channel.
+    - `/notifyiic remove [item]`: Unsubscribes from notifications for an item.
+    - `/notifyiic list`: Lists all active subscriptions.
+  - Linked the stock notification dispatcher to `src/services/convoySync.js` to automatically query active subscriptions and broadcast direct loud pings (`<@userId>`) along with rich, visual stock embeds on true rotation updates.
+  - Created `tests/notify.test.js` to integration-test subscription creation/removal and registered it inside the master `runner.js` test suite.
+- **Slash Commands — `/test`**:
+  - Created developer-only slash command `src/commands/general/test.js` allowing developers to execute test suites (`all`, `env`, `api`, `db`, `blacklist`, `notify`) directly from Discord.
+  - Returns raw log attachments (`.txt`) with ANSI escape codes cleaned up, along with a truncated 15-line console output summary inside a Discord Embed.
+  - Hides the command from non-administrators/non-developers by default using `setDefaultMemberPermissions`.

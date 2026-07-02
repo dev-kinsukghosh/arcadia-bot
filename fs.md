@@ -16,14 +16,17 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── deploy-commands.js
 │   ├── commands/
 │   │   └── general/
+│   │       ├── blacklist.js
 │   │       ├── cis-info.js
 │   │       ├── cstock.js
 │   │       ├── dev-slist.js
 │   │       ├── forcesync.js
 │   │       ├── healthz.js
 │   │       ├── invite-bd.js
+│   │       ├── notifyiic.js
 │   │       ├── ping.js
-│   │       └── stats-dev.js
+│   │       ├── stats-dev.js
+│   │       └── test.js
 │   ├── db/
 │   │   ├── schema.js
 │   │   └── redisSchema.js
@@ -38,6 +41,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │   └── convoySync.js
 │   └── utils/
 │       ├── apiClient.js
+│       ├── blacklistHelper.js
 │       ├── canvasHelper.js
 │       ├── db.js
 │       ├── embedHelper.js
@@ -48,9 +52,11 @@ This file serves as a reference guide for the directory structure and file respo
 │       └── redisOm.js
 ├── tests/
 │   ├── runner.js
+│   ├── blacklist.test.js
 │   ├── env.test.js
 │   ├── api.test.js
-│   └── database.test.js
+│   ├── database.test.js
+│   └── notify.test.js
 ├── .env
 ├── .env.example
 ├── .gitignore
@@ -86,14 +92,17 @@ This file serves as a reference guide for the directory structure and file respo
 - [src/deploy-commands.js](./src/deploy-commands.js): Slash Command deployment script utilizing the Discord REST API.
   - 📂 **src/commands/**: Contains category subfolders containing Discord Slash Commands.
     - 📂 **src/commands/general/**:
+      - [src/commands/general/blacklist.js](./src/commands/general/blacklist.js): `/blacklist` — Manage user blacklist add, remove, and list (Developer Only).
       - [src/commands/general/cis-info.js](./src/commands/general/cis-info.js): `/cis-info` — Displays historical, rarity, and frequency telemetry for convoy items.
       - [src/commands/general/cstock.js](./src/commands/general/cstock.js): `/cstock` — Displays current Convoy shop stock grouped by rarity.
       - [src/commands/general/forcesync.js](./src/commands/general/forcesync.js): `/forcesync` — Forces manual convoy data synchronization from the API (Developer Only).
       - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Lists all guilds the bot is currently in (Developer Only).
       - [src/commands/general/healthz.js](./src/commands/general/healthz.js): `/healthz` — Displays bot status, connection states, and server resources (Developer Only).
       - [src/commands/general/invite-bd.js](./src/commands/general/invite-bd.js): `/invite-bd` — Generates a single-use invite to join a server the bot is in (Developer Only).
+      - [src/commands/general/notifyiic.js](./src/commands/general/notifyiic.js): `/notifyiic` — Subscribe to item stock notifications in a specific channel.
       - [src/commands/general/ping.js](./src/commands/general/ping.js): Ping/latency check.
       - [src/commands/general/stats-dev.js](./src/commands/general/stats-dev.js): `/stats-dev` — Displays command execution telemetry and active servers count (Developer Only).
+      - [src/commands/general/test.js](./src/commands/general/test.js): `/test` — Runs Bot integration and connection test suites from Discord (Developer Only).
   - 📂 **src/icons/**: Cache directory containing block and item texture PNG images downloaded from mcasset.cloud.
   - 📂 **src/db/**: Database schema definitions.
   - [src/db/schema.js](./src/db/schema.js): Drizzle ORM model schemas for MySQL databases.
@@ -109,6 +118,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/services/convoySync.js](./src/services/convoySync.js): Synchronization worker to fetch and track convoy shop items.
 - 📂 **src/utils/**: Helper modules.
   - [src/utils/apiClient.js](./src/utils/apiClient.js): Axios HTTP wrapper configured for ArcadiaMC.
+  - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.
   - [src/utils/canvasHelper.js](./src/utils/canvasHelper.js): Renders premium welcome cards using `@napi-rs/canvas`.
   - [src/utils/db.js](./src/utils/db.js): Drizzle ORM database instance client.
   - [src/utils/embedHelper.js](./src/utils/embedHelper.js): Central helper module to build styled, uniform Discord embeds.
@@ -119,6 +129,8 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/redisOm.js](./src/utils/redisOm.js): Redis-OM client wrapper initialization.
 - 📂 **tests/**: Codebase testing suite and validation tools.
   - [tests/runner.js](./tests/runner.js): Master test runner executing all suites sequentially.
+  - [tests/blacklist.test.js](./tests/blacklist.test.js): Integration tests for blacklist helper methods and caching.
   - [tests/env.test.js](./tests/env.test.js): Health check test for configuration, database connection pools, and Redis pings.
+  - [tests/notify.test.js](./tests/notify.test.js): Integration tests for item stock notifications table mapping.
   - [tests/api.test.js](./tests/api.test.js): Connection verification and response validation test for the ArcadiaMC API endpoints.
   - [tests/database.test.js](./tests/database.test.js): Direct query health validation for Drizzle ORM and MySQL tables.

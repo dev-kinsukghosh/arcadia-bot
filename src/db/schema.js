@@ -1,4 +1,12 @@
-const { mysqlTable, varchar, decimal, int, timestamp, boolean } = require('drizzle-orm/mysql-core');
+const {
+  mysqlTable,
+  varchar,
+  decimal,
+  int,
+  timestamp,
+  boolean,
+  primaryKey,
+} = require('drizzle-orm/mysql-core');
 
 const convoyItems = mysqlTable('convoy_items', {
   item: varchar('item', { length: 255 }).primaryKey(),
@@ -12,6 +20,26 @@ const convoyItems = mysqlTable('convoy_items', {
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
 
+const blacklist = mysqlTable('blacklist', {
+  userId: varchar('user_id', { length: 255 }).primaryKey(),
+  reason: varchar('reason', { length: 255 }),
+  blacklistedBy: varchar('blacklisted_by', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+const itemNotifications = mysqlTable(
+  'item_notifications',
+  {
+    userId: varchar('user_id', { length: 255 }).notNull(),
+    item: varchar('item', { length: 255 }).notNull(),
+    channelId: varchar('channel_id', { length: 255 }).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.item] })]
+);
+
 module.exports = {
   convoyItems,
+  blacklist,
+  itemNotifications,
 };
