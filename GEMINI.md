@@ -203,3 +203,7 @@ The following rules MUST be followed at all times:
   - Automatically calculates the exact delay to the next hourly shop rotation based on the API's `updatedAt` timestamp, adding a 30-second buffer to ensure rotation has finalized on the API side.
   - Automatically handles fallbacks by retrying after 30 seconds if the expected rotation time has passed but the API timestamp remains unchanged.
   - Links to all execution entrypoints (bot startup, automatic scheduler trigger, and `/forcesync` manual executions) to dynamically clear and re-schedule subsequent sync runs.
+- **Background Emoji Sync Automation**:
+  - Hooked the Discord Application Emojis uploader to auto-trigger 3 seconds after the final block/item texture icon completes downloading in the background.
+- **Dependency Reconfiguration**:
+  - Re-installed `axios-retry` and `ms` to handle network retries and durations, and upgraded `@napi-rs/canvas` to the latest `1.0.2` release version. Removed unused `chalk-animation`, `boxen`, and `bullmq` packages.
