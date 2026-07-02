@@ -35,7 +35,7 @@ module.exports = {
     );
 
     try {
-      await syncConvoy();
+      await syncConvoy(true);
 
       logger.success('Manual forced synchronization complete.');
 

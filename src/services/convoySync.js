@@ -8,15 +8,24 @@ const redis = require('../utils/redis.js');
 
 let lastApiUpdatedAt = null;
 let discordClient = null;
+let lastSyncTime = 0;
 
 /**
  * Fetch convoy data from API and sync with the MySQL database
+ * @param {boolean} force - Whether to bypass the short-term rate limit check
  */
-async function syncConvoy() {
+async function syncConvoy(force = false) {
   if (!db) {
     logger.warn('Database is not active. Skipping convoy sync.');
     return;
   }
+
+  const now = Date.now();
+  if (!force && now - lastSyncTime < 10000) {
+    logger.info('Convoy sync requested too recently. Skipping duplicate check.');
+    return;
+  }
+  lastSyncTime = now;
 
   logger.info('Starting convoy synchronization check...');
   try {
@@ -191,7 +200,7 @@ async function syncConvoy() {
 
     // Scan and download missing block/item icons
     const { downloadMissingIcons } = require('../utils/iconDownloader.js');
-    downloadMissingIcons(activeItemNames);
+    downloadMissingIcons(activeItemNames, discordClient);
 
     // Dispatch item stock notifications if this is a new rotation
     if (isNewRotation && discordClient && activeItemNames.length > 0) {
@@ -328,10 +337,70 @@ async function syncConvoy() {
         `${pc.bold(pc.yellow(updatedPriceSeen))} returned in new rotation (+1 timesSeen), ` +
         `${pc.bold(pc.cyan(updatedStockOnly))} updated with stock changes only.`
     );
+
+    if (discordClient) {
+      const lastMs = parseUpdatedAtToMs(lastApiUpdatedAt) || Date.now();
+      scheduleNextSync(discordClient, lastMs);
+    }
   } catch (error) {
     const { reportError } = require('../utils/errorHandler.js');
     await reportError(error, 'Convoy Sync Service');
   }
+}
+
+let syncTimeout = null;
+
+/**
+ * Safely parse the api's updatedAt timestamp into milliseconds
+ * @param {string|number} updatedAtStr
+ * @returns {number|null}
+ */
+function parseUpdatedAtToMs(updatedAtStr) {
+  if (!updatedAtStr) return null;
+  const parsed = Number(updatedAtStr);
+  if (!isNaN(parsed)) {
+    // If it's a Unix timestamp in seconds (10 digits), convert to ms
+    return parsed < 9999999999 ? parsed * 1000 : parsed;
+  }
+  const dateParsed = Date.parse(updatedAtStr);
+  if (!isNaN(dateParsed)) {
+    return dateParsed;
+  }
+  return null;
+}
+
+/**
+ * Dynamically schedule the next synchronization execution based on last update timestamp
+ * @param {Client} client
+ * @param {number} lastUpdatedMs
+ */
+function scheduleNextSync(client, lastUpdatedMs) {
+  if (syncTimeout) {
+    clearTimeout(syncTimeout);
+  }
+
+  const now = Date.now();
+  // Next rotation is expected 1 hour after last updatedAt, plus 30 seconds buffer
+  const nextExpectedRotation = lastUpdatedMs + 60 * 60 * 1000 + 30 * 1000;
+  let delay = nextExpectedRotation - now;
+
+  if (delay <= 0) {
+    // If past due, wait 30 seconds to retry to avoid spamming the API if it hasn't updated its updatedAt timestamp yet
+    logger.info(
+      `Convoy rotation update is past due by ${pc.bold((Math.abs(delay) / 1000).toFixed(1))}s. Scheduling retry in 30 seconds...`
+    );
+    delay = 30000;
+  } else {
+    const delayMinutes = (delay / 60000).toFixed(1);
+    logger.info(
+      `Convoy rotation is scheduled to update in ${pc.bold(delayMinutes)} minutes. Next sync scheduled at: ${new Date(nextExpectedRotation).toLocaleTimeString()}`
+    );
+  }
+
+  syncTimeout = setTimeout(async () => {
+    logger.info('Executing scheduled convoy rotation check...');
+    await syncConvoy();
+  }, delay);
 }
 
 /**
@@ -340,9 +409,19 @@ async function syncConvoy() {
  */
 function startConvoySync(client) {
   discordClient = client;
+  logger.info('Initializing Convoy Sync scheduler...');
+
   // Run once immediately on bot startup
   syncConvoy();
-  logger.info('Initialized Convoy Sync once on startup.');
+
+  // Schedule a backup interval checker running every 5 minutes
+  setInterval(
+    async () => {
+      logger.info('Executing backup 5-minute convoy sync check...');
+      await syncConvoy();
+    },
+    5 * 60 * 1000
+  );
 }
 
 module.exports = {

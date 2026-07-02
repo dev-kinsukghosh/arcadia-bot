@@ -172,7 +172,7 @@ The following rules MUST be followed at all times:
   - Linked the blacklist loader inside `bot.js` startup to populate cache on boot for fast O(1) checks.
 - **Interaction & Event Interception**:
   - Integrated blacklist checks at the start of the `interactionCreate` event to block blacklisted users from running commands, autocompletes, or other component interactions.
-  - Added blacklist check in `guildMemberAdd` event to skip generating and sending welcome cards for blacklisted users.
+  - Bypassed internal command cooldown limit for developer users, preventing them from being blocked when testing developer commands.
 - **Slash Commands — `/blacklist`**:
   - Created developer-only slash command `src/commands/general/blacklist.js` with subcommands:
     - `/blacklist add [user] [reason]`: Validates and adds user to blacklist with developer check, self/dev block protection, and user resolution.
@@ -192,7 +192,14 @@ The following rules MUST be followed at all times:
     - `/notifyiic list`: Lists all active subscriptions.
   - Linked the stock notification dispatcher to `src/services/convoySync.js` to automatically query active subscriptions and broadcast direct loud pings (`<@userId>`) along with rich, visual stock embeds on true rotation updates.
   - Created `tests/notify.test.js` to integration-test subscription creation/removal and registered it inside the master `runner.js` test suite.
+  - Programmed custom nearest-neighbor autocomplete suggestions for `/notifyiic`: `/notifyiic remove` suggests only items that the user is currently subscribed to, and `/notifyiic add` excludes items the user is already subscribed to.
 - **Slash Commands — `/test`**:
   - Created developer-only slash command `src/commands/general/test.js` allowing developers to execute test suites (`all`, `env`, `api`, `db`, `blacklist`, `notify`) directly from Discord.
   - Returns raw log attachments (`.txt`) with ANSI escape codes cleaned up, along with a truncated 15-line console output summary inside a Discord Embed.
-  - Hides the command from non-administrators/non-developers by default using `setDefaultMemberPermissions`.
+  - Added support for choice `Trigger Mock Stock Notification` (`testid: mock_notify`) to instantly send a live demo stock notification ping and visual card to the current channel.
+  - Restricted to developers configured in `DEV_ID` (bypassing default guild admin permission checks to support multi-guild usage).
+- **Convoy Sync Auto-Scheduling Scheduler**:
+  - Implemented dynamic event-driven self-scheduling checker inside `src/services/convoySync.js`.
+  - Automatically calculates the exact delay to the next hourly shop rotation based on the API's `updatedAt` timestamp, adding a 30-second buffer to ensure rotation has finalized on the API side.
+  - Automatically handles fallbacks by retrying after 30 seconds if the expected rotation time has passed but the API timestamp remains unchanged.
+  - Links to all execution entrypoints (bot startup, automatic scheduler trigger, and `/forcesync` manual executions) to dynamically clear and re-schedule subsequent sync runs.

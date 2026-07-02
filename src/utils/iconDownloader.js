@@ -203,7 +203,12 @@ async function downloadItemIcon(itemName) {
  * Queue downloads of missing icons from a trades list with a 5-second delay between requests
  * @param {Array<string>} itemNames - List of item names to scan
  */
-function downloadMissingIcons(itemNames) {
+/**
+ * Queue downloads of missing icons from a trades list with a 5-second delay between requests
+ * @param {Array<string>} itemNames - List of item names to scan
+ * @param {Client} [client] - Optional Discord Client to run emoji upload check after completion
+ */
+function downloadMissingIcons(itemNames, client) {
   const missingItems = itemNames.filter((itemName) => {
     const iconPath = path.join(ICONS_DIR, `${itemName}.png`);
     return !fs.existsSync(iconPath);
@@ -222,6 +227,24 @@ function downloadMissingIcons(itemNames) {
     setTimeout(async () => {
       try {
         await downloadItemIcon(itemName);
+
+        // If this is the last missing item, trigger the Discord Application Emojis sync
+        if (index === missingItems.length - 1 && client) {
+          logger.info(
+            'Finished downloading all missing icons. Queueing Discord Application Emoji upload check...'
+          );
+          setTimeout(async () => {
+            try {
+              const { checkAndUploadEmojis } = require('../../scripts/upload-emojis.js');
+              await checkAndUploadEmojis(client);
+            } catch (emojiErr) {
+              logger.error(
+                'Failed to run background emoji upload check after downloads:',
+                emojiErr
+              );
+            }
+          }, 3000); // 3-second buffer to ensure files are fully flushed to disk
+        }
       } catch (err) {
         logger.error(`Error in scheduled icon downloader for ${itemName}:`, err);
       }
