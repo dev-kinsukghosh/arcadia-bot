@@ -1,4 +1,5 @@
 const axios = require('axios');
+const axiosRetry = require('axios-retry').default;
 const { config } = require('../config.js');
 const logger = require('./logger.js');
 
@@ -8,6 +9,17 @@ const apiClient = axios.create({
   headers: {
     Accept: 'application/json',
     'User-Agent': 'Arcadia-Community-Bot/1.0.0 (Discord Bot)',
+  },
+});
+
+// Configure automatic retries with exponential backoff on network failures
+axiosRetry(apiClient, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  onRetry: (retryCount, error) => {
+    logger.warn(
+      `API request failed: ${error.message}. Retrying request (Attempt #${retryCount})...`
+    );
   },
 });
 
