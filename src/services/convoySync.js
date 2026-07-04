@@ -473,13 +473,13 @@ function startConvoySync(client) {
   // Run once immediately on bot startup
   syncConvoy();
 
-  // Schedule a backup interval checker running every 5 minutes
+  // Schedule a backup interval checker running every 2 minutes
   setInterval(
     async () => {
-      logger.info('Executing backup 5-minute convoy sync check...');
+      logger.info('Executing backup 2-minute convoy sync check...');
       await syncConvoy();
     },
-    5 * 60 * 1000
+    2 * 60 * 1000
   );
 }
 
