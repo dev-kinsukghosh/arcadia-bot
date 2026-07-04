@@ -60,7 +60,7 @@ The following rules MUST be followed at all times:
 - **Convoy Synchronization Worker**:
   - Created `src/services/convoySync.js` to handle fetching and tracking convoy shop items.
   - Configured price comparison logic to update `times_seen` (+1) only when price or rarity changes, and update only stock values if identical.
-  - Scheduled the sync worker to execute immediately on bot startup and recur every 5 minutes.
+  - Scheduled the sync worker to execute immediately on bot startup and recur every 2 minutes.
   - Integrated the synchronization routine inside the `bot.js` startup lifecycle.
   - Configured indefinite auto-reconnection backoff retryStrategy for Redis to keep connections active and prevent packet drops.
   - Added an application-level ping heartbeat every 2 minutes to keep the Redis connection active and prevent server-side idle timeouts (ECONNRESET).

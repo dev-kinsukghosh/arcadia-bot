@@ -179,7 +179,7 @@ function buildPage(
 
   container.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      `-# Prices refresh every 5 minutes  ·  ArcadiaMC Community Bot By _webdevkin`
+      `-# Prices refresh every 2 minutes  ·  ArcadiaMC Community Bot By _webdevkin`
     )
   );
 
