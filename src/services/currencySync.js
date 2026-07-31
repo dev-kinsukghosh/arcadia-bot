@@ -7,7 +7,7 @@ const { currencies, currencyHistory, internal } = require('../db/schema.js');
 const { and, eq, lt } = require('drizzle-orm');
 
 const SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-const HISTORY_RETENTION_DAYS = 90;
+const HISTORY_RETENTION_DAYS = 120;
 const REDIS_KEY = 'currencies:data';
 const REDIS_UPDATED_KEY = 'currencies:last_updated_at';
 
@@ -173,7 +173,7 @@ async function recordDailyHistory(currencyList, scanCount) {
 }
 
 /**
- * Prune currency history + scan rows older than 90 days in batches of 5
+ * Prune currency history + scan rows older than 120 days in batches of 5
  */
 async function pruneOldHistory() {
   if (!db) return;
@@ -266,7 +266,7 @@ async function syncCurrencies() {
     // 3. Record daily history (avg + final values)
     await recordDailyHistory(data.currencies, scanCount);
 
-    // 4. Prune rows older than 90 days
+    // 4. Prune rows older than 120 days
     await pruneOldHistory();
 
     // 5. Download missing standardItem icons and upload as Discord emojis
