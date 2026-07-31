@@ -382,6 +382,10 @@ app.get('/api/towny', handleTownyRequest);
 
 // Local player heads cache serving and downloader proxy
 app.get('/heads/:username.png', async (req, res) => {
+  // Explicit cross-origin headers to bypass helmet CORP restrictions
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
   const { headsDir, downloadHead } = require('./services/headManager.js');
   const fs = require('fs');
   const path = require('path');
