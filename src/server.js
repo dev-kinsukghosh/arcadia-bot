@@ -20,6 +20,7 @@ const app = express();
 app.use(
   helmet({
     contentSecurityPolicy: false, // Disabled to allow standard Vue app imports
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 

@@ -21,3 +21,7 @@ lerna-debug.log*
 .DS_Store
 Thumbs.db
 dist/
+
+# Player head cache images
+dashboard/public/heads/
+
