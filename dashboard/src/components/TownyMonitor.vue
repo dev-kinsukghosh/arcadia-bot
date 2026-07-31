@@ -154,6 +154,36 @@ const topNations = computed(() => {
     .slice(0, 4);
 });
 
+const failedAvatars = ref({});
+
+function handleAvatarError(key) {
+  failedAvatars.value[key] = true;
+}
+
+function getPlayerColor(name) {
+  if (!name) return 'from-blue-500 to-indigo-600 border-blue-500/20 text-blue-100';
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = [
+    'from-blue-500 to-indigo-600 border-blue-500/20 text-blue-100',
+    'from-emerald-500 to-teal-600 border-emerald-500/20 text-emerald-100',
+    'from-amber-500 to-orange-600 border-amber-500/20 text-amber-100',
+    'from-rose-500 to-pink-600 border-rose-500/20 text-rose-100',
+    'from-violet-500 to-purple-600 border-violet-500/20 text-violet-100',
+    'from-cyan-500 to-sky-600 border-cyan-500/20 text-cyan-100',
+    'from-fuchsia-500 to-pink-600 border-fuchsia-500/20 text-fuchsia-100',
+  ];
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+}
+
+function getPlayerInitials(name) {
+  if (!name) return '??';
+  return name.substring(0, 2).toUpperCase();
+}
+
 function openTownDetails(town) {
   selectedTown.value = town;
 }
@@ -246,10 +276,19 @@ function closeModals() {
             
             <div class="flex items-center gap-3">
               <img
+                v-if="!failedAvatars['top-town-' + town.id]"
                 :src="`https://mc-heads.net/avatar/${town.mayor?.name || town.mayor?.uuid || 'steve'}/32.png`"
                 alt="Mayor Avatar"
-                class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900"
+                class="h-8 w-8 rounded-lg border border-slate-850 bg-slate-900 object-cover"
+                @error="handleAvatarError('top-town-' + town.id)"
               />
+              <div
+                v-else
+                :class="getPlayerColor(town.mayor?.name)"
+                class="h-8 w-8 rounded-lg border flex items-center justify-center font-bold text-[10px] bg-gradient-to-br"
+              >
+                {{ getPlayerInitials(town.mayor?.name) }}
+              </div>
               <div class="min-w-0 flex-1 pr-12">
                 <h4 class="text-xs font-bold text-slate-100 truncate group-hover:text-blue-400 transition-colors">
                   {{ cleanName(town.name) }}
@@ -285,10 +324,19 @@ function closeModals() {
             
             <div class="flex items-center gap-3">
               <img
+                v-if="!failedAvatars['top-nation-' + nation.id]"
                 :src="`https://mc-heads.net/avatar/${nation.king?.name || nation.king?.uuid || 'steve'}/32.png`"
                 alt="King Avatar"
-                class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900"
+                class="h-8 w-8 rounded-lg border border-slate-850 bg-slate-900 object-cover"
+                @error="handleAvatarError('top-nation-' + nation.id)"
               />
+              <div
+                v-else
+                :class="getPlayerColor(nation.king?.name)"
+                class="h-8 w-8 rounded-lg border flex items-center justify-center font-bold text-[10px] bg-gradient-to-br"
+              >
+                {{ getPlayerInitials(nation.king?.name) }}
+              </div>
               <div class="min-w-0 flex-1 pr-12">
                 <h4 class="text-xs font-bold text-slate-100 truncate group-hover:text-indigo-400 transition-colors">
                   {{ cleanName(nation.name) }}
@@ -510,12 +558,21 @@ function closeModals() {
         <!-- Modal Body -->
         <div class="p-6 space-y-5">
           <!-- Mayor details & avatar -->
-          <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
+           <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
             <img
+              v-if="!failedAvatars['modal-town-' + selectedTown.id]"
               :src="`https://mc-heads.net/avatar/${selectedTown.mayor?.name || selectedTown.mayor?.uuid || 'steve'}/48.png`"
               alt="Mayor Skin"
-              class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900"
+              class="h-12 w-12 rounded-lg border border-slate-850 shadow-md bg-slate-900 object-cover"
+              @error="handleAvatarError('modal-town-' + selectedTown.id)"
             />
+            <div
+              v-else
+              :class="getPlayerColor(selectedTown.mayor?.name)"
+              class="h-12 w-12 rounded-lg border flex items-center justify-center font-extrabold text-xs bg-gradient-to-br shadow-md"
+            >
+              {{ getPlayerInitials(selectedTown.mayor?.name) }}
+            </div>
             <div>
               <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Town Mayor</div>
               <div class="text-sm font-bold text-slate-100">{{ selectedTown.mayor?.name || 'Unknown' }}</div>
@@ -612,10 +669,19 @@ function closeModals() {
           <!-- King details & avatar -->
           <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
             <img
+              v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
               :src="`https://mc-heads.net/avatar/${selectedNation.king?.name || selectedNation.king?.uuid || 'steve'}/48.png`"
               alt="King Skin"
-              class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900"
+              class="h-12 w-12 rounded-lg border border-slate-850 shadow-md bg-slate-900 object-cover"
+              @error="handleAvatarError('modal-nation-' + selectedNation.id)"
             />
+            <div
+              v-else
+              :class="getPlayerColor(selectedNation.king?.name)"
+              class="h-12 w-12 rounded-lg border flex items-center justify-center font-extrabold text-xs bg-gradient-to-br shadow-md"
+            >
+              {{ getPlayerInitials(selectedNation.king?.name) }}
+            </div>
             <div>
               <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Nation King</div>
               <div class="text-sm font-bold text-slate-100">{{ selectedNation.king?.name || 'Unknown' }}</div>
