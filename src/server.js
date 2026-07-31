@@ -361,6 +361,10 @@ const handleTownyRequest = async (req, res) => {
     localTownyCache = data;
     localTownyCacheTime = now;
 
+    // Trigger heads background schedule sync check
+    const { checkScheduleAndRunBatch } = require('./services/headManager.js');
+    checkScheduleAndRunBatch(data);
+
     res.json(data);
   } catch (err) {
     logger.error(`API Error fetching Towny: ${err.message}`);
@@ -374,6 +378,27 @@ const handleTownyRequest = async (req, res) => {
 
 app.get('/towny', handleTownyRequest);
 app.get('/api/towny', handleTownyRequest);
+
+// Local player heads cache serving and downloader proxy
+app.get('/heads/:username.png', async (req, res) => {
+  const { headsDir, downloadHead } = require('./services/headManager.js');
+  const fs = require('fs');
+  const path = require('path');
+  const username = req.params.username.toLowerCase();
+  const filePath = path.join(headsDir, `${username}.png`);
+
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+
+  // Download skin in-flight
+  const success = await downloadHead(username);
+  if (success && fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+
+  res.status(404).send('Not Found');
+});
 
 // Fallback to SPA routing (serve index.html for unrecognized GET routes)
 app.use((req, res, next) => {

@@ -66,7 +66,8 @@ This file serves as a reference guide for the directory structure and file respo
 │   │   └── eventHandler.js
 │   ├── services/
 │   │   ├── convoySync.js
-│   │   └── currencySync.js
+│   │   ├── currencySync.js
+│   │   └── headManager.js
 │   └── utils/
 │       ├── apiClient.js
 │       ├── blacklistHelper.js
@@ -179,6 +180,7 @@ This file serves as a reference guide for the directory structure and file respo
 - 📂 **src/services/**: Background synchronization services.
   - [src/services/convoySync.js](./src/services/convoySync.js): Synchronization worker to fetch and track convoy shop items.
   - [src/services/currencySync.js](./src/services/currencySync.js): Synchronization worker to fetch, track, and cache currencies.
+  - [src/services/headManager.js](./src/services/headManager.js): Backend manager controlling local serving, cache downloads, and 7-day batch sync checks of player head images.
 - 📂 **src/utils/**: Helper modules.
   - [src/utils/apiClient.js](./src/utils/apiClient.js): Axios HTTP wrapper configured for ArcadiaMC.
   - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.

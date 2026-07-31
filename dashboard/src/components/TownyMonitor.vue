@@ -282,7 +282,7 @@ function closeModals() {
                 <span class="z-0 select-none text-[8px]">{{ getPlayerInitials(town.mayor?.name) }}</span>
                 <img
                   v-if="!failedAvatars['top-town-' + town.id]"
-                  :src="`https://minotar.net/avatar/${(town.mayor?.name || 'steve').toLowerCase()}/32.png`"
+                  :src="`${props.apiBase}/heads/${(town.mayor?.name || 'steve').toLowerCase()}.png`"
                   alt="Mayor Avatar"
                   class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
                   @load="$event.target.classList.remove('opacity-0')"
@@ -330,7 +330,7 @@ function closeModals() {
                 <span class="z-0 select-none text-[8px]">{{ getPlayerInitials(nation.king?.name) }}</span>
                 <img
                   v-if="!failedAvatars['top-nation-' + nation.id]"
-                  :src="`https://minotar.net/avatar/${(nation.king?.name || 'steve').toLowerCase()}/32.png`"
+                  :src="`${props.apiBase}/heads/${(nation.king?.name || 'steve').toLowerCase()}.png`"
                   alt="King Avatar"
                   class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
                   @load="$event.target.classList.remove('opacity-0')"
@@ -566,7 +566,7 @@ function closeModals() {
               <span class="z-0 select-none text-[10px]">{{ getPlayerInitials(selectedTown.mayor?.name) }}</span>
               <img
                 v-if="!failedAvatars['modal-town-' + selectedTown.id]"
-                :src="`https://minotar.net/avatar/${(selectedTown.mayor?.name || 'steve').toLowerCase()}/48.png`"
+                :src="`${props.apiBase}/heads/${(selectedTown.mayor?.name || 'steve').toLowerCase()}.png`"
                 alt="Mayor Skin"
                 class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
                 @load="$event.target.classList.remove('opacity-0')"
@@ -675,7 +675,7 @@ function closeModals() {
               <span class="z-0 select-none text-[10px]">{{ getPlayerInitials(selectedNation.king?.name) }}</span>
               <img
                 v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
-                :src="`https://minotar.net/avatar/${(selectedNation.king?.name || 'steve').toLowerCase()}/48.png`"
+                :src="`${props.apiBase}/heads/${(selectedNation.king?.name || 'steve').toLowerCase()}.png`"
                 alt="King Skin"
                 class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
                 @load="$event.target.classList.remove('opacity-0')"
