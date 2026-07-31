@@ -1,0 +1,68 @@
+name: Deploy Dashboard
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy-dashboard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Vite
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: npm run build
+
+      - name: Zip dist
+        run: |
+          cd dist
+          zip -qry ../dashboard.zip .
+
+      - name: Upload archive
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ vars.SSH_PORT || 22 }}
+          source: "dashboard.zip"
+          target: "/tmp"
+
+      - name: Deploy dashboard
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ vars.SSH_PORT || 22 }}
+          script: |
+            set -e
+
+            TARGET="/www/wwwroot/arcc.webdevkin.com"
+
+            mkdir -p "$TARGET"
+
+            rm -rf "$TARGET"/*
+
+            unzip -oq /tmp/dashboard.zip -d "$TARGET"
+
+            rm -f /tmp/dashboard.zip
+
+            chown -R www:www "$TARGET" 2>/dev/null || true
+
+            echo "✅ Dashboard deployed successfully"

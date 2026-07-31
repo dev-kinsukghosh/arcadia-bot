@@ -68,6 +68,7 @@ jobs:
 
             # ── Run new container with env vars ──
             docker run -d \
+              -p 192.168.22.3:5556:5556 \
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
               -e DISCORD_BOT_TOKEN="${{ secrets.DISCORD_BOT_TOKEN }}" \
