@@ -279,7 +279,7 @@ function closeModals() {
                 v-if="!failedAvatars['top-town-' + town.id]"
                 :src="`https://mc-heads.net/avatar/${(town.mayor?.name || '').toLowerCase() || town.mayor?.uuid || 'steve'}/32.png`"
                 alt="Mayor Avatar"
-                class="h-8 w-8 rounded-lg border border-slate-850 bg-slate-900 object-cover"
+                class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900 object-cover"
                 @error="handleAvatarError('top-town-' + town.id)"
               />
               <div
@@ -327,7 +327,7 @@ function closeModals() {
                 v-if="!failedAvatars['top-nation-' + nation.id]"
                 :src="`https://mc-heads.net/avatar/${(nation.king?.name || '').toLowerCase() || nation.king?.uuid || 'steve'}/32.png`"
                 alt="King Avatar"
-                class="h-8 w-8 rounded-lg border border-slate-850 bg-slate-900 object-cover"
+                class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900 object-cover"
                 @error="handleAvatarError('top-nation-' + nation.id)"
               />
               <div
@@ -563,7 +563,7 @@ function closeModals() {
               v-if="!failedAvatars['modal-town-' + selectedTown.id]"
               :src="`https://mc-heads.net/avatar/${(selectedTown.mayor?.name || '').toLowerCase() || selectedTown.mayor?.uuid || 'steve'}/48.png`"
               alt="Mayor Skin"
-              class="h-12 w-12 rounded-lg border border-slate-850 shadow-md bg-slate-900 object-cover"
+              class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900 object-cover"
               @error="handleAvatarError('modal-town-' + selectedTown.id)"
             />
             <div
@@ -672,7 +672,7 @@ function closeModals() {
               v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
               :src="`https://mc-heads.net/avatar/${(selectedNation.king?.name || '').toLowerCase() || selectedNation.king?.uuid || 'steve'}/48.png`"
               alt="King Skin"
-              class="h-12 w-12 rounded-lg border border-slate-850 shadow-md bg-slate-900 object-cover"
+              class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900 object-cover"
               @error="handleAvatarError('modal-nation-' + selectedNation.id)"
             />
             <div
