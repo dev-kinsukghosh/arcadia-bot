@@ -138,6 +138,22 @@ const processedNations = computed(() => {
   return result;
 });
 
+// Top 4 Towns (ranked by residents count descending)
+const topTowns = computed(() => {
+  if (!townyData.value || !townyData.value.towns) return [];
+  return [...townyData.value.towns]
+    .sort((a, b) => (b.residents || 0) - (a.residents || 0))
+    .slice(0, 4);
+});
+
+// Top 4 Nations (ranked by residents count descending)
+const topNations = computed(() => {
+  if (!townyData.value || !townyData.value.nations) return [];
+  return [...townyData.value.nations]
+    .sort((a, b) => (b.residents || 0) - (a.residents || 0))
+    .slice(0, 4);
+});
+
 function openTownDetails(town) {
   selectedTown.value = town;
 }
@@ -205,6 +221,87 @@ function closeModals() {
         <div class="mt-2 flex items-baseline gap-1.5 font-mono">
           <span class="text-2xl font-extrabold text-slate-100">{{ townyData.counts.townsInNation || 0 }}</span>
           <span class="text-[10px] text-slate-500">({{ townyData.counts.townsNeutral || 0 }} neutral)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 4 Performers Section (Towns or Nations depending on tab) -->
+    <div v-if="townyData" class="mt-6">
+      <div v-if="activeTab === 'towns'">
+        <h3 class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2">
+          <font-awesome-icon icon="globe" class="text-blue-500" />
+          Top 4 Towns by Population
+        </h3>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            v-for="(town, idx) in topTowns"
+            :key="'top-town-' + town.id"
+            @click="openTownDetails(town)"
+            class="group cursor-pointer relative overflow-hidden rounded-xl border border-blue-500/10 bg-[#0c0d15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/30 hover:bg-[#11131f]/70 shadow-sm"
+          >
+            <!-- Badge indicators for rank -->
+            <div class="absolute right-3 top-3 text-[10px] font-extrabold text-blue-500 bg-blue-500/10 border border-blue-500/25 rounded-md px-1.5 py-0.5">
+              Rank #{{ idx + 1 }}
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <img
+                :src="`https://cravatar.eu/avatar/${town.mayor?.uuid || town.mayor?.name || 'steve'}/32.png`"
+                alt="Mayor Avatar"
+                class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900"
+              />
+              <div class="min-w-0 flex-1 pr-12">
+                <h4 class="text-xs font-bold text-slate-100 truncate group-hover:text-blue-400 transition-colors">
+                  {{ cleanName(town.name) }}
+                </h4>
+                <p class="text-[9px] text-slate-500 truncate mt-0.5">Mayor: {{ town.mayor?.name }}</p>
+              </div>
+            </div>
+            
+            <div class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400">
+              <span>👥 {{ town.residents || 0 }} residents</span>
+              <span>📦 {{ town.claims?.claimedChunks || 0 }} chunks</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div v-else-if="activeTab === 'nations'">
+        <h3 class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2">
+          <font-awesome-icon icon="flag" class="text-indigo-500" />
+          Top 4 Nations by Population
+        </h3>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            v-for="(nation, idx) in topNations"
+            :key="'top-nation-' + nation.id"
+            @click="openNationDetails(nation)"
+            class="group cursor-pointer relative overflow-hidden rounded-xl border border-indigo-500/10 bg-[#0d0c15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-indigo-500/30 hover:bg-[#121120]/70 shadow-sm"
+          >
+            <!-- Badge indicators for rank -->
+            <div class="absolute right-3 top-3 text-[10px] font-extrabold text-indigo-500 bg-indigo-500/10 border border-indigo-500/25 rounded-md px-1.5 py-0.5">
+              Rank #{{ idx + 1 }}
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <img
+                :src="`https://cravatar.eu/avatar/${nation.king?.uuid || nation.king?.name || 'steve'}/32.png`"
+                alt="King Avatar"
+                class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900"
+              />
+              <div class="min-w-0 flex-1 pr-12">
+                <h4 class="text-xs font-bold text-slate-100 truncate group-hover:text-indigo-400 transition-colors">
+                  {{ cleanName(nation.name) }}
+                </h4>
+                <p class="text-[9px] text-slate-500 truncate mt-0.5">King: {{ nation.king?.name }}</p>
+              </div>
+            </div>
+            
+            <div class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400">
+              <span>👥 {{ nation.residents || 0 }} residents</span>
+              <span>🏘️ {{ nation.towns || 0 }} towns</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -415,7 +512,7 @@ function closeModals() {
           <!-- Mayor details & avatar -->
           <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
             <img
-              :src="`https://cravatar.eu/avatar/${selectedTown.mayor?.uuid || 'steve'}/48`"
+              :src="`https://cravatar.eu/avatar/${selectedTown.mayor?.uuid || selectedTown.mayor?.name || 'steve'}/48.png`"
               alt="Mayor Skin"
               class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900"
             />
@@ -515,7 +612,7 @@ function closeModals() {
           <!-- King details & avatar -->
           <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
             <img
-              :src="`https://cravatar.eu/avatar/${selectedNation.king?.uuid || 'steve'}/48`"
+              :src="`https://cravatar.eu/avatar/${selectedNation.king?.uuid || selectedNation.king?.name || 'steve'}/48.png`"
               alt="King Skin"
               class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900"
             />
