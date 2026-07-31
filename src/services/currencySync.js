@@ -257,6 +257,48 @@ async function syncCurrencies() {
       }
     }
 
+    // Previous values tracking & Redis caching
+    if (redis && redis.status === 'ready') {
+      try {
+        const lastRatesRaw = await redis.get('currencies:last_rates');
+        const lastRates = lastRatesRaw ? JSON.parse(lastRatesRaw) : {};
+
+        const previousRatesRaw = await redis.get('currencies:previous_rates');
+        const previousRates = previousRatesRaw ? JSON.parse(previousRatesRaw) : {};
+
+        // Query DB as fallback for missing items
+        const dbCurrencies = db ? await db.select().from(currencies) : [];
+        const dbMap = {};
+        for (const curr of dbCurrencies) {
+          dbMap[curr.id] = parseFloat(curr.arcPerUnitLive) || 0;
+        }
+
+        const newLastRates = {};
+        for (const c of data.currencies) {
+          if (!c.id) continue;
+
+          const currentLive = parseFloat(c.arcPerUnitLive) || 0;
+          newLastRates[c.id] = currentLive;
+
+          // Determine previous value
+          if (lastRates[c.id] !== undefined) {
+            previousRates[c.id] = lastRates[c.id];
+          } else if (dbMap[c.id] !== undefined) {
+            previousRates[c.id] = dbMap[c.id];
+          } else {
+            // Newly created currency: assume previous value 0
+            previousRates[c.id] = 0;
+          }
+        }
+
+        // Cache both back to Redis
+        await redis.set('currencies:previous_rates', JSON.stringify(previousRates));
+        await redis.set('currencies:last_rates', JSON.stringify(newLastRates));
+      } catch (err) {
+        logger.warn(`Failed to track and cache previous rates in Redis: ${err.message}`);
+      }
+    }
+
     // 1. Increment today's scan count (1 row update)
     const scanCount = await incrementScanCount();
 
@@ -279,6 +321,10 @@ async function syncCurrencies() {
     logger.success(
       `Currencies sync complete: ${pc.bold(pc.green(currencyCache.currencies.length))} currencies cached & history recorded (scan #${pc.bold(pc.cyan(scanCount))}).`
     );
+
+    // Emit event for real-time WebSocket broadcast
+    const eventEmitter = require('../utils/emitter.js');
+    eventEmitter.emit('currencies:updated', currencyCache.currencies);
   } catch (error) {
     const { reportError } = require('../utils/errorHandler.js');
     await reportError(error, 'Currency Sync Service');

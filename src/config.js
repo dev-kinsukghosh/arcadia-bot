@@ -27,6 +27,9 @@ const config = {
   },
   prefix: process.env.BOT_PREFIX || 'a!',
   logLevel: process.env.LOG_LEVEL || 'DEBUG',
+  web: {
+    port: parseInt(process.env.PORT || '3000', 10),
+  },
 };
 
 // Validate critical variables

@@ -12,11 +12,26 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── workflows/
 │   │   └── deploy.yml
 │   └── gitlab-sync.yml
+├── dashboard/
+│   ├── index.html
+│   ├── vite.config.mjs
+│   ├── .env
+│   ├── .env.example
+│   └── src/
+│       ├── App.vue
+│       ├── main.js
+│       ├── style.css
+│       └── components/
+│           ├── ExchangeCalculator.vue
+│           ├── HistoryChart.vue
+│           └── MarketMonitor.vue
 ├── scripts/
 │   ├── setup.js
 │   ├── migrate-safe.js
+│   ├── export-wiki-table.js
 │   └── upload-emojis.js
 ├── src/
+│   ├── server.js
 │   ├── deploy-commands.js
 │   ├── commands/
 │   │   └── general/
@@ -52,6 +67,7 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── blacklistHelper.js
 │       ├── db.js
 │       ├── embedHelper.js
+│       ├── emitter.js
 │       ├── errorHandler.js
 │       ├── iconDownloader.js
 │       ├── logger.js
@@ -72,7 +88,8 @@ This file serves as a reference guide for the directory structure and file respo
 ├── drizzle.config.js
 ├── eslint.config.js
 ├── .prettierrc
-└── package.json
+├── package.json
+└── wiki_table.md
 ```
 
 ## Directory & File Details
@@ -91,6 +108,7 @@ This file serves as a reference guide for the directory structure and file respo
 - [fs.md](./fs.md): _(This file)_ File system reference guide.
 - [GEMINI.md](./GEMINI.md): Development rule book, project context, and daily change-log repository.
 - [.agents/AGENTS.md](./.agents/AGENTS.md): Project-scoped customization rules for Antigravity developer agent.
+- [wiki_table.md](./wiki_table.md): Exported MediaWiki format table containing convoy items.
 
 ### 📂 .github/
 
@@ -101,10 +119,26 @@ This file serves as a reference guide for the directory structure and file respo
 
 - [scripts/setup.js](./scripts/setup.js): Assistant script to bootstrap directories and setup the `.env` template config.
 - [scripts/migrate-safe.js](./scripts/migrate-safe.js): Programmatic schema migrator for Drizzle ORM.
+- [scripts/export-wiki-table.js](./scripts/export-wiki-table.js): Utility script to fetch and export all convoy items to a MediaWiki-formatted table in a markdown file.
 - [scripts/upload-emojis.js](./scripts/upload-emojis.js): Utility script to upload cached item icon PNGs to Discord Application Emojis.
+
+### 📂 dashboard/
+
+- [dashboard/index.html](./dashboard/index.html): Web entrypoint template for mounting the dashboard.
+- [dashboard/vite.config.mjs](./dashboard/vite.config.mjs): Vite compilation config with proxy endpoints.
+- [dashboard/.env.example](./dashboard/.env.example): Frontend environment configuration template containing `VITE_API_URL`.
+- 📂 **dashboard/src/**: Frontend Vue codebases.
+  - [dashboard/src/App.vue](./dashboard/src/App.vue): Main dashboard component containing Watchlist, Metrics filters, and tab layouts.
+  - [dashboard/src/main.js](./dashboard/src/main.js): Vue bootstrap file registering FontAwesome icons.
+  - [dashboard/src/style.css](./dashboard/src/style.css): Links Tailwind CSS v4 imports.
+  - 📂 **dashboard/src/components/**:
+    - [dashboard/src/components/ExchangeCalculator.vue](./dashboard/src/components/ExchangeCalculator.vue): Conversion widget to calculate rates between nation currencies.
+    - [dashboard/src/components/HistoryChart.vue](./dashboard/src/components/HistoryChart.vue): Comparison Line chart graphing historical rates over 7-120 days.
+    - [dashboard/src/components/MarketMonitor.vue](./dashboard/src/components/MarketMonitor.vue): Unified market table view displaying pinned favorites and category filters.
 
 ### 📂 src/
 
+- [src/server.js](./src/server.js): Express backend webserver managing API endpoints and DoS/DDoS security shields (fingerprints, connection limits).
 - [src/deploy-commands.js](./src/deploy-commands.js): Slash Command deployment script utilizing the Discord REST API.
   - 📂 **src/commands/**: Contains category subfolders containing Discord Slash Commands.
     - 📂 **src/commands/general/**:
@@ -140,6 +174,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.
   - [src/utils/db.js](./src/utils/db.js): Drizzle ORM database instance client.
   - [src/utils/embedHelper.js](./src/utils/embedHelper.js): Central helper module to build styled, uniform Discord embeds.
+  - [src/utils/emitter.js](./src/utils/emitter.js): Central EventEmitter instance for cross-module real-time communications.
   - [src/utils/errorHandler.js](./src/utils/errorHandler.js): Exception wrapper to prevent process crashes and route alerts.
   - [src/utils/iconDownloader.js](./src/utils/iconDownloader.js): Downloads missing block and item icons from assets.mcasset.cloud.
   - [src/utils/logger.js](./src/utils/logger.js): Winston/Picocolors logger.

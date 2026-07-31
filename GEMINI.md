@@ -214,7 +214,7 @@ The following rules MUST be followed at all times:
 - **Currency Synchronization Worker**:
   - Created `src/services/currencySync.js` to handle pulling currency metadata and live rates every 30 minutes.
   - Configured daily running average calculation using the incremental average formula based on scan counters.
-  - Configured automated pruning to delete history rows older than 90 days in safe batches of 5.
+  - Configured automated pruning to delete history rows older than 120 days in safe batches of 5.
   - Hooked up `standardItem` icon checks to download textures automatically into `src/icons/` and upload them to Discord Application Emojis upon completion.
   - Standardized all time stamps and comparison checks to use UTC format.
   - Integrated worker initialization into `bot.js` startup sequence.
@@ -264,3 +264,49 @@ The following rules MUST be followed at all times:
   - Configured conditional command deployment based on the `MODE` environment variable. In `DEV` mode, the script registers commands to the development guild (`DISCORD_GUILD_ID`). In `PROD` mode, the script deploys commands globally and automatically purges old guild-specific commands for `DISCORD_GUILD_ID` to avoid duplicate listings on test guilds.
 - **Unpublishing Application Commands**:
   - Executed the `src/deploy-commands.js` script with the `--clear-all` command-line argument to completely unpublish and clear all global and guild-specific commands from the Discord bot.
+
+### 11-07-2026
+
+- **Wiki Table Export**:
+  - Created `scripts/export-wiki-table.js` to fetch all convoy items from the MySQL database and format them into a clean, vanilla MediaWiki table markup.
+  - Configured formatting rules to convert item names to lowercase and replace underscores (`_`) with spaces.
+  - Exported the formatted vanilla table to `wiki_table.md` in the project root.
+  - Updated `fs.md` to map the new files.
+
+### 31-07-2026
+
+- **Extended Currency History Retention**:
+  - Increased `HISTORY_RETENTION_DAYS` in `src/services/currencySync.js` from 90 to 120 days to expand tracking duration.
+  - Updated codebase comments and historical entries to align with the new 120-day threshold.
+- **Vue.js Dashboard Implementation (Vite + Vue 3 + Tailwind v4 + FontAwesome)**:
+  - Created a modular scope project inside the `dashboard/` directory using root `node_modules` and Vite command-line parameters (`vite dashboard --config dashboard/vite.config.mjs`).
+  - Resolved Vite's ESM CommonJS config conflicts by naming the config file `vite.config.mjs`.
+  - Implemented the Express API webserver in `src/server.js` exposing `/api/currencies`, `/api/currencies/history`, `/api/currencies/stats`, and `/api/status`. Integrated server boot into the bot startup sequence in `bot.js`.
+  - Configured advanced stability analytics, calculating Standard Deviation (volatility), Spread, Averages, and Stability Scores (Coefficient of Variation) over 1-120 days.
+  - Programmed dynamic multi-tag filtering (Nations, Backing items), configurable display limits (Top 5, Top 10, Top 20, Custom limits), sorting filters (worst/best perform, high/low volatility), and a watchlist favorites pinning manager using `localStorage`.
+  - Built an interactive Exchange Desk widget for converting between any two currencies or base ARC utilizing current live rates.
+  - Charted historical exchange rates with `vue-chartjs` / `chart.js` supporting comparative overlay graphs and relative index scaling (normalized to 100%).
+  - Structured aggressive layer-7 DoS/DDoS mitigation features: Helmet secure headers, CORS restrictions, strict 10KB JSON/URL payload size limits, socket-level 10s idle timeouts, dynamic tarpitting (response slow-down delays), IP rate-limiting, and persistent Device Fingerprint rate-limiting (using browser-generated UUID headers).
+  - Resolved express-rate-limit IPv6 validation warnings by supplying `validate: false` to disable rate-limiting checks, and resolved Express v5 path routing errors by utilizing a standard GET route fallback middleware to avoid path-to-regexp parsing crashes.
+  - Implemented real-time WebSocket pushing using the `ws` package. Wrapped Express's HTTP listener inside a dynamic `WebSocketServer` and created a central event broker (`src/utils/emitter.js`) to broadcast live currency updates to all connected browser sockets when the sync scheduler completes.
+  - Added real-time socket connection hooks inside the Vue dashboard (`dashboard/src/App.vue`) to auto-fetch the latest statistics from the API whenever an update signal is broadcast.
+  - Configured index-aligned tooltips on the chart (`dashboard/src/components/HistoryChart.vue`), showing hover values for all compared currencies simultaneously rather than requiring hovering individual nodes.
+  - Removed `DASHBOARD_ENABLED` config overrides and flags, making the Express server a core component that always initializes with the bot.
+  - Enabled support for client calculation `POST` endpoints by updating the server CORS rules to accept both `GET` and `POST` methods.
+  - Extracted the inline Market Monitor template, filter sidebar, export actions, and state management out of `dashboard/src/App.vue` into a separate, modular Vue component `dashboard/src/components/MarketMonitor.vue`.
+  - Deleted the `/security` route, tab navigation button, and Guard Status view markup completely from the dashboard.
+  - Added safety checks in `scripts/upload-emojis.js` to bypass uploading Custom Emojis if the client application is not fully logged in.
+  - Excluded `dashboard/dist/` from ESLint checks inside `eslint.config.js` to optimize linting speeds.
+  - Added export features to download filtered datasets as CSV and JSON formats.
+  - Verified project health (all tests, linter, formatter, and builds passing successfully).
+- **Server Tax Toggle (5% Conversion Tax)**:
+  - Reverse-engineered the ArcadiaMC server's currency exchange tax by analyzing in-game transactions. Confirmed a flat **5% tax** applied to the ARC intermediate value during cross-currency conversions.
+  - Updated the Discord `/exchange` slash command (`src/commands/general/exchange.js`) with an optional `include_tax` boolean parameter. When enabled, applies the 5% tax (`taxArc = arcAmount * 0.05`), displays the after-tax converted amount, and adds a `🔥 Server Tax (5%)` embed field showing the ARC burned.
+  - Updated the dashboard Exchange Calculator (`dashboard/src/components/ExchangeCalculator.vue`) with a styled toggle switch labeled "Include Server Tax (5%)". When enabled, calculates the taxed conversion through the ARC intermediate pipeline and displays `🔥 X.XXX ARC burned as server tax` in the result panel.
+  - Redeployed slash commands to the development guild.
+- **Route Renaming — Calculator → Exchange**:
+  - Renamed the dashboard navigation tab from "Exchange Desk" to "Exchange" and updated the client-side route from `/calculator` to `/exchange` in `dashboard/src/App.vue`.
+  - Fixed API property mismatches in the Exchange Calculator component: changed `arcPerUnitLive`/`arcPerUnitBase` lookups to `liveRate`/`baseRate` to match the `/currencies/stats` endpoint response shape.
+- **Command Registration Cleanup**:
+  - Cleared stale global application commands (`--clear-global`) that were duplicating with the guild-scoped DEV mode registrations, resolving the issue of two `/exchange` commands appearing simultaneously in Discord.
+

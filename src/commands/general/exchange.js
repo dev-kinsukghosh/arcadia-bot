@@ -28,6 +28,12 @@ module.exports = {
         .setDescription('The target currency you are converting to')
         .setRequired(true)
         .setAutocomplete(true)
+    )
+    .addBooleanOption((option) =>
+      option
+        .setName('include_tax')
+        .setDescription('Include 5% server conversion tax in the calculation')
+        .setRequired(false)
     ),
 
   async autocomplete(interaction) {
@@ -113,9 +119,21 @@ module.exports = {
       toName = found.name || toId;
     }
 
+    const includeTax = interaction.options.getBoolean('include_tax') ?? false;
+
     // Calculate math: (amount * fromRate) / toRate
-    const amountInArc = amount * fromRate;
-    const finalAmount = amountInArc / toRate;
+    const arcAmount = amount * fromRate;
+
+    let finalAmount;
+    let taxArc = 0;
+
+    if (includeTax) {
+      taxArc = arcAmount * 0.05;
+      const netArc = arcAmount - taxArc;
+      finalAmount = netArc / toRate;
+    } else {
+      finalAmount = arcAmount / toRate;
+    }
 
     // Direct exchange rate from 1 unit of source to target
     const directRate = fromRate / toRate;
@@ -128,10 +146,14 @@ module.exports = {
       });
     };
 
+    const description = includeTax
+      ? 'Expected converted amount and exchange rate telemetry — **5% server conversion tax included**.'
+      : 'Expected converted amount and exchange rate telemetry.';
+
     const embed = createBaseEmbed()
       .setColor(EMBED_COLORS.CYBER)
       .setTitle('💱 Currency Exchange Calculator')
-      .setDescription('Expected converted amount and exchange rate telemetry.')
+      .setDescription(description)
       .addFields(
         {
           name: '📥 Convert From',
@@ -149,6 +171,14 @@ module.exports = {
           inline: false,
         }
       );
+
+    if (includeTax) {
+      embed.addFields({
+        name: '🔥 Server Tax (5%)',
+        value: `\`${formatPrice(taxArc)} ARC\` burned as conversion tax`,
+        inline: false,
+      });
+    }
 
     return interaction.editReply({ embeds: [embed] });
   },
