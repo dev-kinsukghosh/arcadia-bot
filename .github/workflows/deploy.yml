@@ -84,6 +84,7 @@ jobs:
               -e REDIS_DB="${{ vars.REDIS_DB }}" \
               -e LOG_LEVEL="${{ vars.LOG_LEVEL }}" \
               -e NODE_ENV=production \
+              -e PORT="${{ vars.PORT }}" \
               ${{ env.IMAGE_NAME }}:latest
 
             # ── Cleanup: remove old dangling images to free disk ──
