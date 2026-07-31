@@ -25,7 +25,8 @@ This file serves as a reference guide for the directory structure and file respo
 │           ├── ConvoyStock.vue
 │           ├── ExchangeCalculator.vue
 │           ├── HistoryChart.vue
-│           └── MarketMonitor.vue
+│           ├── MarketMonitor.vue
+│           └── TownyMonitor.vue
 ├── scripts/
 │   ├── setup.js
 │   ├── migrate-safe.js
@@ -37,7 +38,9 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── commands/
 │   │   └── general/
 │   │       ├── blacklist.js
+│   │       ├── chistory.js
 │   │       ├── cis-info.js
+│   │       ├── cstats.js
 │   │       ├── cstock.js
 │   │       ├── currencies.js
 │   │       ├── dev-slist.js
@@ -49,7 +52,8 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── notifyiic.js
 │   │       ├── ping.js
 │   │       ├── stats-dev.js
-│   │       └── test.js
+│   │       ├── test.js
+│   │       └── towny.js
 │   ├── db/
 │   │   ├── schema.js
 │   │   └── redisSchema.js
@@ -137,6 +141,7 @@ This file serves as a reference guide for the directory structure and file respo
     - [dashboard/src/components/ExchangeCalculator.vue](./dashboard/src/components/ExchangeCalculator.vue): Conversion widget to calculate rates between nation currencies.
     - [dashboard/src/components/HistoryChart.vue](./dashboard/src/components/HistoryChart.vue): Comparison Line chart graphing historical rates over 7-120 days.
     - [dashboard/src/components/MarketMonitor.vue](./dashboard/src/components/MarketMonitor.vue): Unified market table view displaying pinned favorites and category filters.
+    - [dashboard/src/components/TownyMonitor.vue](./dashboard/src/components/TownyMonitor.vue): Towny monitor displaying overview counts, towns, and nations with detail modals.
 
 ### 📂 src/
 
@@ -145,7 +150,9 @@ This file serves as a reference guide for the directory structure and file respo
   - 📂 **src/commands/**: Contains category subfolders containing Discord Slash Commands.
     - 📂 **src/commands/general/**:
       - [src/commands/general/blacklist.js](./src/commands/general/blacklist.js): `/blacklist` — Manage user blacklist add, remove, and list (Developer Only).
+      - [src/commands/general/chistory.js](./src/commands/general/chistory.js): `/chistory` — View historical price charts and trend sparklines for nation currencies with raw/percentage mode.
       - [src/commands/general/cis-info.js](./src/commands/general/cis-info.js): `/cis-info` — Displays historical, rarity, and frequency telemetry for convoy items.
+      - [src/commands/general/cstats.js](./src/commands/general/cstats.js): `/cstats` — View currency market health metrics and performers ranking.
       - [src/commands/general/cstock.js](./src/commands/general/cstock.js): `/cstock` — Displays current Convoy shop stock grouped by rarity.
       - [src/commands/general/currencies.js](./src/commands/general/currencies.js): `/currencies` — Displays active list of nation currencies and their rates.
       - [src/commands/general/exchange.js](./src/commands/general/exchange.js): `/exchange` — Calculates conversions and exchange rates between nation currencies.
@@ -158,6 +165,7 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/ping.js](./src/commands/general/ping.js): Ping/latency check.
       - [src/commands/general/stats-dev.js](./src/commands/general/stats-dev.js): `/stats-dev` — Displays command execution telemetry and active servers count (Developer Only).
       - [src/commands/general/test.js](./src/commands/general/test.js): `/test` — Runs Bot integration and connection test suites from Discord (Developer Only).
+      - [src/commands/general/towny.js](./src/commands/general/towny.js): `/towny` — Displays Towny stats, town info, and nation info with autocomplete.
   - 📂 **src/icons/**: Cache directory containing block and item texture PNG images downloaded from mcasset.cloud.
   - 📂 **src/db/**: Database schema definitions.
   - [src/db/schema.js](./src/db/schema.js): Drizzle ORM model schemas for MySQL databases.

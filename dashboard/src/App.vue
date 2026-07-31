@@ -5,6 +5,7 @@ import MarketMonitor from './components/MarketMonitor.vue';
 import HistoryChart from './components/HistoryChart.vue';
 import ExchangeCalculator from './components/ExchangeCalculator.vue';
 import ConvoyStock from './components/ConvoyStock.vue';
+import TownyMonitor from './components/TownyMonitor.vue';
 
 // Retrieve API URL from Vite environment variables (falls back to relative path '')
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -199,6 +200,18 @@ onMounted(() => {
           <font-awesome-icon icon="cube" />
           Convoy Shop
         </button>
+        <button
+          @click.prevent="navigate('/towny')"
+          :class="
+            currentRoute === '/towny'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'text-slate-400 hover:text-slate-200'
+          "
+          class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200"
+        >
+          <font-awesome-icon icon="globe" />
+          Towny
+        </button>
       </nav>
     </header>
 
@@ -254,6 +267,11 @@ onMounted(() => {
             <!-- ================= CONVOY TAB ================= -->
             <div v-if="currentRoute === '/convoy'">
               <ConvoyStock :api-base="API_BASE" />
+            </div>
+
+            <!-- ================= TOWNY TAB ================= -->
+            <div v-if="currentRoute === '/towny'">
+              <TownyMonitor :api-base="API_BASE" />
             </div>
           </div>
         </Transition>

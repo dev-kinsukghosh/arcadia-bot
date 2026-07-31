@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => {
           target: `http://localhost:${port}`,
           changeOrigin: true,
         },
+        '/towny': {
+          target: `http://localhost:${port}`,
+          changeOrigin: true,
+        },
       },
     },
   };

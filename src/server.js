@@ -91,6 +91,7 @@ app.get('/', (req, res) => {
       currencies: '/currencies',
       stats: '/currencies/stats',
       history: '/currencies/history',
+      towny: '/towny',
     },
   });
 });
@@ -319,6 +320,60 @@ app.get('/currencies/stats', async (req, res) => {
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
+
+// Cache variables for fallback when Redis is offline
+let localTownyCache = null;
+let localTownyCacheTime = 0;
+const TOWNY_CACHE_TTL = 2 * 60 * 1000; // 2 minutes cache
+
+const handleTownyRequest = async (req, res) => {
+  const { arcadiaApi } = require('./utils/apiClient.js');
+  const redisClient = require('./utils/redis.js');
+  const now = Date.now();
+
+  // Try Redis first
+  if (redisClient && redisClient.status === 'ready') {
+    try {
+      const cached = await redisClient.get('cache:towny');
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (err) {
+      logger.warn(`Failed to fetch Towny data from Redis: ${err.message}`);
+    }
+  } else if (localTownyCache && now - localTownyCacheTime < TOWNY_CACHE_TTL) {
+    return res.json(localTownyCache);
+  }
+
+  try {
+    const data = await arcadiaApi.getTowny();
+
+    // Save to Redis
+    if (redisClient && redisClient.status === 'ready') {
+      try {
+        await redisClient.setex('cache:towny', 120, JSON.stringify(data)); // 2 minutes TTL
+      } catch (err) {
+        logger.warn(`Failed to save Towny data to Redis: ${err.message}`);
+      }
+    }
+
+    // Save to local cache
+    localTownyCache = data;
+    localTownyCacheTime = now;
+
+    res.json(data);
+  } catch (err) {
+    logger.error(`API Error fetching Towny: ${err.message}`);
+    // If external call fails, serve stale local cache if exists
+    if (localTownyCache) {
+      return res.json(localTownyCache);
+    }
+    res.status(502).json({ error: 'Failed to fetch Towny data from external API.' });
+  }
+};
+
+app.get('/towny', handleTownyRequest);
+app.get('/api/towny', handleTownyRequest);
 
 // Fallback to SPA routing (serve index.html for unrecognized GET routes)
 app.use((req, res, next) => {

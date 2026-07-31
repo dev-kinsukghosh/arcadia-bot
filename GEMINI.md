@@ -428,4 +428,25 @@ The following rules MUST be followed at all times:
   - Implemented `<TransitionGroup name="row-list">` horizontal slide-fade entries and movement tracking animations on the Live Currency Market table rows.
 - **App.vue Syntax Compilation Fixes**:
   - Resolved two missing closing braces `}` in `App.vue`: one in the top-level `currentRoute` initialization `if` block (line 26) and one in the `popstate` event listener (line 116), both of which were accidentally removed during the convoy route simplification refactor and caused Vite's `@babel/parser` to throw `Unexpected token` errors at compile time.
+- **Slash Commands — `/towny`**:
+  - Created `src/commands/general/towny.js` slash command supporting subcommands `/towny stats`, `/towny town [name]`, and `/towny nation [name]`.
+  - Implemented `/towny stats` returning overall statistics (towns count with in-nation/neutral breakdown, nations count, online/total residents count, and claimed chunks with by-world breakdown).
+  - Implemented `/towny town` with autocomplete matching town names and slugs, displaying detailed embeds (mayor name and UUID, nation, resident population, claimed/bonus/outpost chunks, town flags, spawn/homeblock coordinates, and creation/last online activity dates).
+  - Implemented `/towny nation` with autocomplete matching nation names and slugs, displaying detailed embeds (king name and UUID, capital town, towns count, resident population, formatted allies and enemies lists, and nation flags).
+  - Added 500ms debouncing map pattern for autocomplete interactions, 25-item suggestion limits, defensive property checks to avoid runtime null crashes, and `MessageFlags.Ephemeral` error responses.
+- **Slash Commands — `/chistory`**:
+  - Created `src/commands/general/chistory.js` slash command supporting parameters: `currency` (autocomplete enabled), `days` (choices 7, 15, 30, 60, 90, 120), and `mode` (Raw Rate vs Compare to Base percentage).
+  - Calculates and renders a custom text-based sparkline trend graph (` ▂▃▄▅▆▇█`) representing pricing volatility trends.
+  - Implemented full paginated button navigation (`◀ Prev`, `Next ▶`) displaying a detailed chronological table log (10 items per page) sorted newest-first.
+- **Slash Commands — `/cstats`**:
+  - Created `src/commands/general/cstats.js` slash command supporting an optional `days` timeframe.
+  - Calculates and lists composite rank top performers (`stabilityScore * 1.0 + normalizedRate * 50`), overall market health tier distribution (Steady/Mixed/Risky), and top 3 gainers/losers.
+  - Resolves standard items to custom Discord Application Emojis dynamically using `getAppEmojis`.
+- **Towny Backend Cache & Dashboard Integration**:
+  - Exposed `/towny` and `/api/towny` endpoints on the Express server (`src/server.js`) backed by a Redis-ex cache (and in-memory fallback) with a 2-minute TTL to throttle external Arcadia Towny API queries.
+  - Built `dashboard/src/components/TownyMonitor.vue` featuring general stats cards, reactive town and nation list grids with multi-column sorting (population, chunks, age, allies), text search, and modal overlays displaying mayor/king skin cravatar avatars.
+  - Linked to tab routing controls and added cubic-bezier page swaps inside `dashboard/src/App.vue`.
+  - Registered the proxy paths in `dashboard/vite.config.mjs` and updated the directory map in `fs.md`.
+
+
 
