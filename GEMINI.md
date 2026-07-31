@@ -446,7 +446,7 @@ The following rules MUST be followed at all times:
   - Exposed `/towny` and `/api/towny` endpoints on the Express server (`src/server.js`) backed by a Redis-ex cache (and in-memory fallback) with a 2-minute TTL to throttle external Arcadia Towny API queries.
   - Built `dashboard/src/components/TownyMonitor.vue` featuring general stats cards, reactive town and nation list grids with multi-column sorting (population, chunks, age, allies), text search, and modal overlays.
   - Added a reactive "Top 4 Towns by Population" / "Top 4 Nations by Population" ranking grid depending on active tab.
-  - Fixed player head skin avatar loader by using cravatar's `.png` suffix schema with nested properties checks and fallback parameters to prevent 404/avatar render issues.
+  - Fixed player head skin avatar loader by switching to `mc-heads.net`'s avatar API (supporting both UUID and name fallbacks) to prevent Cravatar's Cloudflare 521 offline server downtime error issues.
   - Linked to tab routing controls and added cubic-bezier page swaps inside `dashboard/src/App.vue`.
   - Registered the proxy paths in `dashboard/vite.config.mjs` and updated the directory map in `fs.md`.
 
