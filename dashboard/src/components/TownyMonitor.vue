@@ -275,19 +275,19 @@ function closeModals() {
             </div>
             
             <div class="flex items-center gap-3">
-              <img
-                v-if="!failedAvatars['top-town-' + town.id]"
-                :src="`https://minotar.net/avatar/${(town.mayor?.name || 'steve').toLowerCase()}/32.png`"
-                alt="Mayor Avatar"
-                class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900 object-cover"
-                @error="handleAvatarError('top-town-' + town.id)"
-              />
               <div
-                v-else
                 :class="getPlayerColor(town.mayor?.name)"
-                class="h-8 w-8 rounded-lg border flex items-center justify-center font-bold text-[10px] bg-gradient-to-br"
+                class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
               >
-                {{ getPlayerInitials(town.mayor?.name) }}
+                <span class="z-0 select-none text-[8px]">{{ getPlayerInitials(town.mayor?.name) }}</span>
+                <img
+                  v-if="!failedAvatars['top-town-' + town.id]"
+                  :src="`https://minotar.net/avatar/${(town.mayor?.name || 'steve').toLowerCase()}/32.png`"
+                  alt="Mayor Avatar"
+                  class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                  @load="$event.target.classList.remove('opacity-0')"
+                  @error="handleAvatarError('top-town-' + town.id)"
+                />
               </div>
               <div class="min-w-0 flex-1 pr-12">
                 <h4 class="text-xs font-bold text-slate-100 truncate group-hover:text-blue-400 transition-colors">
@@ -323,19 +323,19 @@ function closeModals() {
             </div>
             
             <div class="flex items-center gap-3">
-              <img
-                v-if="!failedAvatars['top-nation-' + nation.id]"
-                :src="`https://minotar.net/avatar/${(nation.king?.name || 'steve').toLowerCase()}/32.png`"
-                alt="King Avatar"
-                class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900 object-cover"
-                @error="handleAvatarError('top-nation-' + nation.id)"
-              />
               <div
-                v-else
                 :class="getPlayerColor(nation.king?.name)"
-                class="h-8 w-8 rounded-lg border flex items-center justify-center font-bold text-[10px] bg-gradient-to-br"
+                class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
               >
-                {{ getPlayerInitials(nation.king?.name) }}
+                <span class="z-0 select-none text-[8px]">{{ getPlayerInitials(nation.king?.name) }}</span>
+                <img
+                  v-if="!failedAvatars['top-nation-' + nation.id]"
+                  :src="`https://minotar.net/avatar/${(nation.king?.name || 'steve').toLowerCase()}/32.png`"
+                  alt="King Avatar"
+                  class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                  @load="$event.target.classList.remove('opacity-0')"
+                  @error="handleAvatarError('top-nation-' + nation.id)"
+                />
               </div>
               <div class="min-w-0 flex-1 pr-12">
                 <h4 class="text-xs font-bold text-slate-100 truncate group-hover:text-indigo-400 transition-colors">
@@ -559,19 +559,19 @@ function closeModals() {
         <div class="p-6 space-y-5">
           <!-- Mayor details & avatar -->
            <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
-            <img
-              v-if="!failedAvatars['modal-town-' + selectedTown.id]"
-              :src="`https://minotar.net/avatar/${(selectedTown.mayor?.name || 'steve').toLowerCase()}/48.png`"
-              alt="Mayor Skin"
-              class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900 object-cover"
-              @error="handleAvatarError('modal-town-' + selectedTown.id)"
-            />
             <div
-              v-else
               :class="getPlayerColor(selectedTown.mayor?.name)"
-              class="h-12 w-12 rounded-lg border flex items-center justify-center font-extrabold text-xs bg-gradient-to-br shadow-md"
+              class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
             >
-              {{ getPlayerInitials(selectedTown.mayor?.name) }}
+              <span class="z-0 select-none text-[10px]">{{ getPlayerInitials(selectedTown.mayor?.name) }}</span>
+              <img
+                v-if="!failedAvatars['modal-town-' + selectedTown.id]"
+                :src="`https://minotar.net/avatar/${(selectedTown.mayor?.name || 'steve').toLowerCase()}/48.png`"
+                alt="Mayor Skin"
+                class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                @load="$event.target.classList.remove('opacity-0')"
+                @error="handleAvatarError('modal-town-' + selectedTown.id)"
+              />
             </div>
             <div>
               <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Town Mayor</div>
@@ -668,19 +668,19 @@ function closeModals() {
         <div class="p-6 space-y-5">
           <!-- King details & avatar -->
           <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
-            <img
-              v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
-              :src="`https://minotar.net/avatar/${(selectedNation.king?.name || 'steve').toLowerCase()}/48.png`"
-              alt="King Skin"
-              class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900 object-cover"
-              @error="handleAvatarError('modal-nation-' + selectedNation.id)"
-            />
             <div
-              v-else
               :class="getPlayerColor(selectedNation.king?.name)"
-              class="h-12 w-12 rounded-lg border flex items-center justify-center font-extrabold text-xs bg-gradient-to-br shadow-md"
+              class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
             >
-              {{ getPlayerInitials(selectedNation.king?.name) }}
+              <span class="z-0 select-none text-[10px]">{{ getPlayerInitials(selectedNation.king?.name) }}</span>
+              <img
+                v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
+                :src="`https://minotar.net/avatar/${(selectedNation.king?.name || 'steve').toLowerCase()}/48.png`"
+                alt="King Skin"
+                class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                @load="$event.target.classList.remove('opacity-0')"
+                @error="handleAvatarError('modal-nation-' + selectedNation.id)"
+              />
             </div>
             <div>
               <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Nation King</div>
