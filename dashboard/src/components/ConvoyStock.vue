@@ -21,9 +21,9 @@ async function fetchConvoyData() {
   fetchError.value = null;
   try {
     const res = await axios.get(`${props.apiBase}/currencies/convoy/all`);
-    convoyItems.value = res.data.map(item => ({
+    convoyItems.value = res.data.map((item) => ({
       ...item,
-      imageError: false
+      imageError: false,
     }));
   } catch (err) {
     console.error('Failed to fetch convoy stock:', err);
@@ -43,26 +43,26 @@ function formatItemName(name) {
   return name
     .toLowerCase()
     .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
 
 // Live stock items (active right now)
 const liveItems = computed(() => {
-  return convoyItems.value.filter(item => item.current_p);
+  return convoyItems.value.filter((item) => item.current_p);
 });
 
 // Group Live items by rarity for distinct sections
 const liveItemsByRarity = computed(() => {
   const groups = {
-    'Legendary': [],
-    'Epic': [],
-    'Rare': [],
-    'Uncommon': [],
-    'Common': []
+    Legendary: [],
+    Epic: [],
+    Rare: [],
+    Uncommon: [],
+    Common: [],
   };
 
-  liveItems.value.forEach(item => {
+  liveItems.value.forEach((item) => {
     const key = item.rarity.charAt(0).toUpperCase() + item.rarity.slice(1).toLowerCase();
     if (groups[key] !== undefined) {
       groups[key].push(item);
@@ -73,7 +73,7 @@ const liveItemsByRarity = computed(() => {
   });
 
   return Object.keys(groups)
-    .filter(r => groups[r].length > 0)
+    .filter((r) => groups[r].length > 0)
     .reduce((obj, key) => {
       obj[key] = groups[key];
       return obj;
@@ -82,7 +82,7 @@ const liveItemsByRarity = computed(() => {
 
 // Compute unique rarities tracked
 const uniqueRarities = computed(() => {
-  const rarities = convoyItems.value.map(item => item.rarity);
+  const rarities = convoyItems.value.map((item) => item.rarity);
   return ['all', ...new Set(rarities)];
 });
 
@@ -93,15 +93,16 @@ const filteredItems = computed(() => {
   // Search filter
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
-    list = list.filter(item =>
-      item.item.toLowerCase().replace(/_/g, ' ').includes(q) ||
-      item.rarity.toLowerCase().includes(q)
+    list = list.filter(
+      (item) =>
+        item.item.toLowerCase().replace(/_/g, ' ').includes(q) ||
+        item.rarity.toLowerCase().includes(q)
     );
   }
 
   // Rarity filter
   if (activeRarityFilter.value !== 'all') {
-    list = list.filter(item => item.rarity === activeRarityFilter.value);
+    list = list.filter((item) => item.rarity === activeRarityFilter.value);
   }
 
   return list;
@@ -110,14 +111,14 @@ const filteredItems = computed(() => {
 // Group catalog items by rarity for sections
 const catalogItemsByRarity = computed(() => {
   const groups = {
-    'Legendary': [],
-    'Epic': [],
-    'Rare': [],
-    'Uncommon': [],
-    'Common': []
+    Legendary: [],
+    Epic: [],
+    Rare: [],
+    Uncommon: [],
+    Common: [],
   };
 
-  filteredItems.value.forEach(item => {
+  filteredItems.value.forEach((item) => {
     const key = item.rarity.charAt(0).toUpperCase() + item.rarity.slice(1).toLowerCase();
     if (groups[key] !== undefined) {
       groups[key].push(item);
@@ -128,7 +129,7 @@ const catalogItemsByRarity = computed(() => {
   });
 
   return Object.keys(groups)
-    .filter(r => groups[r].length > 0)
+    .filter((r) => groups[r].length > 0)
     .reduce((obj, key) => {
       obj[key] = groups[key].sort((a, b) => a.item.localeCompare(b.item));
       return obj;
@@ -181,20 +182,22 @@ function handleImageError(item) {
 <template>
   <div class="space-y-6">
     <!-- Header Block -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-900">
+    <div
+      class="flex flex-col justify-between gap-4 border-b border-slate-900 pb-4 sm:flex-row sm:items-center"
+    >
       <div>
-        <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+        <h2 class="flex items-center gap-2 text-base font-bold text-slate-100">
           <font-awesome-icon icon="cube" class="text-blue-500" />
           Convoy Shop Monitor
         </h2>
-        <p class="text-[11px] text-slate-400 mt-0.5">
+        <p class="mt-0.5 text-[11px] text-slate-400">
           Real-time active shop rotations and complete tracked item catalogs grouped by rarity tiers
         </p>
       </div>
 
       <button
         @click="fetchConvoyData"
-        class="bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all duration-150 self-start sm:self-auto cursor-pointer"
+        class="flex cursor-pointer items-center gap-2 self-start rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800 sm:self-auto"
       >
         <font-awesome-icon icon="rotate" :spin="isLoading" />
         Sync Stock
@@ -202,7 +205,7 @@ function handleImageError(item) {
     </div>
 
     <!-- Segmented Control View Selector -->
-    <div class="flex bg-slate-950/85 border border-slate-900 rounded-xl p-1 max-w-[280px]">
+    <div class="flex max-w-[280px] rounded-xl border border-slate-900 bg-slate-950/85 p-1">
       <button
         @click="activeSubView = 'live'"
         :class="
@@ -210,7 +213,7 @@ function handleImageError(item) {
             ? 'bg-slate-900 text-white shadow-md'
             : 'text-slate-400 hover:text-slate-200'
         "
-        class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold tracking-wider uppercase transition-all duration-200 cursor-pointer text-center"
+        class="flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-center text-[10px] font-semibold tracking-wider uppercase transition-all duration-200"
       >
         Convoy Live
       </button>
@@ -221,7 +224,7 @@ function handleImageError(item) {
             ? 'bg-slate-900 text-white shadow-md'
             : 'text-slate-400 hover:text-slate-200'
         "
-        class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold tracking-wider uppercase transition-all duration-200 cursor-pointer text-center"
+        class="flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-center text-[10px] font-semibold tracking-wider uppercase transition-all duration-200"
       >
         All Items
       </button>
@@ -229,101 +232,135 @@ function handleImageError(item) {
 
     <!-- Loading / Error states -->
     <div v-if="isLoading" class="flex flex-col items-center justify-center py-24">
-      <font-awesome-icon icon="rotate" spin class="text-3xl text-blue-500 mb-3" />
-      <span class="text-xs text-slate-400 font-semibold">Loading convoy database records...</span>
+      <font-awesome-icon icon="rotate" spin class="mb-3 text-3xl text-blue-500" />
+      <span class="text-xs font-semibold text-slate-400">Loading convoy database records...</span>
     </div>
 
-    <div v-else-if="fetchError" class="bg-red-500/10 border border-red-500/20 text-red-400 p-6 rounded-2xl text-center">
-      <font-awesome-icon icon="triangle-exclamation" class="text-2xl mb-2" />
+    <div
+      v-else-if="fetchError"
+      class="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-center text-red-400"
+    >
+      <font-awesome-icon icon="triangle-exclamation" class="mb-2 text-2xl" />
       <h4 class="text-sm font-semibold">{{ fetchError }}</h4>
     </div>
 
     <!-- Active Sections -->
     <div v-else>
       <Transition name="fade" mode="out-in">
-        
         <!-- ================= SECTION 1: LIVE SHOP TRADES ================= -->
         <div v-if="activeSubView === 'live'" key="view-live" class="space-y-6">
           <div class="flex items-center justify-between border-b border-slate-900/60 pb-2">
             <div class="flex items-center gap-2">
               <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span
+                  class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
+                ></span>
+                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
               </span>
-              <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Live Shop Trades</h3>
+              <h3 class="text-xs font-bold tracking-wider text-slate-200 uppercase">
+                Live Shop Trades
+              </h3>
             </div>
-            <span class="text-[9px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+            <span
+              class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold tracking-wider text-emerald-400 uppercase"
+            >
               {{ liveItems.length }} active rotations
             </span>
           </div>
 
-          <div v-if="liveItems.length === 0" class="bg-[#11131c]/40 border border-slate-800/80 rounded-2xl py-12 text-center text-slate-500 text-xs">
-            <font-awesome-icon icon="circle-info" class="text-xl mb-1.5 text-slate-600" />
+          <div
+            v-if="liveItems.length === 0"
+            class="rounded-2xl border border-slate-800/80 bg-[#11131c]/40 py-12 text-center text-xs text-slate-500"
+          >
+            <font-awesome-icon icon="circle-info" class="mb-1.5 text-xl text-slate-600" />
             <div>No items currently active in the shop rotation.</div>
           </div>
 
           <div v-else class="space-y-8">
-            <div v-for="(items, rarity) in liveItemsByRarity" :key="'live-group-' + rarity" class="space-y-3">
-              <h4 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2" :class="getRarityTextClass(rarity)">
-                <span class="w-1.5 h-1.5 rounded-full animate-pulse" :class="getRarityDotBg(rarity)"></span>
+            <div
+              v-for="(items, rarity) in liveItemsByRarity"
+              :key="'live-group-' + rarity"
+              class="space-y-3"
+            >
+              <h4
+                class="flex items-center gap-2 text-xs font-bold tracking-wider uppercase"
+                :class="getRarityTextClass(rarity)"
+              >
+                <span
+                  class="h-1.5 w-1.5 animate-pulse rounded-full"
+                  :class="getRarityDotBg(rarity)"
+                ></span>
                 {{ rarity }} Tier
               </h4>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                 <div
                   v-for="item in items"
                   :key="'live-' + item.item"
-                  class="border rounded-2xl p-4 transition-all duration-300 flex flex-col justify-between shadow-lg hover:-translate-y-1 relative group overflow-hidden bg-slate-950/20"
+                  class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-slate-950/20 p-4 shadow-lg transition-all duration-300 hover:-translate-y-1"
                   :class="getRarityClasses(item.rarity)"
                 >
                   <!-- Card Rarity Badge -->
-                  <div class="flex items-center justify-between mb-3.5">
+                  <div class="mb-3.5 flex items-center justify-between">
                     <span
-                      class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border capitalize bg-slate-950/60"
-                      :class="[getRarityTextClass(item.rarity), getRarityClasses(item.rarity).split(' ')[0]]"
+                      class="rounded border bg-slate-950/60 px-2 py-0.5 text-[9px] font-bold tracking-wider capitalize uppercase"
+                      :class="[
+                        getRarityTextClass(item.rarity),
+                        getRarityClasses(item.rarity).split(' ')[0],
+                      ]"
                     >
                       {{ item.rarity.toLowerCase() }}
                     </span>
-                    <span class="text-[9px] text-slate-500 font-mono">Seen: {{ item.timesSeen }}x</span>
+                    <span class="font-mono text-[9px] text-slate-500"
+                      >Seen: {{ item.timesSeen }}x</span
+                    >
                   </div>
 
                   <!-- Item Texture Area -->
-                  <div class="flex items-center justify-center py-4 bg-slate-950/20 rounded-xl mb-4 border border-slate-900/30 min-h-[96px] relative">
+                  <div
+                    class="relative mb-4 flex min-h-[96px] items-center justify-center rounded-xl border border-slate-900/30 bg-slate-950/20 py-4"
+                  >
                     <img
                       v-if="!item.imageError"
                       :src="'/icons/' + item.item + '.png'"
                       @error="handleImageError(item)"
-                      class="w-14 h-14 object-contain image-rendering-pixelated group-hover:scale-110 transition-transform duration-300"
+                      class="image-rendering-pixelated h-14 w-14 object-contain transition-transform duration-300 group-hover:scale-110"
                       :alt="item.item"
                     />
                     <div v-else class="flex flex-col items-center gap-1.5 text-slate-600">
                       <font-awesome-icon icon="cube" class="text-3xl text-slate-600" />
-                      <span class="text-[8px] font-mono tracking-wider">NO TEXTURE</span>
+                      <span class="font-mono text-[8px] tracking-wider">NO TEXTURE</span>
                     </div>
                   </div>
 
                   <!-- Item Info -->
-                  <div class="space-y-3.5 flex-1 flex flex-col justify-between">
+                  <div class="flex flex-1 flex-col justify-between space-y-3.5">
                     <div>
-                      <h4 class="text-xs font-bold text-slate-200 tracking-tight group-hover:text-blue-400 transition-colors duration-150 truncate">
+                      <h4
+                        class="truncate text-xs font-bold tracking-tight text-slate-200 transition-colors duration-150 group-hover:text-blue-400"
+                      >
                         {{ formatItemName(item.item) }}
                       </h4>
-                      <p class="text-[8px] font-mono text-slate-600 mt-0.5 truncate uppercase">
+                      <p class="mt-0.5 truncate font-mono text-[8px] text-slate-600 uppercase">
                         ID: {{ item.item }}
                       </p>
                     </div>
 
                     <!-- Price Pills -->
                     <div class="grid grid-cols-2 gap-2 text-center">
-                      <div class="bg-[#0b0c10] border border-slate-900 rounded-lg p-1">
-                        <div class="text-[7px] text-slate-500 font-bold uppercase tracking-wider">Buy</div>
-                        <div class="text-[10px] font-mono font-bold text-emerald-400 mt-0.5">
+                      <div class="rounded-lg border border-slate-900 bg-[#0b0c10] p-1">
+                        <div class="text-[7px] font-bold tracking-wider text-slate-500 uppercase">
+                          Buy
+                        </div>
+                        <div class="mt-0.5 font-mono text-[10px] font-bold text-emerald-400">
                           ₳{{ parseFloat(item.buyPrice).toFixed(2) }}
                         </div>
                       </div>
-                      <div class="bg-[#0b0c10] border border-slate-900 rounded-lg p-1">
-                        <div class="text-[7px] text-slate-500 font-bold uppercase tracking-wider">Sell</div>
-                        <div class="text-[10px] font-mono font-bold text-slate-300 mt-0.5">
+                      <div class="rounded-lg border border-slate-900 bg-[#0b0c10] p-1">
+                        <div class="text-[7px] font-bold tracking-wider text-slate-500 uppercase">
+                          Sell
+                        </div>
+                        <div class="mt-0.5 font-mono text-[10px] font-bold text-slate-300">
                           ₳{{ parseFloat(item.sellPrice).toFixed(2) }}
                         </div>
                       </div>
@@ -331,21 +368,27 @@ function handleImageError(item) {
 
                     <!-- Stock Progress -->
                     <div>
-                      <div class="flex items-center justify-between text-[9px] text-slate-400 mb-1 font-medium">
+                      <div
+                        class="mb-1 flex items-center justify-between text-[9px] font-medium text-slate-400"
+                      >
                         <span>Current Stock</span>
-                        <span class="font-mono text-slate-200">{{ item.stock }} / {{ item.maxStock }}</span>
+                        <span class="font-mono text-slate-200"
+                          >{{ item.stock }} / {{ item.maxStock }}</span
+                        >
                       </div>
-                      <div class="h-1 bg-slate-950 border border-slate-900 rounded-full overflow-hidden">
+                      <div
+                        class="h-1 overflow-hidden rounded-full border border-slate-900 bg-slate-950"
+                      >
                         <div
                           class="h-full rounded-full transition-all duration-500"
                           :class="[
-                            (item.stock / item.maxStock) >= 0.5
+                            item.stock / item.maxStock >= 0.5
                               ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-                              : (item.stock / item.maxStock) >= 0.2
+                              : item.stock / item.maxStock >= 0.2
                                 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]'
-                                : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]'
+                                : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]',
                           ]"
-                          :style="{ width: (item.stock / item.maxStock * 100) + '%' }"
+                          :style="{ width: (item.stock / item.maxStock) * 100 + '%' }"
                         ></div>
                       </div>
                     </div>
@@ -360,20 +403,27 @@ function handleImageError(item) {
         <div v-else-if="activeSubView === 'all'" key="view-all" class="space-y-4">
           <div class="flex items-center gap-2 border-b border-slate-900/60 pb-2">
             <font-awesome-icon icon="globe" class="text-blue-500/80" />
-            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">All Tracked Items</h3>
+            <h3 class="text-xs font-bold tracking-wider text-slate-200 uppercase">
+              All Tracked Items
+            </h3>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+          <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-4">
             <!-- Filters & Search -->
-            <div class="lg:col-span-1 bg-[#11131c] border border-slate-800/80 rounded-2xl p-5 space-y-5 shadow-xl backdrop-blur-md">
-              <div class="flex items-center justify-between pb-3 border-b border-slate-800/50">
-                <h4 class="text-xs font-bold text-slate-200 flex items-center gap-2">
+            <div
+              class="space-y-5 rounded-2xl border border-slate-800/80 bg-[#11131c] p-5 shadow-xl backdrop-blur-md lg:col-span-1"
+            >
+              <div class="flex items-center justify-between border-b border-slate-800/50 pb-3">
+                <h4 class="flex items-center gap-2 text-xs font-bold text-slate-200">
                   <font-awesome-icon icon="filter" class="text-slate-400" />
                   Catalog Filters
                 </h4>
                 <button
-                  @click="searchQuery = ''; activeRarityFilter = 'all'"
-                  class="text-[9px] text-slate-500 hover:text-slate-300 font-semibold uppercase tracking-wider transition-colors duration-150 cursor-pointer"
+                  @click="
+                    searchQuery = '';
+                    activeRarityFilter = 'all';
+                  "
+                  class="cursor-pointer text-[9px] font-semibold tracking-wider text-slate-500 uppercase transition-colors duration-150 hover:text-slate-300"
                 >
                   Reset
                 </button>
@@ -381,42 +431,63 @@ function handleImageError(item) {
 
               <!-- Search input -->
               <div>
-                <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Search Catalog</label>
+                <label
+                  class="mb-2 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
+                  >Search Catalog</label
+                >
                 <div class="relative">
-                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 text-[10px]">
+                  <span
+                    class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[10px] text-slate-500"
+                  >
                     <font-awesome-icon icon="search" />
                   </span>
                   <input
                     type="text"
                     v-model="searchQuery"
                     placeholder="Search item name..."
-                    class="block w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="block w-full rounded-lg border border-slate-800 bg-slate-950 py-1.5 pr-3 pl-8 text-xs text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <!-- Rarity Filters -->
               <div>
-                <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Rarity Tier</label>
+                <label
+                  class="mb-2 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
+                  >Rarity Tier</label
+                >
                 <div class="space-y-1">
                   <button
                     @click="activeRarityFilter = 'all'"
-                    :class="activeRarityFilter === 'all' ? 'bg-blue-600/15 border-blue-500/30 text-blue-300' : 'bg-slate-950/40 border-slate-800/60 text-slate-400 hover:text-slate-200'"
-                    class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center justify-between transition-all duration-150 cursor-pointer"
+                    :class="
+                      activeRarityFilter === 'all'
+                        ? 'border-blue-500/30 bg-blue-600/15 text-blue-300'
+                        : 'border-slate-800/60 bg-slate-950/40 text-slate-400 hover:text-slate-200'
+                    "
+                    class="flex w-full cursor-pointer items-center justify-between rounded-lg border px-3 py-1.5 text-left text-xs font-medium transition-all duration-150"
                   >
                     <span>All Rarities</span>
-                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-900 font-mono text-slate-500">{{ convoyItems.length }}</span>
+                    <span
+                      class="rounded bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] text-slate-500"
+                      >{{ convoyItems.length }}</span
+                    >
                   </button>
                   <button
-                    v-for="rarity in uniqueRarities.filter(r => r !== 'all')"
+                    v-for="rarity in uniqueRarities.filter((r) => r !== 'all')"
                     :key="'filter-' + rarity"
                     @click="activeRarityFilter = rarity"
-                    :class="activeRarityFilter === rarity ? 'bg-blue-600/15 border-blue-500/30 text-blue-300' : 'bg-slate-950/40 border-slate-800/60 text-slate-400 hover:text-slate-200'"
-                    class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center justify-between transition-all duration-150 cursor-pointer capitalize"
+                    :class="
+                      activeRarityFilter === rarity
+                        ? 'border-blue-500/30 bg-blue-600/15 text-blue-300'
+                        : 'border-slate-800/60 bg-slate-950/40 text-slate-400 hover:text-slate-200'
+                    "
+                    class="flex w-full cursor-pointer items-center justify-between rounded-lg border px-3 py-1.5 text-left text-xs font-medium capitalize transition-all duration-150"
                   >
                     <span :class="getRarityTextClass(rarity)">{{ rarity.toLowerCase() }}</span>
-                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-900 font-mono text-slate-500">
-                      {{ convoyItems.filter(item => item.rarity === rarity).length }}
+                    <span
+                      class="rounded bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] text-slate-500"
+                    >
+                      {{ convoyItems.filter((item) => item.rarity === rarity).length }}
                     </span>
                   </button>
                 </div>
@@ -424,97 +495,137 @@ function handleImageError(item) {
             </div>
 
             <!-- Catalog Cards Grouped by Rarity Sections -->
-            <div class="lg:col-span-3 space-y-8">
-              <div class="bg-[#11131c] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between shadow-lg backdrop-blur-md">
+            <div class="space-y-8 lg:col-span-3">
+              <div
+                class="flex items-center justify-between rounded-2xl border border-slate-800/80 bg-[#11131c] p-4 shadow-lg backdrop-blur-md"
+              >
                 <div>
-                  <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Catalog Coverage</div>
-                  <div class="text-xs font-bold text-slate-200 mt-0.5">
-                    Showing <span class="text-blue-500 font-mono">{{ filteredItems.length }}</span> of <span class="text-slate-400 font-mono">{{ convoyItems.length }}</span> registered convoy items
+                  <div class="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                    Catalog Coverage
+                  </div>
+                  <div class="mt-0.5 text-xs font-bold text-slate-200">
+                    Showing
+                    <span class="font-mono text-blue-500">{{ filteredItems.length }}</span> of
+                    <span class="font-mono text-slate-400">{{ convoyItems.length }}</span>
+                    registered convoy items
                   </div>
                 </div>
               </div>
 
-              <div v-if="filteredItems.length === 0" class="bg-[#11131c] border border-slate-800/80 rounded-2xl py-16 px-4 text-center">
-                <font-awesome-icon icon="circle-info" class="text-2xl text-slate-600 mb-2" />
+              <div
+                v-if="filteredItems.length === 0"
+                class="rounded-2xl border border-slate-800/80 bg-[#11131c] px-4 py-16 text-center"
+              >
+                <font-awesome-icon icon="circle-info" class="mb-2 text-2xl text-slate-600" />
                 <h4 class="text-xs font-semibold text-slate-300">No Matching Items Found</h4>
-                <p class="text-[11px] text-slate-500 mt-1">Try clearing filters or search terms.</p>
+                <p class="mt-1 text-[11px] text-slate-500">Try clearing filters or search terms.</p>
               </div>
 
               <div v-else class="space-y-8">
-                <div v-for="(items, rarity) in catalogItemsByRarity" :key="'catalog-group-' + rarity" class="space-y-3">
-                  <h4 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b border-slate-900 pb-1" :class="getRarityTextClass(rarity)">
-                    <span class="w-1.5 h-1.5 rounded-full" :class="getRarityDotBg(rarity)"></span>
+                <div
+                  v-for="(items, rarity) in catalogItemsByRarity"
+                  :key="'catalog-group-' + rarity"
+                  class="space-y-3"
+                >
+                  <h4
+                    class="flex items-center gap-2 border-b border-slate-900 pb-1 text-xs font-bold tracking-wider uppercase"
+                    :class="getRarityTextClass(rarity)"
+                  >
+                    <span class="h-1.5 w-1.5 rounded-full" :class="getRarityDotBg(rarity)"></span>
                     {{ rarity }} Items
-                    <span class="text-[9px] font-mono text-slate-500 font-normal ml-1">({{ items.length }})</span>
+                    <span class="ml-1 font-mono text-[9px] font-normal text-slate-500"
+                      >({{ items.length }})</span
+                    >
                   </h4>
 
                   <TransitionGroup
                     name="card-list"
                     tag="div"
-                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+                    class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3"
                   >
                     <div
                       v-for="item in items"
                       :key="'all-' + item.item"
-                      class="border rounded-2xl p-4 transition-all duration-300 flex flex-col justify-between shadow-lg hover:-translate-y-1 relative group overflow-hidden"
+                      class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-4 shadow-lg transition-all duration-300 hover:-translate-y-1"
                       :class="getRarityClasses(item.rarity)"
                     >
                       <!-- Card Rarity / Status Badge -->
-                      <div class="flex items-center justify-between mb-3">
+                      <div class="mb-3 flex items-center justify-between">
                         <div class="flex items-center gap-1.5">
                           <span
-                            class="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border capitalize bg-slate-950/60"
-                            :class="[getRarityTextClass(item.rarity), getRarityClasses(item.rarity).split(' ')[0]]"
+                            class="rounded border bg-slate-950/60 px-1.5 py-0.5 text-[8px] font-bold tracking-wider capitalize uppercase"
+                            :class="[
+                              getRarityTextClass(item.rarity),
+                              getRarityClasses(item.rarity).split(' ')[0],
+                            ]"
                           >
                             {{ item.rarity.toLowerCase() }}
                           </span>
                           <span
-                            :class="item.current_p ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-950/50 border-slate-900 text-slate-500'"
-                            class="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border"
+                            :class="
+                              item.current_p
+                                ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
+                                : 'border-slate-900 bg-slate-950/50 text-slate-500'
+                            "
+                            class="rounded border px-1.5 py-0.5 text-[8px] font-bold tracking-wider uppercase"
                           >
                             {{ item.current_p ? 'Active' : 'Inactive' }}
                           </span>
                         </div>
-                        <span class="text-[8px] text-slate-500 font-mono">Seen: {{ item.timesSeen }}x</span>
+                        <span class="font-mono text-[8px] text-slate-500"
+                          >Seen: {{ item.timesSeen }}x</span
+                        >
                       </div>
 
                       <!-- Item Texture Area -->
-                      <div class="flex items-center justify-center py-3 bg-slate-950/20 rounded-xl mb-3 border border-slate-900/30 min-h-[84px] relative">
+                      <div
+                        class="relative mb-3 flex min-h-[84px] items-center justify-center rounded-xl border border-slate-900/30 bg-slate-950/20 py-3"
+                      >
                         <img
                           v-if="!item.imageError"
                           :src="'/icons/' + item.item + '.png'"
                           @error="handleImageError(item)"
-                          class="w-12 h-12 object-contain image-rendering-pixelated group-hover:scale-110 transition-transform duration-300"
+                          class="image-rendering-pixelated h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-110"
                           :alt="item.item"
                         />
                         <div v-else class="flex flex-col items-center gap-1 text-slate-600">
                           <font-awesome-icon icon="cube" class="text-2xl text-slate-600" />
-                          <span class="text-[8px] font-mono tracking-wider">NO TEXTURE</span>
+                          <span class="font-mono text-[8px] tracking-wider">NO TEXTURE</span>
                         </div>
                       </div>
 
                       <!-- Item Info -->
-                      <div class="space-y-3 flex-1 flex flex-col justify-between">
+                      <div class="flex flex-1 flex-col justify-between space-y-3">
                         <div>
-                          <h4 class="text-xs font-bold text-slate-200 tracking-tight group-hover:text-blue-400 transition-colors duration-150 truncate">
+                          <h4
+                            class="truncate text-xs font-bold tracking-tight text-slate-200 transition-colors duration-150 group-hover:text-blue-400"
+                          >
                             {{ formatItemName(item.item) }}
                           </h4>
-                          <p class="text-[8px] font-mono text-slate-600 mt-0.5 truncate uppercase">
+                          <p class="mt-0.5 truncate font-mono text-[8px] text-slate-600 uppercase">
                             ID: {{ item.item }}
                           </p>
                         </div>
 
                         <!-- Price Pills -->
                         <div class="grid grid-cols-2 gap-2 text-center">
-                          <div class="bg-[#0b0c10] border border-slate-900 rounded-lg p-1">
-                            <div class="text-[7px] text-slate-500 font-bold uppercase tracking-wider">Buy</div>
-                            <div class="text-[10px] font-mono font-bold text-emerald-400 mt-0.5">
+                          <div class="rounded-lg border border-slate-900 bg-[#0b0c10] p-1">
+                            <div
+                              class="text-[7px] font-bold tracking-wider text-slate-500 uppercase"
+                            >
+                              Buy
+                            </div>
+                            <div class="mt-0.5 font-mono text-[10px] font-bold text-emerald-400">
                               ₳{{ parseFloat(item.buyPrice).toFixed(2) }}
                             </div>
                           </div>
-                          <div class="bg-[#0b0c10] border border-slate-900 rounded-lg p-1">
-                            <div class="text-[7px] text-slate-500 font-bold uppercase tracking-wider">Sell</div>
-                            <div class="text-[10px] font-mono font-bold text-slate-300 mt-0.5">
+                          <div class="rounded-lg border border-slate-900 bg-[#0b0c10] p-1">
+                            <div
+                              class="text-[7px] font-bold tracking-wider text-slate-500 uppercase"
+                            >
+                              Sell
+                            </div>
+                            <div class="mt-0.5 font-mono text-[10px] font-bold text-slate-300">
                               ₳{{ parseFloat(item.sellPrice).toFixed(2) }}
                             </div>
                           </div>
@@ -522,25 +633,37 @@ function handleImageError(item) {
 
                         <!-- Stock Capacity indicator -->
                         <div>
-                          <div class="flex items-center justify-between text-[9px] text-slate-400 mb-1 font-medium">
-                            <span>{{ item.current_p ? 'Current Stock' : 'Max Stock Capacity' }}</span>
+                          <div
+                            class="mb-1 flex items-center justify-between text-[9px] font-medium text-slate-400"
+                          >
+                            <span>{{
+                              item.current_p ? 'Current Stock' : 'Max Stock Capacity'
+                            }}</span>
                             <span class="font-mono text-slate-200">
-                              {{ item.current_p ? `${item.stock} / ${item.maxStock}` : item.maxStock }}
+                              {{
+                                item.current_p ? `${item.stock} / ${item.maxStock}` : item.maxStock
+                              }}
                             </span>
                           </div>
-                          <div class="h-1 bg-slate-950 border border-slate-900 rounded-full overflow-hidden">
+                          <div
+                            class="h-1 overflow-hidden rounded-full border border-slate-900 bg-slate-950"
+                          >
                             <div
                               class="h-full rounded-full transition-all duration-500"
                               :class="[
                                 !item.current_p
                                   ? 'bg-slate-700'
-                                  : (item.stock / item.maxStock) >= 0.5
+                                  : item.stock / item.maxStock >= 0.5
                                     ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-                                    : (item.stock / item.maxStock) >= 0.2
+                                    : item.stock / item.maxStock >= 0.2
                                       ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]'
-                                      : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]'
+                                      : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]',
                               ]"
-                              :style="{ width: (!item.current_p ? '100' : (item.stock / item.maxStock * 100)) + '%' }"
+                              :style="{
+                                width:
+                                  (!item.current_p ? '100' : (item.stock / item.maxStock) * 100) +
+                                  '%',
+                              }"
                             ></div>
                           </div>
                         </div>
@@ -582,7 +705,9 @@ function handleImageError(item) {
 /* Premium Card Entering & Leaving Animations */
 .card-list-enter-active,
 .card-list-leave-active {
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-list-enter-from {
   opacity: 0;
@@ -599,7 +724,9 @@ function handleImageError(item) {
 /* Subview Fade Transitions */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 .fade-enter-from {
   opacity: 0;

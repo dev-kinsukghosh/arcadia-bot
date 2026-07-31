@@ -105,16 +105,16 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
 
 <template>
   <div
-    class="bg-[#11131c] border border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden backdrop-blur-md"
+    class="relative overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c] p-6 shadow-xl backdrop-blur-md"
   >
-    <div class="flex items-center gap-2 mb-4 pb-4 border-b border-slate-800/50">
+    <div class="mb-4 flex items-center gap-2 border-b border-slate-800/50 pb-4">
       <font-awesome-icon icon="calculator" class="text-emerald-500" />
       <h2 class="text-lg font-semibold text-slate-100">Exchange Calculator</h2>
     </div>
 
     <div class="space-y-4">
       <div>
-        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+        <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
           >Amount</label
         >
         <div class="relative rounded-lg shadow-sm">
@@ -126,20 +126,20 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
                 .replace(/[^0-9.]/g, '')
                 .replace(/(\..*?)\..*/g, '$1')
             "
-            class="block w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-4 py-2.5 font-mono text-sm text-slate-100 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             placeholder="Enter value"
           />
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-9 items-center gap-3">
+      <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-9">
         <div class="md:col-span-4">
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
             >From</label
           >
           <select
             v-model="fromCurrencyId"
-            class="block w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-100 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
           >
             <option v-for="opt in allOptions" :key="'from-' + opt.id" :value="opt.id">
               {{ opt.name }} [{{ opt.nation }}]
@@ -147,10 +147,10 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
           </select>
         </div>
 
-        <div class="md:col-span-1 flex justify-center pt-5">
+        <div class="flex justify-center pt-5 md:col-span-1">
           <button
             @click="swapCurrencies"
-            class="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-slate-300 flex items-center justify-center transition-all duration-200"
+            class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-300 transition-all duration-200 hover:border-slate-700 hover:bg-slate-800"
             title="Swap source and destination"
           >
             <font-awesome-icon icon="rotate" class="text-sm" />
@@ -158,12 +158,12 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
         </div>
 
         <div class="md:col-span-4">
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
             >To</label
           >
           <select
             v-model="toCurrencyId"
-            class="block w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-100 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
           >
             <option v-for="opt in allOptions" :key="'to-' + opt.id" :value="opt.id">
               {{ opt.name }} [{{ opt.nation }}]
@@ -173,48 +173,48 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
       </div>
 
       <!-- Server Tax Toggle -->
-      <div class="flex items-center gap-3 mt-1">
-        <label class="relative inline-flex items-center cursor-pointer select-none">
-          <input type="checkbox" v-model="taxEnabled" class="sr-only peer" />
+      <div class="mt-1 flex items-center gap-3">
+        <label class="relative inline-flex cursor-pointer items-center select-none">
+          <input type="checkbox" v-model="taxEnabled" class="peer sr-only" />
           <div
-            class="w-9 h-5 rounded-full bg-slate-800 border border-slate-700 peer-focus:ring-1 peer-focus:ring-emerald-500 peer-checked:bg-emerald-600 peer-checked:border-emerald-500 transition-colors duration-200 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-slate-400 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all after:duration-200 peer-checked:after:translate-x-4 peer-checked:after:bg-white"
+            class="h-5 w-9 rounded-full border border-slate-700 bg-slate-800 transition-colors duration-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-600 peer-focus:ring-1 peer-focus:ring-emerald-500 after:absolute after:top-[3px] after:left-[3px] after:h-3.5 after:w-3.5 after:rounded-full after:bg-slate-400 after:transition-all after:duration-200 after:content-[''] peer-checked:after:translate-x-4 peer-checked:after:bg-white"
           ></div>
         </label>
-        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider"
+        <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase"
           >Include Server Tax (5%)</span
         >
       </div>
 
       <div
-        class="bg-slate-950 border border-slate-900/60 rounded-xl p-5 mt-4 flex flex-col md:flex-row items-center justify-between gap-4"
+        class="mt-4 flex flex-col items-center justify-between gap-4 rounded-xl border border-slate-900/60 bg-slate-950 p-5 md:flex-row"
       >
         <div>
-          <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+          <div class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
             Converted Value
           </div>
-          <div class="text-xl md:text-2xl font-bold font-mono text-emerald-400 mt-1">
+          <div class="mt-1 font-mono text-xl font-bold text-emerald-400 md:text-2xl">
             {{ formattedInputAmount }} {{ fromCurrency ? fromCurrency.name.split(' (')[0] : '' }}
           </div>
-          <div class="text-2xl md:text-3xl font-extrabold font-mono text-slate-100 mt-1">
+          <div class="mt-1 font-mono text-2xl font-extrabold text-slate-100 md:text-3xl">
             ≈ {{ formattedConvertedAmount }}
             {{ toCurrency ? toCurrency.name.split(' (')[0] : '' }}
           </div>
-          <div v-if="taxEnabled" class="text-sm font-mono font-medium text-orange-400/90 mt-1.5">
+          <div v-if="taxEnabled" class="mt-1.5 font-mono text-sm font-medium text-orange-400/90">
             🔥 {{ formattedTaxArc }} ARC burned as server tax
           </div>
         </div>
 
         <div
-          class="text-right border-t md:border-t-0 md:border-l border-slate-800/80 pt-3 md:pt-0 md:pl-6 flex-shrink-0"
+          class="flex-shrink-0 border-t border-slate-800/80 pt-3 text-right md:border-t-0 md:border-l md:pt-0 md:pl-6"
         >
-          <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+          <div class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
             Exchange Rate
           </div>
-          <div class="text-sm font-mono font-medium text-slate-300 mt-1">
+          <div class="mt-1 font-mono text-sm font-medium text-slate-300">
             1 {{ fromCurrency ? fromCurrency.id.toUpperCase() : '' }} = {{ formattedRate }}
             {{ toCurrency ? toCurrency.id.toUpperCase() : '' }}
           </div>
-          <div class="text-sm font-mono font-medium text-slate-300 mt-0.5">
+          <div class="mt-0.5 font-mono text-sm font-medium text-slate-300">
             1 {{ toCurrency ? toCurrency.id.toUpperCase() : '' }} = {{ formattedInverseRate }}
             {{ fromCurrency ? fromCurrency.id.toUpperCase() : '' }}
           </div>

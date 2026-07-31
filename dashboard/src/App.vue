@@ -126,31 +126,31 @@ onMounted(() => {
 
 <template>
   <div
-    class="min-h-screen bg-[#07080c] text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white"
+    class="flex min-h-screen flex-col bg-[#07080c] font-sans text-slate-100 selection:bg-blue-600 selection:text-white"
   >
     <!-- Navbar Header -->
     <header
-      class="border-b border-slate-900 bg-[#090b11] py-4 px-6 md:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-50 shadow-md"
+      class="sticky top-0 z-50 flex flex-col items-center justify-between gap-4 border-b border-slate-900 bg-[#090b11] px-6 py-4 shadow-md sm:flex-row md:px-12"
     >
       <div class="flex items-center gap-3">
         <img
           src="/logo.png"
           alt="ArcadiaMC Logo"
-          class="w-12 h-12 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.25)]"
+          class="h-12 w-12 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.25)]"
         />
         <div>
           <h1
-            class="text-lg font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent"
+            class="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-lg font-bold tracking-tight text-transparent"
           >
             ArcadiaMC Stats Panel
           </h1>
-          <span class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold"
+          <span class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
             >Community Stats Dashboard</span
           >
         </div>
       </div>
 
-      <nav class="flex items-center bg-slate-950/80 border border-slate-900 rounded-xl p-1 gap-1">
+      <nav class="flex items-center gap-1 rounded-xl border border-slate-900 bg-slate-950/80 p-1">
         <button
           @click.prevent="navigate('/live-market')"
           :class="
@@ -158,7 +158,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
           "
-          class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+          class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200"
         >
           <font-awesome-icon icon="coins" />
           Live Currency Market
@@ -170,7 +170,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
           "
-          class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+          class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200"
         >
           <font-awesome-icon icon="chart-line" />
           Currency History
@@ -182,7 +182,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
           "
-          class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+          class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200"
         >
           <font-awesome-icon icon="calculator" />
           Exchange
@@ -194,7 +194,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
           "
-          class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer"
+          class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200"
         >
           <font-awesome-icon icon="cube" />
           Convoy Shop
@@ -203,27 +203,27 @@ onMounted(() => {
     </header>
 
     <!-- Main Workspace -->
-    <main class="flex-1 py-8 px-6 md:px-12 max-w-7xl w-full mx-auto">
+    <main class="mx-auto w-full max-w-7xl flex-1 px-6 py-8 md:px-12">
       <!-- Error Alert -->
       <div
         v-if="fetchError"
-        class="bg-red-500/10 border border-red-500/25 text-red-400 p-4 rounded-xl mb-6 flex items-start gap-3 shadow-md"
+        class="mb-6 flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-red-400 shadow-md"
       >
         <font-awesome-icon icon="circle-exclamation" class="mt-0.5 text-red-400" />
         <div>
-          <h4 class="font-bold text-sm">Synchronicity Issue</h4>
-          <p class="text-xs text-red-400/90 mt-0.5 leading-relaxed">{{ fetchError }}</p>
+          <h4 class="text-sm font-bold">Synchronicity Issue</h4>
+          <p class="mt-0.5 text-xs leading-relaxed text-red-400/90">{{ fetchError }}</p>
         </div>
       </div>
 
       <!-- Loading State -->
-      <div v-if="isLoading" class="flex flex-col items-center justify-center py-24 space-y-4">
+      <div v-if="isLoading" class="flex flex-col items-center justify-center space-y-4 py-24">
         <div
-          class="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"
+          class="h-10 w-10 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500"
         ></div>
         <div class="text-center">
           <h4 class="text-sm font-semibold text-slate-300">Synchronizing Telemetry Nodes</h4>
-          <p class="text-xs text-slate-500 mt-1">
+          <p class="mt-1 text-xs text-slate-500">
             Connecting to API and loading MySQL database averages...
           </p>
         </div>
@@ -262,13 +262,13 @@ onMounted(() => {
 
     <!-- Footer -->
     <footer
-      class="border-t border-slate-900 bg-[#090b11] py-6 px-6 text-center text-xs text-slate-500"
+      class="border-t border-slate-900 bg-[#090b11] px-6 py-6 text-center text-xs text-slate-500"
     >
-      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
         <div>ArcadiaMC Community Bot. Built by webdevkin</div>
         <div class="flex items-center gap-4">
           <span class="flex items-center gap-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500"></span>
             System Online
           </span>
           <span class="font-mono text-[10px]">v1.1.5</span>
@@ -297,7 +297,9 @@ onMounted(() => {
 /* Premium Tab Fade & Slide Animation */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 .fade-enter-from {
   opacity: 0;

@@ -153,7 +153,7 @@ const chartDatasets = computed(() => {
           typeof r.date === 'string'
             ? r.date.split('T')[0]
             : new Date(r.date).toISOString().split('T')[0];
-        
+
         const live = parseFloat(r.arcPerUnitLive) || 0;
         const base = parseFloat(r.arcPerUnitBase) || 0;
 
@@ -338,35 +338,43 @@ const chartOptions = computed(() => ({
 
 <template>
   <div
-    class="bg-[#11131c] border border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden backdrop-blur-md"
+    class="relative overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c] p-6 shadow-xl backdrop-blur-md"
   >
     <div
-      class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800/50"
+      class="mb-6 flex flex-col justify-between gap-4 border-b border-slate-800/50 pb-4 md:flex-row md:items-center"
     >
       <div>
-        <h2 class="text-xl font-semibold text-slate-100 flex items-center gap-2">
+        <h2 class="flex items-center gap-2 text-xl font-semibold text-slate-100">
           <font-awesome-icon icon="chart-line" class="text-blue-500" />
           Currencies History Data Graph
         </h2>
-        <p class="text-xs text-slate-400 mt-1">
+        <p class="mt-1 text-xs text-slate-400">
           Track currency values and overlay multiple currencies side-by-side
         </p>
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
         <!-- Chart Mode Toggle Buttons (Side-by-side Segmented Control) -->
-        <div class="flex bg-slate-950 border border-slate-900 rounded-lg p-0.5 gap-0.5">
+        <div class="flex gap-0.5 rounded-lg border border-slate-900 bg-slate-950 p-0.5">
           <button
             @click="chartMode = 'raw'"
-            :class="chartMode === 'raw' ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20' : 'text-slate-400 hover:text-slate-200'"
-            class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 cursor-pointer select-none"
+            :class="
+              chartMode === 'raw'
+                ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                : 'text-slate-400 hover:text-slate-200'
+            "
+            class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 select-none"
           >
             Raw Rate (₳)
           </button>
           <button
             @click="chartMode = 'percentage'"
-            :class="chartMode === 'percentage' ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20' : 'text-slate-400 hover:text-slate-200'"
-            class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 cursor-pointer select-none"
+            :class="
+              chartMode === 'percentage'
+                ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                : 'text-slate-400 hover:text-slate-200'
+            "
+            class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 select-none"
           >
             Compare to Base (%)
           </button>
@@ -375,7 +383,7 @@ const chartOptions = computed(() => ({
         <!-- Time Range Selector -->
         <select
           v-model="daysLimit"
-          class="bg-slate-950 text-slate-200 border border-slate-800 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+          class="rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
         >
           <option :value="7" class="bg-slate-950 text-slate-200">Last 7 Days</option>
           <option :value="15" class="bg-slate-950 text-slate-200">Last 15 Days</option>
@@ -387,9 +395,9 @@ const chartOptions = computed(() => ({
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <div class="lg:col-span-1 border-r border-slate-800/50 pr-3 flex flex-col h-[350px]">
-        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2"
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <div class="flex h-[350px] flex-col border-r border-slate-800/50 pr-3 lg:col-span-1">
+        <span class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
           >Compare Currencies</span
         >
 
@@ -397,24 +405,24 @@ const chartOptions = computed(() => ({
           <font-awesome-icon
             v-if="!searchQuery"
             icon="search"
-            class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs transition-opacity duration-200"
+            class="absolute top-1/2 left-2.5 -translate-y-1/2 text-xs text-slate-500 transition-opacity duration-200"
           />
           <font-awesome-icon
             v-else
             icon="rotate"
             spin
-            class="absolute left-2.5 top-1/2 -translate-y-1/2 text-blue-500 text-xs transition-opacity duration-200"
+            class="absolute top-1/2 left-2.5 -translate-y-1/2 text-xs text-blue-500 transition-opacity duration-200"
           />
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search currencies..."
-            class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-8 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all duration-300 focus:border-blue-500/50 focus:shadow-[0_0_10px_rgba(59,130,246,0.15)]"
+            class="w-full rounded-lg border border-slate-800 bg-slate-950 py-1.5 pr-8 pl-8 text-xs text-slate-200 placeholder-slate-600 transition-all duration-300 focus:border-blue-500/50 focus:shadow-[0_0_10px_rgba(59,130,246,0.15)] focus:ring-1 focus:ring-blue-500 focus:outline-none"
           />
           <button
             v-if="searchQuery"
             @click="searchQuery = ''"
-            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs transition-all duration-200 hover:scale-110"
+            class="absolute top-1/2 right-2.5 -translate-y-1/2 text-xs text-slate-500 transition-all duration-200 hover:scale-110 hover:text-slate-300"
           >
             <font-awesome-icon icon="times" />
           </button>
@@ -423,13 +431,13 @@ const chartOptions = computed(() => ({
         <TransitionGroup
           tag="div"
           name="list-fade"
-          class="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-2"
+          class="custom-scrollbar flex-1 space-y-2 overflow-y-auto pr-1"
         >
           <div
             v-for="curr in filteredCurrencies"
             :key="curr.id"
             :id="'item-' + curr.id"
-            class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-950 transition-colors duration-150 cursor-pointer"
+            class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors duration-150 hover:bg-slate-950"
             @click="toggleSelection(curr.id)"
           >
             <input
@@ -438,19 +446,19 @@ const chartOptions = computed(() => ({
               :value="curr.id"
               :checked="selectedCurrencies.includes(curr.id)"
               @change.stop
-              class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700 focus:ring-blue-500 focus:ring-offset-slate-900"
+              class="h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900"
             />
-            <span class="text-sm font-medium text-slate-300 select-none truncate">
+            <span class="truncate text-sm font-medium text-slate-300 select-none">
               {{ curr.name }}
             </span>
           </div>
         </TransitionGroup>
       </div>
 
-      <div class="lg:col-span-3 h-[320px] relative">
+      <div class="relative h-[320px] lg:col-span-3">
         <div
           v-if="isLoading"
-          class="absolute inset-0 bg-[#11131c]/60 flex items-center justify-center z-10 rounded-xl backdrop-blur-xs"
+          class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-[#11131c]/60 backdrop-blur-xs"
         >
           <div class="flex flex-col items-center gap-3">
             <font-awesome-icon icon="rotate" spin class="text-3xl text-blue-500" />
@@ -460,11 +468,11 @@ const chartOptions = computed(() => ({
 
         <div
           v-if="selectedCurrencies.length === 0"
-          class="h-full border-2 border-dashed border-slate-800 rounded-xl flex flex-col items-center justify-center text-center p-6"
+          class="flex h-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-800 p-6 text-center"
         >
-          <font-awesome-icon icon="sliders" class="text-4xl text-slate-600 mb-3" />
+          <font-awesome-icon icon="sliders" class="mb-3 text-4xl text-slate-600" />
           <h4 class="text-sm font-semibold text-slate-300">No Currencies Selected</h4>
-          <p class="text-xs text-slate-500 mt-1 max-w-[280px]">
+          <p class="mt-1 max-w-[280px] text-xs text-slate-500">
             Select one or more currencies on the left to display historical charts.
           </p>
         </div>

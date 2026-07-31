@@ -415,8 +415,9 @@ The following rules MUST be followed at all times:
   - Resized the header logo element to `w-12 h-12` (48px) for increased visibility.
   - Updated the browser tab favicon link inside `dashboard/index.html` to target `/logo.png` (image/png type), displaying the custom Arcadia stars logo directly in browser tabs.
 - **Convoy Stock Dashboard Tab & Local Asset Synchronization (ConvoyStock.vue & App.vue)**:
-  - Created a new **Convoy Shop** tab containing two main visual sections: **Live Shop Trades** and **All Tracked Items**.
-  - Grouped both active shop trades and historical catalog items into distinct sub-sections organized by rarity class (**Legendary**, **Epic**, **Rare**, **Uncommon**, **Common**), using colored headers and status tags.
+  - Created a new **Convoy Shop** tab with a segmented pill-toggle control (**Convoy Live** / **All Items**) enabling users to switch between active shop trades and the full historical catalog on the same page.
+  - Grouped both live shop trades and catalog items into distinct sub-sections organized by rarity class (**Legendary**, **Epic**, **Rare**, **Uncommon**, **Common**), each with colored dot indicators, tier headers, and item count badges.
+  - Wrapped the view toggle inside a `<Transition name="fade" mode="out-in">` block for smooth cross-fade animations when switching views.
   - Added backend Express API endpoints `/currencies/convoy` and `/currencies/convoy/all` querying the `convoy_items` MySQL database.
   - Updated `iconDownloader.js` to automatically save downloaded/upscaled Minecraft asset icons to both the bot cache directory (`src/icons/`) and the dashboard static directory (`dashboard/public/icons/`).
   - Executed a script to synchronize all 88 existing cached PNG icons from `src/icons/` to `dashboard/public/icons/` immediately.
@@ -425,8 +426,6 @@ The following rules MUST be followed at all times:
   - Wrapped all active tab routes inside a `<Transition name="fade" mode="out-in">` block keyed by the reactive `currentRoute` with slide-fade transition styles.
   - Implemented card-popping hover scaling (`hover:scale-[1.02] hover:shadow-xl` hover effects) and `<TransitionGroup name="card-list">` fade-and-scale animations on Convoy cards.
   - Implemented `<TransitionGroup name="row-list">` horizontal slide-fade entries and movement tracking animations on the Live Currency Market table rows.
-  - Resolved a syntax compile error in the `popstate` event listener of `App.vue` by restoring the closing brace on the redirect check condition.
-
-
-
+- **App.vue Syntax Compilation Fixes**:
+  - Resolved two missing closing braces `}` in `App.vue`: one in the top-level `currentRoute` initialization `if` block (line 26) and one in the `popstate` event listener (line 116), both of which were accidentally removed during the convoy route simplification refactor and caused Vite's `@babel/parser` to throw `Unexpected token` errors at compile time.
 

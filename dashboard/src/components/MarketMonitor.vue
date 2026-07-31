@@ -48,7 +48,9 @@ const savedStabilityTier = localStorage.getItem('market:filterStabilityTier');
 const filterStabilityTier = ref(savedStabilityTier || 'all'); // 'all', 'steady', 'mixed', 'risky'
 
 const savedVolatilityThreshold = localStorage.getItem('market:volatilityAlertThreshold');
-const volatilityAlertThreshold = ref(savedVolatilityThreshold ? parseInt(savedVolatilityThreshold, 10) : 15);
+const volatilityAlertThreshold = ref(
+  savedVolatilityThreshold ? parseInt(savedVolatilityThreshold, 10) : 15
+);
 
 // Watchlist
 const pinnedFavorites = ref([]);
@@ -377,25 +379,25 @@ onMounted(() => {
   <div class="space-y-6">
     <!-- Header with Time Interval Selector -->
     <div
-      class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-900"
+      class="flex flex-col justify-between gap-4 border-b border-slate-900 pb-4 sm:flex-row sm:items-center"
     >
       <div>
-        <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+        <h2 class="flex items-center gap-2 text-base font-bold text-slate-100">
           <font-awesome-icon icon="coins" class="text-blue-500" />
           Live Currency Market
         </h2>
-        <p class="text-[11px] text-slate-400 mt-0.5">
+        <p class="mt-0.5 text-[11px] text-slate-400">
           Real-time exchange tracking and metrics calculated over the selected interval
         </p>
       </div>
 
       <div
-        class="flex items-center gap-2 bg-slate-950 border border-slate-900 rounded-xl px-3 py-1.5 self-start sm:self-auto"
+        class="flex items-center gap-2 self-start rounded-xl border border-slate-900 bg-slate-950 px-3 py-1.5 sm:self-auto"
       >
-        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Interval:</span>
+        <span class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Interval:</span>
         <select
           v-model="daysLimit"
-          class="bg-slate-950 text-slate-300 text-xs font-semibold focus:outline-none cursor-pointer border-none"
+          class="cursor-pointer border-none bg-slate-950 text-xs font-semibold text-slate-300 focus:outline-none"
         >
           <option :value="7" class="bg-slate-950 text-slate-300">Last 7 Days</option>
           <option :value="15" class="bg-slate-950 text-slate-300">Last 15 Days</option>
@@ -410,30 +412,30 @@ onMounted(() => {
     <!-- Top 5 Performers Side-by-Side -->
     <div v-if="topPerformers.length > 0">
       <h3
-        class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2"
+        class="mb-3 flex items-center gap-2 text-xs font-bold tracking-widest text-slate-500 uppercase"
       >
         <font-awesome-icon icon="arrow-trend-up" class="text-emerald-500" />
         Top 5 Best Currencies (Steady + High Value, Last {{ daysLimit }} Days)
       </h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <div
           v-for="curr in topPerformers"
           :key="'top-' + curr.id"
-          class="bg-slate-950/40 border border-emerald-500/25 hover:border-emerald-500/40 rounded-xl p-4 shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative group overflow-hidden"
+          class="group relative overflow-hidden rounded-xl border border-emerald-500/25 bg-slate-950/40 p-4 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-500/40"
         >
           <div
-            class="absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-emerald-500/5 blur-xl group-hover:bg-emerald-500/10 transition-all duration-300"
+            class="absolute -right-6 -bottom-6 h-20 w-20 rounded-full bg-emerald-500/5 blur-xl transition-all duration-300 group-hover:bg-emerald-500/10"
           ></div>
 
           <div class="flex items-start justify-between">
             <div>
               <h4
-                class="font-bold text-xs text-slate-100 group-hover:text-emerald-400 transition-colors duration-200 truncate max-w-[110px]"
+                class="max-w-[110px] truncate text-xs font-bold text-slate-100 transition-colors duration-200 group-hover:text-emerald-400"
               >
                 {{ curr.name }}
               </h4>
               <span
-                class="text-[9px] text-slate-500 uppercase tracking-wider font-semibold truncate block max-w-[110px]"
+                class="block max-w-[110px] truncate text-[9px] font-semibold tracking-wider text-slate-500 uppercase"
               >
                 {{ curr.nation || 'Unknown' }}
               </span>
@@ -449,20 +451,20 @@ onMounted(() => {
 
           <div class="mt-3 flex items-end justify-between">
             <div>
-              <span class="text-[9px] text-slate-500 uppercase font-semibold block">Live Rate</span>
-              <div class="text-xs font-bold font-mono text-slate-200 mt-0.5">
+              <span class="block text-[9px] font-semibold text-slate-500 uppercase">Live Rate</span>
+              <div class="mt-0.5 font-mono text-xs font-bold text-slate-200">
                 ₳{{ (curr.liveRate || 0).toFixed(3) }}
               </div>
             </div>
             <div
               :class="
                 (curr.percentageChange || 0) > 0
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
                   : (curr.percentageChange || 0) < 0
-                    ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                    : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                    ? 'border-red-500/20 bg-red-500/10 text-red-400'
+                    : 'border-slate-500/20 bg-slate-500/10 text-slate-400'
               "
-              class="border px-1.5 py-0.5 rounded text-[9px] font-mono font-bold flex items-center gap-0.5 shadow-sm"
+              class="flex items-center gap-0.5 rounded border px-1.5 py-0.5 font-mono text-[9px] font-bold shadow-sm"
             >
               <font-awesome-icon
                 :icon="(curr.percentageChange || 0) >= 0 ? 'arrow-trend-up' : 'arrow-trend-down'"
@@ -476,33 +478,33 @@ onMounted(() => {
     </div>
     <!-- Pinned Watchlist -->
     <div v-if="pinnedCurrencies.length > 0">
-      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+      <h3 class="mb-3 text-xs font-bold tracking-widest text-slate-500 uppercase">
         Pinned Watchlist
       </h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         <div
           v-for="curr in pinnedCurrencies"
           :key="'pinned-' + curr.id"
-          class="bg-[#11131c] border border-blue-500/30 rounded-xl p-4 shadow-md shadow-blue-500/5 hover:-translate-y-0.5 transition-all duration-300 relative group overflow-hidden"
+          class="group relative overflow-hidden rounded-xl border border-blue-500/30 bg-[#11131c] p-4 shadow-md shadow-blue-500/5 transition-all duration-300 hover:-translate-y-0.5"
         >
           <div
-            class="absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-blue-600/10 blur-xl group-hover:bg-blue-600/15 transition-all duration-300"
+            class="absolute -right-6 -bottom-6 h-20 w-20 rounded-full bg-blue-600/10 blur-xl transition-all duration-300 group-hover:bg-blue-600/15"
           ></div>
 
           <div class="flex items-start justify-between">
             <div>
               <h4
-                class="font-bold text-slate-100 group-hover:text-blue-400 transition-colors duration-200"
+                class="font-bold text-slate-100 transition-colors duration-200 group-hover:text-blue-400"
               >
                 {{ curr.name }}
               </h4>
-              <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{{
+              <span class="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">{{
                 curr.nation || 'Unknown'
               }}</span>
             </div>
             <button
               @click="togglePin(curr.id)"
-              class="text-blue-500 hover:text-slate-400 transition-colors duration-150"
+              class="text-blue-500 transition-colors duration-150 hover:text-slate-400"
             >
               <font-awesome-icon icon="star" />
             </button>
@@ -510,27 +512,28 @@ onMounted(() => {
 
           <div class="mt-4 flex items-end justify-between">
             <div>
-              <span class="text-[10px] text-slate-500 uppercase font-semibold"
+              <span class="text-[10px] font-semibold text-slate-500 uppercase"
                 >Live Exchange Rate</span
               >
-              <div class="text-lg font-bold font-mono text-slate-200 mt-0.5">
+              <div class="mt-0.5 font-mono text-lg font-bold text-slate-200">
                 ₳{{ (curr.liveRate || 0).toFixed(3) }}
               </div>
             </div>
             <div
               :class="
                 (curr.percentageChange || 0) > 0
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
                   : (curr.percentageChange || 0) < 0
-                    ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                    : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                    ? 'border-red-500/20 bg-red-500/10 text-red-400'
+                    : 'border-slate-500/20 bg-slate-500/10 text-slate-400'
               "
-              class="border px-2 py-0.5 rounded text-[11px] font-mono font-bold flex items-center gap-1 shadow-sm"
+              class="flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[11px] font-bold shadow-sm"
             >
               <font-awesome-icon
                 :icon="(curr.percentageChange || 0) >= 0 ? 'arrow-trend-up' : 'arrow-trend-down'"
               />
-              {{ (curr.percentageChange || 0) >= 0 ? '+' : '' }}{{ (curr.percentageChange || 0).toFixed(2) }}%
+              {{ (curr.percentageChange || 0) >= 0 ? '+' : ''
+              }}{{ (curr.percentageChange || 0).toFixed(2) }}%
             </div>
           </div>
         </div>
@@ -538,19 +541,19 @@ onMounted(() => {
     </div>
 
     <!-- Main Analytics Workspace -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-4">
       <!-- Filters Sidebar -->
       <div
-        class="lg:col-span-1 bg-[#11131c] border border-slate-800/80 rounded-2xl p-5 space-y-5 shadow-xl backdrop-blur-md"
+        class="space-y-5 rounded-2xl border border-slate-800/80 bg-[#11131c] p-5 shadow-xl backdrop-blur-md lg:col-span-1"
       >
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800/50">
-          <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+        <div class="flex items-center justify-between border-b border-slate-800/50 pb-3">
+          <h3 class="flex items-center gap-2 text-sm font-bold text-slate-200">
             <font-awesome-icon icon="filter" class="text-slate-400" />
             Filters & Limits
           </h3>
           <button
             @click="clearFilters"
-            class="text-[10px] text-slate-500 hover:text-slate-300 font-semibold uppercase tracking-wider transition-colors duration-150"
+            class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase transition-colors duration-150 hover:text-slate-300"
           >
             Reset
           </button>
@@ -558,12 +561,12 @@ onMounted(() => {
 
         <!-- Search -->
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
             >Search</label
           >
           <div class="relative">
             <span
-              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500"
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500"
             >
               <font-awesome-icon icon="search" />
             </span>
@@ -571,25 +574,25 @@ onMounted(() => {
               type="text"
               v-model="searchSearch"
               placeholder="Search name, id, nation..."
-              class="block w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="block w-full rounded-lg border border-slate-800 bg-slate-950 py-1.5 pr-3 pl-9 text-xs text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
         </div>
 
         <!-- Limits Filter -->
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
             >Display Limit</label
           >
           <div
-            class="grid grid-cols-5 bg-slate-950 border border-slate-800 rounded-lg p-0.5 gap-0.5 text-center"
+            class="grid grid-cols-5 gap-0.5 rounded-lg border border-slate-800 bg-slate-950 p-0.5 text-center"
           >
             <button
               @click="limitType = '5'"
               :class="
                 limitType === '5' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
               "
-              class="py-1 rounded text-[10px] font-semibold transition-all duration-200"
+              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
             >
               Top 5
             </button>
@@ -600,7 +603,7 @@ onMounted(() => {
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               "
-              class="py-1 rounded text-[10px] font-semibold transition-all duration-200"
+              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
             >
               Top 10
             </button>
@@ -611,7 +614,7 @@ onMounted(() => {
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               "
-              class="py-1 rounded text-[10px] font-semibold transition-all duration-200"
+              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
             >
               Top 20
             </button>
@@ -622,7 +625,7 @@ onMounted(() => {
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               "
-              class="py-1 rounded text-[10px] font-semibold transition-all duration-200"
+              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
             >
               All
             </button>
@@ -633,49 +636,57 @@ onMounted(() => {
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               "
-              class="py-1 rounded text-[10px] font-semibold transition-all duration-200"
+              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
             >
               Custom
             </button>
           </div>
 
           <div v-if="limitType === 'custom'" class="mt-2 flex items-center gap-2">
-            <span class="text-[10px] text-slate-500 font-semibold uppercase">Count:</span>
+            <span class="text-[10px] font-semibold text-slate-500 uppercase">Count:</span>
             <input
               type="number"
               v-model="customLimit"
               min="1"
-              class="block w-20 bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="block w-20 rounded border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
         </div>
 
         <!-- Sorting Criteria -->
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
             >Sorting Mode</label
           >
           <select
             v-model="filterCriteria"
-            class="block w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
             <option value="all" class="bg-slate-950 text-slate-200">Alphabetical (Name)</option>
-            <option value="best_perform" class="bg-slate-950 text-slate-200">Biggest Gainers</option>
-            <option value="worst_perform" class="bg-slate-950 text-slate-200">Biggest Losers</option>
-            <option value="stable" class="bg-slate-950 text-slate-200">Most Steady (Fewest Swings)</option>
+            <option value="best_perform" class="bg-slate-950 text-slate-200">
+              Biggest Gainers
+            </option>
+            <option value="worst_perform" class="bg-slate-950 text-slate-200">
+              Biggest Losers
+            </option>
+            <option value="stable" class="bg-slate-950 text-slate-200">
+              Most Steady (Fewest Swings)
+            </option>
             <option value="volatile" class="bg-slate-950 text-slate-200">Most Unpredictable</option>
-            <option value="stable_high_val" class="bg-slate-950 text-slate-200">Most Steady + High Value</option>
+            <option value="stable_high_val" class="bg-slate-950 text-slate-200">
+              Most Steady + High Value
+            </option>
           </select>
         </div>
 
         <!-- Additional Filters -->
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
             >Price Trend</label
           >
           <select
             v-model="filterPriceDir"
-            class="block w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
             <option value="all" class="bg-slate-950 text-slate-200">All Trends</option>
             <option value="gainers" class="bg-slate-950 text-slate-200">Only Upwards</option>
@@ -685,27 +696,29 @@ onMounted(() => {
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
             >Price Bracket</label
           >
           <select
             v-model="filterPriceTier"
-            class="block w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
             <option value="all" class="bg-slate-950 text-slate-200">All Prices</option>
             <option value="high" class="bg-slate-950 text-slate-200">High Value (≥ ₳20)</option>
-            <option value="medium" class="bg-slate-950 text-slate-200">Medium Value (₳5 - ₳20)</option>
+            <option value="medium" class="bg-slate-950 text-slate-200">
+              Medium Value (₳5 - ₳20)
+            </option>
             <option value="low" class="bg-slate-950 text-slate-200">Low Value (&lt; ₳5)</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
             >Steady Tier</label
           >
           <select
             v-model="filterStabilityTier"
-            class="block w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
             <option value="all" class="bg-slate-950 text-slate-200">All Tiers</option>
             <option value="steady" class="bg-slate-950 text-slate-200">Steady (≥ 85%)</option>
@@ -716,29 +729,33 @@ onMounted(() => {
 
         <!-- Price Swing Alert -->
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <label
+            class="mb-2 block flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-400 uppercase"
+          >
             <font-awesome-icon icon="triangle-exclamation" class="text-red-400" />
             Price Swing Alert
           </label>
-          <p class="text-[10px] text-slate-500 leading-relaxed mb-3">
-            Rows where the <span class="text-slate-300 font-semibold">Price Change</span> column
+          <p class="mb-3 text-[10px] leading-relaxed text-slate-500">
+            Rows where the <span class="font-semibold text-slate-300">Price Change</span> column
             exceeds your threshold will be
-            <span class="text-red-400 font-semibold">highlighted in red</span>.
+            <span class="font-semibold text-red-400">highlighted in red</span>.
           </p>
           <div class="flex items-center gap-2.5">
-            <span class="text-[9px] text-slate-600 font-mono font-bold w-6 text-right">5%</span>
+            <span class="w-6 text-right font-mono text-[9px] font-bold text-slate-600">5%</span>
             <input
               type="range"
               v-model="volatilityAlertThreshold"
               min="5"
               max="50"
               step="5"
-              class="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+              class="h-1.5 flex-1 cursor-pointer appearance-none rounded-lg bg-slate-800 accent-red-500"
             />
-            <span class="text-[9px] text-slate-600 font-mono font-bold w-7">50%</span>
+            <span class="w-7 font-mono text-[9px] font-bold text-slate-600">50%</span>
           </div>
           <div class="mt-2.5 flex items-center justify-center">
-            <span class="bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold font-mono px-3 py-1 rounded-lg flex items-center gap-1.5">
+            <span
+              class="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1 font-mono text-[10px] font-bold text-red-400"
+            >
               <font-awesome-icon icon="bell" class="text-[8px]" />
               ≥ {{ volatilityAlertThreshold }}% triggers alert
             </span>
@@ -747,22 +764,39 @@ onMounted(() => {
 
         <!-- Nations Filter -->
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nations</label>
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+            >Nations</label
+          >
           <div class="relative">
             <button
-              @click.stop="nationsDropdownOpen = !nationsDropdownOpen; itemsDropdownOpen = false; nationsSearch = ''"
-              class="w-full flex items-center justify-between bg-slate-950 border rounded-lg px-3 py-2 text-xs transition-colors duration-150"
-              :class="nationsDropdownOpen ? 'border-blue-500/50 text-slate-200' : 'border-slate-800 text-slate-400 hover:border-slate-700'"
+              @click.stop="
+                nationsDropdownOpen = !nationsDropdownOpen;
+                itemsDropdownOpen = false;
+                nationsSearch = '';
+              "
+              class="flex w-full items-center justify-between rounded-lg border bg-slate-950 px-3 py-2 text-xs transition-colors duration-150"
+              :class="
+                nationsDropdownOpen
+                  ? 'border-blue-500/50 text-slate-200'
+                  : 'border-slate-800 text-slate-400 hover:border-slate-700'
+              "
             >
               <span class="flex items-center gap-2">
-                <font-awesome-icon icon="flag" class="text-slate-500 text-[10px]" />
+                <font-awesome-icon icon="flag" class="text-[10px] text-slate-500" />
                 <span v-if="selectedNations.length === 0" class="text-slate-500">All Nations</span>
                 <span v-else class="text-slate-200">{{ selectedNations.length }} selected</span>
               </span>
-              <font-awesome-icon :icon="nationsDropdownOpen ? 'chevron-up' : 'chevron-down'" class="text-slate-500 text-[9px]" />
+              <font-awesome-icon
+                :icon="nationsDropdownOpen ? 'chevron-up' : 'chevron-down'"
+                class="text-[9px] text-slate-500"
+              />
             </button>
 
-            <div v-if="nationsDropdownOpen" @click="nationsDropdownOpen = false" class="fixed inset-0 z-10"></div>
+            <div
+              v-if="nationsDropdownOpen"
+              @click="nationsDropdownOpen = false"
+              class="fixed inset-0 z-10"
+            ></div>
 
             <Transition
               enter-from-class="opacity-0 -translate-y-1"
@@ -774,48 +808,62 @@ onMounted(() => {
             >
               <div
                 v-if="nationsDropdownOpen"
-                class="absolute left-0 right-0 mt-1.5 z-20 bg-[#0d0f17] border border-slate-800 rounded-xl shadow-2xl shadow-black/50 overflow-hidden"
+                class="absolute right-0 left-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
               >
-                <div class="px-3 py-2 border-b border-slate-800/50 flex items-center justify-between">
-                  <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Select Nations</span>
+                <div
+                  class="flex items-center justify-between border-b border-slate-800/50 px-3 py-2"
+                >
+                  <span class="text-[9px] font-bold tracking-widest text-slate-500 uppercase"
+                    >Select Nations</span
+                  >
                   <button
                     v-if="selectedNations.length > 0"
                     @click="selectedNations = []"
-                    class="text-[9px] text-red-400/70 hover:text-red-400 font-semibold transition-colors"
+                    class="text-[9px] font-semibold text-red-400/70 transition-colors hover:text-red-400"
                   >
                     Clear
                   </button>
                 </div>
-                <div class="px-2.5 pt-1.5 pb-1 border-b border-slate-800/30">
+                <div class="border-b border-slate-800/30 px-2.5 pt-1.5 pb-1">
                   <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-slate-600">
+                    <span
+                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-600"
+                    >
                       <font-awesome-icon icon="search" class="text-[9px]" />
                     </span>
                     <input
                       type="text"
                       v-model="nationsSearch"
                       placeholder="Search nations..."
-                      class="block w-full bg-slate-950/50 border border-slate-800/50 rounded-lg pl-7 pr-2.5 py-1.5 text-[10px] text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/40"
+                      class="block w-full rounded-lg border border-slate-800/50 bg-slate-950/50 py-1.5 pr-2.5 pl-7 text-[10px] text-slate-300 placeholder-slate-600 focus:border-blue-500/40 focus:outline-none"
                     />
                   </div>
                 </div>
-                <div class="max-h-[180px] overflow-y-auto custom-scrollbar p-1.5 space-y-0.5">
+                <div class="custom-scrollbar max-h-[180px] space-y-0.5 overflow-y-auto p-1.5">
                   <button
                     v-for="nation in filteredNationsList"
                     :key="'dd-nation-' + nation"
                     @click="toggleNationFilter(nation)"
-                    class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150"
-                    :class="selectedNations.includes(nation)
-                      ? 'bg-blue-500/10 text-blue-300'
-                      : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'"
+                    class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150"
+                    :class="
+                      selectedNations.includes(nation)
+                        ? 'bg-blue-500/10 text-blue-300'
+                        : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                    "
                   >
                     <span
-                      class="w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-all duration-150"
-                      :class="selectedNations.includes(nation)
-                        ? 'bg-blue-500 border-blue-500'
-                        : 'border-slate-600'"
+                      class="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
+                      :class="
+                        selectedNations.includes(nation)
+                          ? 'border-blue-500 bg-blue-500'
+                          : 'border-slate-600'
+                      "
                     >
-                      <font-awesome-icon v-if="selectedNations.includes(nation)" icon="check" class="text-[7px] text-white" />
+                      <font-awesome-icon
+                        v-if="selectedNations.includes(nation)"
+                        icon="check"
+                        class="text-[7px] text-white"
+                      />
                     </span>
                     {{ nation.replace(/_/g, ' ') }}
                   </button>
@@ -827,22 +875,39 @@ onMounted(() => {
 
         <!-- Backing Items Filter -->
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Backing Items</label>
+          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+            >Backing Items</label
+          >
           <div class="relative">
             <button
-              @click.stop="itemsDropdownOpen = !itemsDropdownOpen; nationsDropdownOpen = false; itemsSearch = ''"
-              class="w-full flex items-center justify-between bg-slate-950 border rounded-lg px-3 py-2 text-xs transition-colors duration-150"
-              :class="itemsDropdownOpen ? 'border-emerald-500/50 text-slate-200' : 'border-slate-800 text-slate-400 hover:border-slate-700'"
+              @click.stop="
+                itemsDropdownOpen = !itemsDropdownOpen;
+                nationsDropdownOpen = false;
+                itemsSearch = '';
+              "
+              class="flex w-full items-center justify-between rounded-lg border bg-slate-950 px-3 py-2 text-xs transition-colors duration-150"
+              :class="
+                itemsDropdownOpen
+                  ? 'border-emerald-500/50 text-slate-200'
+                  : 'border-slate-800 text-slate-400 hover:border-slate-700'
+              "
             >
               <span class="flex items-center gap-2">
-                <font-awesome-icon icon="cube" class="text-slate-500 text-[10px]" />
+                <font-awesome-icon icon="cube" class="text-[10px] text-slate-500" />
                 <span v-if="selectedItems.length === 0" class="text-slate-500">All Items</span>
                 <span v-else class="text-slate-200">{{ selectedItems.length }} selected</span>
               </span>
-              <font-awesome-icon :icon="itemsDropdownOpen ? 'chevron-up' : 'chevron-down'" class="text-slate-500 text-[9px]" />
+              <font-awesome-icon
+                :icon="itemsDropdownOpen ? 'chevron-up' : 'chevron-down'"
+                class="text-[9px] text-slate-500"
+              />
             </button>
 
-            <div v-if="itemsDropdownOpen" @click="itemsDropdownOpen = false" class="fixed inset-0 z-10"></div>
+            <div
+              v-if="itemsDropdownOpen"
+              @click="itemsDropdownOpen = false"
+              class="fixed inset-0 z-10"
+            ></div>
 
             <Transition
               enter-from-class="opacity-0 -translate-y-1"
@@ -854,48 +919,62 @@ onMounted(() => {
             >
               <div
                 v-if="itemsDropdownOpen"
-                class="absolute left-0 right-0 mt-1.5 z-20 bg-[#0d0f17] border border-slate-800 rounded-xl shadow-2xl shadow-black/50 overflow-hidden"
+                class="absolute right-0 left-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
               >
-                <div class="px-3 py-2 border-b border-slate-800/50 flex items-center justify-between">
-                  <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Select Items</span>
+                <div
+                  class="flex items-center justify-between border-b border-slate-800/50 px-3 py-2"
+                >
+                  <span class="text-[9px] font-bold tracking-widest text-slate-500 uppercase"
+                    >Select Items</span
+                  >
                   <button
                     v-if="selectedItems.length > 0"
                     @click="selectedItems = []"
-                    class="text-[9px] text-red-400/70 hover:text-red-400 font-semibold transition-colors"
+                    class="text-[9px] font-semibold text-red-400/70 transition-colors hover:text-red-400"
                   >
                     Clear
                   </button>
                 </div>
-                <div class="px-2.5 pt-1.5 pb-1 border-b border-slate-800/30">
+                <div class="border-b border-slate-800/30 px-2.5 pt-1.5 pb-1">
                   <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-slate-600">
+                    <span
+                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-600"
+                    >
                       <font-awesome-icon icon="search" class="text-[9px]" />
                     </span>
                     <input
                       type="text"
                       v-model="itemsSearch"
                       placeholder="Search items..."
-                      class="block w-full bg-slate-950/50 border border-slate-800/50 rounded-lg pl-7 pr-2.5 py-1.5 text-[10px] text-slate-300 placeholder-slate-600 focus:outline-none focus:border-emerald-500/40"
+                      class="block w-full rounded-lg border border-slate-800/50 bg-slate-950/50 py-1.5 pr-2.5 pl-7 text-[10px] text-slate-300 placeholder-slate-600 focus:border-emerald-500/40 focus:outline-none"
                     />
                   </div>
                 </div>
-                <div class="max-h-[180px] overflow-y-auto custom-scrollbar p-1.5 space-y-0.5">
+                <div class="custom-scrollbar max-h-[180px] space-y-0.5 overflow-y-auto p-1.5">
                   <button
                     v-for="item in filteredItemsList"
                     :key="'dd-item-' + item"
                     @click="toggleItemFilter(item)"
-                    class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150"
-                    :class="selectedItems.includes(item)
-                      ? 'bg-emerald-500/10 text-emerald-300'
-                      : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'"
+                    class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150"
+                    :class="
+                      selectedItems.includes(item)
+                        ? 'bg-emerald-500/10 text-emerald-300'
+                        : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                    "
                   >
                     <span
-                      class="w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-all duration-150"
-                      :class="selectedItems.includes(item)
-                        ? 'bg-emerald-500 border-emerald-500'
-                        : 'border-slate-600'"
+                      class="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
+                      :class="
+                        selectedItems.includes(item)
+                          ? 'border-emerald-500 bg-emerald-500'
+                          : 'border-slate-600'
+                      "
                     >
-                      <font-awesome-icon v-if="selectedItems.includes(item)" icon="check" class="text-[7px] text-white" />
+                      <font-awesome-icon
+                        v-if="selectedItems.includes(item)"
+                        icon="check"
+                        class="text-[7px] text-white"
+                      />
                     </span>
                     {{ item.replace(/_/g, ' ') }}
                   </button>
@@ -907,16 +986,16 @@ onMounted(() => {
       </div>
 
       <!-- Monitor Grid View -->
-      <div class="lg:col-span-3 space-y-4">
+      <div class="space-y-4 lg:col-span-3">
         <div
-          class="bg-[#11131c] border border-slate-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg backdrop-blur-md"
+          class="flex flex-col items-center justify-between gap-4 rounded-2xl border border-slate-800/80 bg-[#11131c] p-4 shadow-lg backdrop-blur-md sm:flex-row"
         >
           <div class="text-center sm:text-left">
-            <div class="text-xs text-slate-400 font-semibold">Active Market Coverage</div>
-            <div class="text-lg font-bold text-slate-200 mt-0.5">
+            <div class="text-xs font-semibold text-slate-400">Active Market Coverage</div>
+            <div class="mt-0.5 text-lg font-bold text-slate-200">
               Viewing
-              <span class="text-blue-500 font-mono">{{ filteredCurrencies.length }}</span> of
-              <span class="text-slate-400 font-mono">{{ currencies.length }}</span>
+              <span class="font-mono text-blue-500">{{ filteredCurrencies.length }}</span> of
+              <span class="font-mono text-slate-400">{{ currencies.length }}</span>
               nation currencies
             </div>
           </div>
@@ -924,14 +1003,14 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <button
               @click="downloadCSV"
-              class="bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-2 transition-all duration-150"
+              class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800"
             >
               <font-awesome-icon icon="download" />
               Export CSV
             </button>
             <button
               @click="downloadJSON"
-              class="bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-2 transition-all duration-150"
+              class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800"
             >
               <font-awesome-icon icon="download" />
               Export JSON
@@ -941,39 +1020,35 @@ onMounted(() => {
 
         <!-- Main Data Table -->
         <div
-          class="bg-[#11131c] border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md"
+          class="overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c] shadow-2xl backdrop-blur-md"
         >
           <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full border-collapse text-left">
               <thead>
                 <tr
-                  class="bg-slate-950 border-b border-slate-900 text-slate-400 text-[10px] font-bold uppercase tracking-wider"
+                  class="border-b border-slate-900 bg-slate-950 text-[10px] font-bold tracking-wider text-slate-400 uppercase"
                 >
-                  <th class="py-3.5 px-4 text-center w-12">Watch</th>
-                  <th class="py-3.5 px-4">Currency</th>
-                  <th class="py-3.5 px-4">Creator / Nation</th>
-                  <th class="py-3.5 px-4">Base Rate</th>
-                  <th class="py-3.5 px-4">Live Rate</th>
-                  <th class="py-3.5 px-4">How Steady</th>
-                  <th class="py-3.5 px-4 text-right">Price Change</th>
+                  <th class="w-12 px-4 py-3.5 text-center">Watch</th>
+                  <th class="px-4 py-3.5">Currency</th>
+                  <th class="px-4 py-3.5">Creator / Nation</th>
+                  <th class="px-4 py-3.5">Base Rate</th>
+                  <th class="px-4 py-3.5">Live Rate</th>
+                  <th class="px-4 py-3.5">How Steady</th>
+                  <th class="px-4 py-3.5 text-right">Price Change</th>
                 </tr>
               </thead>
-              <TransitionGroup
-                name="row-list"
-                tag="tbody"
-                class="divide-y divide-slate-900/50"
-              >
+              <TransitionGroup name="row-list" tag="tbody" class="divide-y divide-slate-900/50">
                 <tr
                   v-for="curr in filteredCurrencies"
                   :key="curr.id"
                   :class="[
                     Math.abs(curr.percentageChange || 0) >= volatilityAlertThreshold
-                      ? 'bg-red-500/5 hover:bg-red-500/10 hover:scale-[1.002] hover:shadow-lg'
-                      : 'hover:bg-slate-900/40 hover:scale-[1.002] hover:shadow-lg',
-                    'transition-all duration-150 group',
+                      ? 'bg-red-500/5 hover:scale-[1.002] hover:bg-red-500/10 hover:shadow-lg'
+                      : 'hover:scale-[1.002] hover:bg-slate-900/40 hover:shadow-lg',
+                    'group transition-all duration-150',
                   ]"
                 >
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="px-4 py-3.5 text-center">
                     <button
                       @click="togglePin(curr.id)"
                       class="text-xs transition-colors duration-150"
@@ -985,37 +1060,37 @@ onMounted(() => {
                     </button>
                   </td>
 
-                  <td class="py-3.5 px-4">
+                  <td class="px-4 py-3.5">
                     <div
-                      class="font-bold text-slate-200 group-hover:text-blue-400 transition-colors duration-150"
+                      class="font-bold text-slate-200 transition-colors duration-150 group-hover:text-blue-400"
                     >
                       {{ curr.name }}
                     </div>
                     <div
-                      class="text-[10px] font-mono text-slate-500 uppercase tracking-wide mt-0.5"
+                      class="mt-0.5 font-mono text-[10px] tracking-wide text-slate-500 uppercase"
                     >
                       Backed by: {{ (curr.standardItem || '').replace(/_/g, ' ') }}
                     </div>
                   </td>
 
-                  <td class="py-3.5 px-4">
+                  <td class="px-4 py-3.5">
                     <div class="text-xs font-semibold text-slate-300">
                       {{ (curr.nation || '').replace(/_/g, ' ') }}
                     </div>
-                    <div class="text-[9px] font-mono text-slate-500 mt-0.5">
+                    <div class="mt-0.5 font-mono text-[9px] text-slate-500">
                       UUID: {{ (curr.creatorUuid || '').substring(0, 8) }}...
                     </div>
                   </td>
 
-                  <td class="py-3.5 px-4 font-mono text-xs text-slate-400">
+                  <td class="px-4 py-3.5 font-mono text-xs text-slate-400">
                     ₳{{ (curr.baseRate || 0).toFixed(4) }}
                   </td>
 
-                  <td class="py-3.5 px-4 font-mono text-xs font-bold text-slate-200">
+                  <td class="px-4 py-3.5 font-mono text-xs font-bold text-slate-200">
                     ₳{{ (curr.liveRate || 0).toFixed(4) }}
                   </td>
 
-                  <td class="py-3.5 px-4">
+                  <td class="px-4 py-3.5">
                     <div class="flex items-center gap-2">
                       <span
                         :class="
@@ -1025,19 +1100,19 @@ onMounted(() => {
                               ? 'text-amber-400'
                               : 'text-red-400'
                         "
-                        class="text-xs font-mono font-bold"
+                        class="font-mono text-xs font-bold"
                       >
                         {{ curr.stabilityScore ?? 0 }}%
                       </span>
                       <span
                         :class="
                           getSteadinessTier(curr) === 'steady'
-                            ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400'
+                            ? 'border-emerald-500/20 bg-emerald-500/15 text-emerald-400'
                             : getSteadinessTier(curr) === 'mixed'
-                              ? 'bg-amber-500/15 border-amber-500/20 text-amber-400'
-                              : 'bg-red-500/15 border-red-500/20 text-red-400'
+                              ? 'border-amber-500/20 bg-amber-500/15 text-amber-400'
+                              : 'border-red-500/20 bg-red-500/15 text-red-400'
                         "
-                        class="border px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider"
+                        class="rounded border px-1.5 py-0.5 text-[8px] font-bold tracking-wider uppercase"
                       >
                         {{
                           getSteadinessTier(curr) === 'steady'
@@ -1048,12 +1123,12 @@ onMounted(() => {
                         }}
                       </span>
                     </div>
-                    <div class="text-[9px] text-slate-500 mt-0.5 font-mono">
+                    <div class="mt-0.5 font-mono text-[9px] text-slate-500">
                       Price Spread: {{ (curr.stdDev || 0).toFixed(4) }}
                     </div>
                   </td>
 
-                  <td class="py-3.5 px-4 text-right">
+                  <td class="px-4 py-3.5 text-right">
                     <div
                       :class="
                         (curr.percentageChange || 0) > 0
@@ -1065,27 +1140,28 @@ onMounted(() => {
                       class="font-mono text-xs font-bold"
                     >
                       <font-awesome-icon
-                        :icon="(curr.percentageChange || 0) >= 0 ? 'arrow-trend-up' : 'arrow-trend-down'"
-                        class="text-[10px] mr-1"
+                        :icon="
+                          (curr.percentageChange || 0) >= 0 ? 'arrow-trend-up' : 'arrow-trend-down'
+                        "
+                        class="mr-1 text-[10px]"
                       />
                       {{ (curr.percentageChange || 0) >= 0 ? '+' : ''
                       }}{{ (curr.percentageChange || 0).toFixed(2) }}%
                     </div>
                     <div
                       v-if="Math.abs(curr.percentageChange || 0) >= volatilityAlertThreshold"
-                      class="text-[8px] text-red-400 uppercase font-bold tracking-widest mt-0.5"
+                      class="mt-0.5 text-[8px] font-bold tracking-widest text-red-400 uppercase"
                     >
-                      <font-awesome-icon icon="triangle-exclamation" class="mr-0.5" /> Big
-                      Change
+                      <font-awesome-icon icon="triangle-exclamation" class="mr-0.5" /> Big Change
                     </div>
                   </td>
                 </tr>
 
                 <tr v-if="filteredCurrencies.length === 0" key="empty-row">
-                  <td colspan="7" class="py-12 px-4 text-center">
-                    <font-awesome-icon icon="circle-info" class="text-3xl text-slate-600 mb-2" />
+                  <td colspan="7" class="px-4 py-12 text-center">
+                    <font-awesome-icon icon="circle-info" class="mb-2 text-3xl text-slate-600" />
                     <h4 class="text-sm font-semibold text-slate-300">No Matching Currencies</h4>
-                    <p class="text-xs text-slate-500 mt-1">
+                    <p class="mt-1 text-xs text-slate-500">
                       Try clearing your searches or category filters.
                     </p>
                   </td>
@@ -1103,7 +1179,9 @@ onMounted(() => {
 /* Premium Table Row Enter/Leave Transitions */
 .row-list-enter-active,
 .row-list-leave-active {
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .row-list-enter-from {
   opacity: 0;
@@ -1117,4 +1195,3 @@ onMounted(() => {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 </style>
-
