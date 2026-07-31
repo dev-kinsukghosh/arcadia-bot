@@ -19,19 +19,23 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: dashboard/package-lock.json
 
-      - name: Install dependencies
+      - name: Install dashboard dependencies
+        working-directory: dashboard
         run: npm ci
 
-      - name: Build Vite
+      - name: Build dashboard
+        working-directory: dashboard
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
-        run: npm run dashboard:build
+        run: npm run build
 
       - name: Zip dist
+        working-directory: dashboard
         run: |
           cd dist
-          zip -qry ../dashboard.zip .
+          zip -qry ../../dashboard.zip .
 
       - name: Upload archive
         uses: appleboy/scp-action@v1
@@ -54,13 +58,16 @@ jobs:
             set -e
 
             TARGET="/www/wwwroot/arcc.webdevkin.com"
+            TMP="/tmp/dashboard-deploy"
 
-            mkdir -p "$TARGET"
+            mkdir -p "$TMP"
+            rm -rf "$TMP"/*
 
-            rm -rf "$TARGET"/*
+            unzip -oq /tmp/dashboard.zip -d "$TMP"
 
-            unzip -oq /tmp/dashboard.zip -d "$TARGET"
+            rsync -a --delete "$TMP"/ "$TARGET"/
 
+            rm -rf "$TMP"
             rm -f /tmp/dashboard.zip
 
             chown -R www:www "$TARGET" 2>/dev/null || true
