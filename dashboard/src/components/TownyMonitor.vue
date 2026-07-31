@@ -246,7 +246,7 @@ function closeModals() {
             
             <div class="flex items-center gap-3">
               <img
-                :src="`https://cravatar.eu/avatar/${town.mayor?.uuid || town.mayor?.name || 'steve'}/32.png`"
+                :src="`https://mc-heads.net/avatar/${town.mayor?.uuid || town.mayor?.name || 'steve'}/32.png`"
                 alt="Mayor Avatar"
                 class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900"
               />
@@ -285,7 +285,7 @@ function closeModals() {
             
             <div class="flex items-center gap-3">
               <img
-                :src="`https://cravatar.eu/avatar/${nation.king?.uuid || nation.king?.name || 'steve'}/32.png`"
+                :src="`https://mc-heads.net/avatar/${nation.king?.uuid || nation.king?.name || 'steve'}/32.png`"
                 alt="King Avatar"
                 class="h-8 w-8 rounded-lg border border-slate-800 bg-slate-900"
               />
@@ -512,7 +512,7 @@ function closeModals() {
           <!-- Mayor details & avatar -->
           <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
             <img
-              :src="`https://cravatar.eu/avatar/${selectedTown.mayor?.uuid || selectedTown.mayor?.name || 'steve'}/48.png`"
+              :src="`https://mc-heads.net/avatar/${selectedTown.mayor?.uuid || selectedTown.mayor?.name || 'steve'}/48.png`"
               alt="Mayor Skin"
               class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900"
             />
@@ -612,7 +612,7 @@ function closeModals() {
           <!-- King details & avatar -->
           <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
             <img
-              :src="`https://cravatar.eu/avatar/${selectedNation.king?.uuid || selectedNation.king?.name || 'steve'}/48.png`"
+              :src="`https://mc-heads.net/avatar/${selectedNation.king?.uuid || selectedNation.king?.name || 'steve'}/48.png`"
               alt="King Skin"
               class="h-12 w-12 rounded-lg border border-slate-800 shadow-md bg-slate-900"
             />
