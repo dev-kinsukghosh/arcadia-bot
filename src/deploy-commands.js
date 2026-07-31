@@ -108,6 +108,11 @@ const rest = new REST({ version: '10' }).setToken(token);
         logger.success(
           `[DEV MODE] Successfully reloaded ${data.length} application (/) commands for guild ${guildId}.`
         );
+
+        // Clear stale global commands to prevent duplicates
+        logger.info('[DEV MODE] Clearing old global commands...');
+        await rest.put(Routes.applicationCommands(clientId), { body: [] });
+        logger.success('[DEV MODE] Successfully cleared global application (/) commands.');
       } else {
         logger.warn(
           '[DEV MODE] DISCORD_GUILD_ID is not specified in .env. Falling back to global deployment.'

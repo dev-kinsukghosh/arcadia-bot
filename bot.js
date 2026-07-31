@@ -56,7 +56,12 @@ async function main() {
   const { startCurrencySync } = require('./src/services/currencySync.js');
   startCurrencySync(client);
 
-  // 3. Login to Discord
+  // 4. Start Express Webserver for Dashboard API
+  logger.info('Starting dashboard webserver...');
+  const { startServer } = require('./src/server.js');
+  startServer();
+
+  // 5. Login to Discord
   logger.info('Logging in to Discord...');
   try {
     await client.login(config.discord.token);

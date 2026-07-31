@@ -20,6 +20,24 @@ module.exports = [
     },
   },
   {
-    ignores: ['node_modules/', 'dist/', '.env*', 'drizzle/', 'fs.md', 'GEMINI.md'],
+    files: ['dashboard/src/main.js', 'dashboard/vite.config.mjs'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+  },
+  {
+    ignores: [
+      'node_modules/',
+      'dist/',
+      'dashboard/dist/',
+      '.env*',
+      'drizzle/',
+      'fs.md',
+      'GEMINI.md',
+    ],
   },
 ];

@@ -14,6 +14,11 @@ const ICONS_DIR = path.join(process.cwd(), 'src', 'icons');
  * @param {Client} client - The active Discord client
  */
 async function checkAndUploadEmojis(client) {
+  if (!client || !client.application) {
+    logger.warn('Discord client application is not fully ready. Skipping application emoji sync.');
+    return;
+  }
+
   if (!fs.existsSync(ICONS_DIR)) {
     logger.error(`Icons directory not found at ${ICONS_DIR}`);
     return;

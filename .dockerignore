@@ -37,3 +37,6 @@ Thumbs.db
 Dockerfile
 .dockerignore
 docker-compose*.yml
+# Build
+dist/
+dashboard

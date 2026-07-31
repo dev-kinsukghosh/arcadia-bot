@@ -49,7 +49,10 @@ module.exports = {
       const pageItems = limitedGuilds.slice(startIdx, startIdx + 10);
 
       const itemsDesc = pageItems
-        .map((guild, idx) => `**${startIdx + idx + 1}.** ${guild.name} - \`${guild.id}\``)
+        .map(
+          (guild, idx) =>
+            `**${startIdx + idx + 1}.** ${guild.name} - \`${guild.id}\` — <@${guild.ownerId}>`
+        )
         .join('\n');
 
       return successEmbed(
