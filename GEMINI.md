@@ -34,6 +34,7 @@ The following rules MUST be followed at all times:
 6. 🚫 **No Direct Ephemeral Options**: Never supply `ephemeral: true` directly in Discord interaction response options (deprecated). Always utilize `flags: MessageFlags.Ephemeral` instead.
 7. 📂 **Relative Project Links**: Never use absolute Windows paths (e.g., `C:/...` or `file:///C:/...`) or `file:///src` link schemes in chat responses, logs, or documentation. Always refer to files using relative text paths (e.g. `src/commands/general/cis-info.js`) or simple code formatting (e.g. `cis-info.js`). When explaining file changes or structural additions, use a tree-like text structure to outline the directories, followed by a list of files with their descriptions next to them, avoiding any inline link syntax.
 8. ⚠️ **Emoji URL Deprecation**: Never use `Emoji.url` (deprecated in Discord.js v14). Always utilize `Emoji.imageURL()` instead to prevent console deprecation warning logs.
+9. 🧪 **Do Not Auto-Run Integration Tests**: Never run bot integration tests (`npm test` or specific suites) automatically on your own. Only execute tests when the user explicitly instructs you to do so.
 
 ---
 
@@ -309,4 +310,123 @@ The following rules MUST be followed at all times:
   - Fixed API property mismatches in the Exchange Calculator component: changed `arcPerUnitLive`/`arcPerUnitBase` lookups to `liveRate`/`baseRate` to match the `/currencies/stats` endpoint response shape.
 - **Command Registration Cleanup**:
   - Cleared stale global application commands (`--clear-global`) that were duplicating with the guild-scoped DEV mode registrations, resolving the issue of two `/exchange` commands appearing simultaneously in Discord.
+- **Page Renaming & UI Rebranding**:
+  - Renamed the "Telemetry charts" dashboard view to **"Currency History"** (route `/currency-history`) to better reflect its purpose as a historical price/rate tracker.
+  - Renamed the "Market Monitor" dashboard view to **"Live Currency Market"** (route `/`) to emphasize its nature as a live-updating ticker board.
+- **Currency History Search & Filtering**:
+  - Integrated a search input bar under the "Compare Currencies" list in `dashboard/src/components/HistoryChart.vue`. Users can now search and filter the multi-select checklist dynamically by name or ID.
+- **Interactive Animations & Transitions**:
+  - Integrated standard Vue `<Transition>` component wrapping the primary application main workspace in `dashboard/src/App.vue` using a custom `fade-slide` cubic-bezier transition, delivering page-swap animations.
+  - Configured Vue `<TransitionGroup>` tags in `dashboard/src/components/MarketMonitor.vue` for the pinned watchlist cards (`grid-list`) and the main currency table rows (`table-list`), enabling sliding and fade entries.
+- **Dynamic Line Hover Highlighting**:
+  - Configured custom interactive state management inside `dashboard/src/components/HistoryChart.vue`. When hovering over a specific line, the active dataset highlights (thickness increases from 3px to 5px, points grow), and all other non-hovered datasets dynamically fade to 20% opacity.
+  - Programmed a dynamic `interaction` mode trigger. Moving cursor across the index shows index details for all lines (show all). Hovering directly over any individual line point instantly flips the tooltip mode to `nearest` with `intersect: true` to target and display only the hovered line's data.
+- **Anchored Search Layout**:
+  - Refactored the layout structure of the "Compare Currencies" list. Converted the outer sidebar container to a flexbox container with locked header elements, anchoring the search bar fixed at the top while letting only the checklist inner wrapper scroll.
+- **LocalStorage Preferences Persistence**:
+  - Wired localStorage state persistence in `HistoryChart.vue` to save and restore user selection list, daysLimit timeline selector, and chartMode metric options on boot.
+  - Configured localStorage state tracking in `ExchangeCalculator.vue` to preserve amountInput values, taxEnabled state, and source/target currency selections across sessions/tabs.
+- **Checlist Smooth-Scroll Assist**:
+  - Configured Vue `nextTick` inside `HistoryChart.vue`'s selection handler to query the toggled checklist item and trigger programmatic `.scrollIntoView({ behavior: 'smooth', block: 'nearest' })` upon selection, keeping active items aligned.
+- **Search Animations & Transitions**:
+  - Built a dynamic search input wrapper inside `HistoryChart.vue`. When there is text in the search input, the search magnifier morphs into a spinning loader icon (`fa-rotate`) and a close icon (`fa-times`) fades in to let users clear input instantly.
+  - Wrapped the currency selection checklist in a Vue `<TransitionGroup name="list-fade">`. When typing, items entering/leaving the list fade and slide horizontally, creating a smooth filter animation.
+- **Live Currency Market Time Range & Top Performers**:
+  - Added a reactive `marketDaysLimit` interval limit selector (7, 15, 30, 90, 120 days) at the top of the **Live Currency Market** page. Toggling it sends dynamic `?days=...` query updates to the backend stats endpoint to recalculate all live metrics (volatility, performance rates, stability score) over that timeframe.
+  - Built a "Top 5 Performers" grid side-by-side at the top of `MarketMonitor.vue`. It renders the top 5 highest gainers dynamically sorted by performance over the selected interval, complete with glassmorphic backgrounds and hover transitions.
+- **Slug Routing & Variable Fix**:
+  - Restored missing `currenciesStats`, `isLoading`, and `fetchError` refs inside `App.vue` script setup to resolve the dashboard rendering crash.
+  - Configured route paths in `App.vue` to assign the "Live Currency Market" tab to `/live-market` slug. Automatically intercepts root `/` visits and redirects them smoothly using `history.replaceState` to `/live-market`.
+
+### 31-07-2026
+
+- **Live Market Defensive Fixes (MarketMonitor.vue)**:
+  - Added `Array.isArray()` validation checks to `loadPinnedFavorites()`, `togglePin()`, and a new `isPinned()` helper function to prevent crashes from legacy or corrupted non-array localStorage values.
+  - Replaced raw `pinnedFavorites.includes(curr.id)` template bindings with the safe `isPinned(curr.id)` helper function to avoid Vue ref unwrapping failures in complex template expressions.
+  - Added `Array.isArray()` guard to the `pinnedCurrencies` computed property.
+  - Safeguarded `filteredCurrencies` search filter with `(c.name || '')`, `(c.id || '')`, `(c.nation || '')` fallbacks before `.toLowerCase()` to prevent TypeError on undefined/null fields.
+  - Guarded all sorting operations (`percentageChange`, `stabilityScore`, `name`) with `|| 0` and `|| ''` fallbacks to prevent NaN propagation.
+- **Live Market Interval Selector (Decentralized State)**:
+  - Removed parent-child prop binding for `daysLimit`. `MarketMonitor.vue` now maintains its own local `daysLimit` ref, initialized from `localStorage('market:days')`.
+  - Added a `watch(daysLimit)` that persists changes to localStorage and emits `refresh-stats` to the parent.
+  - `App.vue` catches `@refresh-stats` and re-runs `fetchLatestStats()`, which reads the days limit from localStorage to build the API query string.
+  - Imported `watch` from Vue and declared `defineEmits(['refresh-stats'])` in `MarketMonitor.vue`.
+- **Top 5 Performers Grid**:
+  - Added `topPerformers` computed property sorting currencies by `percentageChange` descending and slicing to 5.
+  - Built a responsive 5-column glassmorphic card grid in the template with emerald-themed borders, hover lift animations, nation labels, live rate display, and percentage change badges.
+- **Slug Routing Finalization (App.vue)**:
+  - Configured initial route redirect: if pathname is `/`, `''`, or `/monitor`, immediately `replaceState` to `/live-market`.
+  - Updated `navigate()` function to remap root paths to `/live-market`.
+  - Updated `popstate` listener to intercept and redirect legacy paths.
+  - Updated nav button to navigate to `/live-market` and template `v-if` to match `/live-market` or `/monitor`.
+- **Resolved Bug — `creatorUuid.substring` Crash & Full Template Audit**:
+  - **Root Cause**: Line 670 in `MarketMonitor.vue` called `curr.creatorUuid.substring(0, 8)` but some currency objects returned from the API have `creatorUuid` as `undefined`, causing a `TypeError` that blanked the entire page.
+  - **Fix Applied**: Added defensive `|| ''`, `|| 0`, and `?? 0` fallbacks to **20 unsafe property access patterns** across the Pinned Watchlist and Main Data Table sections: `creatorUuid.substring()`, `nation.replace()`, `standardItem.replace()`, `liveRate.toFixed()`, `baseRate.toFixed()`, `stdDev.toFixed()`, `percentageChange.toFixed()`, `stabilityScore` ternaries, and `Math.abs(percentageChange)` calls.
+  - **Status**: ✅ Resolved.
+- **Filter Sidebar UX Redesign (MarketMonitor.vue)**:
+  - Converted **Nations** and **Backing Items** inline tag-button lists into animated **popup dropdown menus** with checkbox-style selection indicators, "Clear" actions, click-outside dismissal (invisible backdrop), and smooth `<Transition>` slide-fade animations.
+  - Dropdowns auto-close each other (opening Nations closes Items and vice versa) and reset on filter clear.
+  - Trigger buttons show dynamic state: "All Nations" / "All Items" placeholder when nothing selected, or "X selected" count badge when filters are active. Border color shifts to blue/emerald accent on open.
+  - Registered 4 new FontAwesome icons (`faFlag`, `faCube`, `faCheck`, `faChevronUp`) in `dashboard/src/main.js`.
+- **Volatility Alert Trigger → Price Swing Alert**:
+  - Renamed the filter from "Volatility Alert Trigger" to **"Price Swing Alert"** with a red warning icon.
+  - Added descriptive copy explaining that rows where the **Price Change** column exceeds the threshold will be **highlighted in red**.
+  - Added min/max range labels (5% — 50%) flanking the slider.
+  - Replaced the plain percentage readout with a styled red badge: `≥ X% triggers alert`.
+  - Changed slider accent color from blue to red to match the alert theme.
+- **Plain-Language Terminology Overhaul (MarketMonitor.vue)**:
+  - Replaced all technical jargon with simple, user-friendly labels across the entire component:
+    - Table header: "Stability Index" → **"How Steady"**, "Rate Shift" → **"Price Change"**.
+    - Row badges: "Stable" → **"Steady"**, "Medium" → **"Mixed"**, "Volatile" → **"Risky"**.
+    - Row detail: "Volatility (StdDev)" → **"Price Spread"**.
+    - Alert tag: "High Deviation" → **"Big Change"**.
+    - Sort options: "Best/Worst Performing (Rate Gain/Loss)" → **"Biggest Gainers/Losers"**, "Highest/Lowest Stability (Low/High Volatility)" → **"Most Steady (Fewest Swings)" / "Most Unpredictable"**.
+- **Dropdown Search Inputs (MarketMonitor.vue)**:
+  - Added search bars inside the **Nations** and **Backing Items** popup dropdown menus with magnifier icons.
+  - Search inputs auto-clear when toggling a dropdown open/closed or resetting all filters.
+- **Interval Dropdown & Custom Sorting/Filters Improvements (MarketMonitor.vue)**:
+  - Fixed browser-native white background option styling for the `<select>` and `<option>` elements (Interval & Sorting Mode dropdowns) by adding explicit dark `bg-slate-950 text-slate-300` styling directly.
+  - Added **Last 60 Days** history duration selector to the Interval options.
+  - Implemented **"Most Steady + High Value"** custom sorting mode option using a weighted formula combining `stabilityScore` (weight 1.0) and normalized `liveRate` (weight 0.8) relative to the maximum rate.
+  - Added 3 new sidebar dropdown filters to narrow down the datasets:
+    - **Price Trend**: Filter by direction (All Trends, Only Upwards, Only Downwards, Only Unchanged).
+    - **Price Bracket**: Filter by value tiers (All Prices, High Value ≥ 20, Medium Value 5 - 20, Low Value < 5).
+    - **Steady Tier**: Filter by steadiness classification (All Tiers, Steady ≥ 85%, Mixed 65% - 84%, Risky < 65%).
+  - Configured the **Top 5 Best Currencies** grid to sort automatically using a balanced weighted score formula combining steadiness/stability (weight 1.0) and normalized live value (weight 0.5), and updated the section title text accordingly.
+- **Historical Comparison View (HistoryChart.vue)**:
+  - Added a new chart display mode side-by-side segmented button toggle control: **Raw Rate (₳)** vs. **Compare to Base (%)**.
+  - When in base comparison mode, calculates the percentage difference of `liveRate` relative to the record's `baseRate` using the formula `((live - base) / base) * 100`.
+  - Configured the chart Y-axis ticks and tooltip hover labels to dynamically render with percentage signs and sign indicators (e.g. `+20.00%`, `-5.50%`, `0.00%`) when percentage mode is active.
+  - Wired localStorage persistence (`history:mode`) to preserve the selected chart display mode across sessions, defaulting to Raw Rate if unset.
+  - Styled all dropdown selectors on the history page with dark `bg-slate-950 text-slate-200` to prevent browser-native white backgrounds.
+- **Resolving Browser Default White Borders**:
+  - Replaced all invalid `border-slate-850`, `divide-slate-850`, and `bg-slate-850` classes in `HistoryChart.vue`, `MarketMonitor.vue`, and `ExchangeCalculator.vue` with valid dark Tailwind classes (`border-slate-900`, `border-slate-800`, `divide-slate-900`, `bg-slate-800`).
+  - This prevents standard browsers (Chrome, Firefox, etc.) from falling back to native light gray/white borders on container layouts, segmented controls, table dividing lines, and swap buttons.
+- **Custom Crash Detection (MarketMonitor.vue)**:
+  - Created `getSteadinessTier` helper function to dynamically categorize currencies.
+  - Automatically overrides standard stability ratings and marks a currency as **Risky** (red badge/label) if it fell by 20% or more from its peak rate in the active interval (`maxRate`) and remains in the bottom 30% of its trading recovery range (`recoveryRatio < 0.3`).
+  - Integrated this fallback into the main market table badges, text indicators, and sidebar dropdown filters.
+- **Live Market Settings Persistence (MarketMonitor.vue)**:
+  - Configured state-recovery logic to load all sidebar filters, search keywords, nations/items selections, display limits, price brackets, steadiness tiers, and swing alert thresholds from `localStorage` on component mount.
+  - Added a deep watch block to automatically save state changes back to `localStorage` keys, ensuring preferences are remembered and restored on page refresh.
+- **Dashboard Header Logo Replacement (App.vue)**:
+  - Programmatically downloaded the transparent Arcadia stars logo from `https://arcadiamc.net/images/transparentarcadiastarslogo.png` and cached it inside `dashboard/public/logo.png` (creating the folder automatically).
+  - Replaced the placeholder Coins FontAwesome icon in the top-left navigation header corner of `App.vue` with an `<img>` tag rendering the new ArcadiaMC stars logo, complete with blue drop-shadow highlights.
+  - Resized the header logo element to `w-12 h-12` (48px) for increased visibility.
+  - Updated the browser tab favicon link inside `dashboard/index.html` to target `/logo.png` (image/png type), displaying the custom Arcadia stars logo directly in browser tabs.
+- **Convoy Stock Dashboard Tab & Local Asset Synchronization (ConvoyStock.vue & App.vue)**:
+  - Created a new **Convoy Shop** tab containing two main visual sections: **Live Shop Trades** and **All Tracked Items**.
+  - Grouped both active shop trades and historical catalog items into distinct sub-sections organized by rarity class (**Legendary**, **Epic**, **Rare**, **Uncommon**, **Common**), using colored headers and status tags.
+  - Added backend Express API endpoints `/currencies/convoy` and `/currencies/convoy/all` querying the `convoy_items` MySQL database.
+  - Updated `iconDownloader.js` to automatically save downloaded/upscaled Minecraft asset icons to both the bot cache directory (`src/icons/`) and the dashboard static directory (`dashboard/public/icons/`).
+  - Executed a script to synchronize all 88 existing cached PNG icons from `src/icons/` to `dashboard/public/icons/` immediately.
+  - Updated the directory mapping list inside `fs.md`.
+- **Premium Transitions & Animations (App.vue, ConvoyStock.vue, MarketMonitor.vue)**:
+  - Wrapped all active tab routes inside a `<Transition name="fade" mode="out-in">` block keyed by the reactive `currentRoute` with slide-fade transition styles.
+  - Implemented card-popping hover scaling (`hover:scale-[1.02] hover:shadow-xl` hover effects) and `<TransitionGroup name="card-list">` fade-and-scale animations on Convoy cards.
+  - Implemented `<TransitionGroup name="row-list">` horizontal slide-fade entries and movement tracking animations on the Live Currency Market table rows.
+  - Resolved a syntax compile error in the `popstate` event listener of `App.vue` by restoring the closing brace on the redirect check condition.
+
+
+
 

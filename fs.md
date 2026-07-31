@@ -22,6 +22,7 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── main.js
 │       ├── style.css
 │       └── components/
+│           ├── ConvoyStock.vue
 │           ├── ExchangeCalculator.vue
 │           ├── HistoryChart.vue
 │           └── MarketMonitor.vue
@@ -132,6 +133,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [dashboard/src/main.js](./dashboard/src/main.js): Vue bootstrap file registering FontAwesome icons.
   - [dashboard/src/style.css](./dashboard/src/style.css): Links Tailwind CSS v4 imports.
   - 📂 **dashboard/src/components/**:
+    - [dashboard/src/components/ConvoyStock.vue](./dashboard/src/components/ConvoyStock.vue): Active convoy trades monitor showcasing upscaled PNG textures and inventory progress.
     - [dashboard/src/components/ExchangeCalculator.vue](./dashboard/src/components/ExchangeCalculator.vue): Conversion widget to calculate rates between nation currencies.
     - [dashboard/src/components/HistoryChart.vue](./dashboard/src/components/HistoryChart.vue): Comparison Line chart graphing historical rates over 7-120 days.
     - [dashboard/src/components/MarketMonitor.vue](./dashboard/src/components/MarketMonitor.vue): Unified market table view displaying pinned favorites and category filters.

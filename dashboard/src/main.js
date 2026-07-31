@@ -21,12 +21,16 @@ import {
   faSearch,
   faFilter,
   faCircleCheck,
+  faCheck,
   faTriangleExclamation,
   faSliders,
   faCircleInfo,
   faGlobe,
   faTimes,
   faChevronDown,
+  faChevronUp,
+  faFlag,
+  faCube,
 } from '@fortawesome/free-solid-svg-icons';
 
 // Add icons to library
@@ -46,12 +50,16 @@ library.add(
   faSearch,
   faFilter,
   faCircleCheck,
+  faCheck,
   faTriangleExclamation,
   faSliders,
   faCircleInfo,
   faGlobe,
   faTimes,
-  faChevronDown
+  faChevronDown,
+  faChevronUp,
+  faFlag,
+  faCube
 );
 
 const app = createApp(App);

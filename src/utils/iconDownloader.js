@@ -6,6 +6,7 @@ const logger = require('./logger.js');
 const pc = require('picocolors');
 
 const ICONS_DIR = path.join(process.cwd(), 'src', 'icons');
+const DASHBOARD_ICONS_DIR = path.join(process.cwd(), 'dashboard', 'public', 'icons');
 const MC_VERSION = process.env.MC_VERSION || '1.21.1';
 
 // Upscale output size — nearest-neighbor keeps pixel art crisp at any multiple of 16
@@ -96,12 +97,16 @@ async function resizeImage(rawBuffer) {
  * @param {string} itemName - The uppercase Minecraft item name (e.g. "BIRCH_LOG")
  */
 async function downloadItemIcon(itemName) {
-  // Ensure icons directory exists
+  // Ensure both icons directories exist
   if (!fs.existsSync(ICONS_DIR)) {
     fs.mkdirSync(ICONS_DIR, { recursive: true });
   }
+  if (!fs.existsSync(DASHBOARD_ICONS_DIR)) {
+    fs.mkdirSync(DASHBOARD_ICONS_DIR, { recursive: true });
+  }
 
   const outputFilePath = path.join(ICONS_DIR, `${itemName}.png`);
+  const dashboardFilePath = path.join(DASHBOARD_ICONS_DIR, `${itemName}.png`);
   const lowercaseName = itemName.toLowerCase();
 
   // 1. Try 3D Render API first (provides beautiful inventory renders)
@@ -121,8 +126,9 @@ async function downloadItemIcon(itemName) {
     if (contentType.includes('image/png')) {
       const resizedBuffer = await resizeImage(Buffer.from(response.data));
       fs.writeFileSync(outputFilePath, resizedBuffer);
+      fs.writeFileSync(dashboardFilePath, resizedBuffer);
       logger.success(
-        `Downloaded 3D render for ${pc.bold(pc.green(itemName))} -> src/icons/${itemName}.png`
+        `Downloaded 3D render for ${pc.bold(pc.green(itemName))} -> src/icons/ & dashboard/public/icons/`
       );
       return true;
     }
@@ -179,9 +185,10 @@ async function downloadItemIcon(itemName) {
       const rawBuffer = Buffer.from(response.data);
       const upscaledBuffer = await upscaleIcon(rawBuffer);
       fs.writeFileSync(outputFilePath, upscaledBuffer);
+      fs.writeFileSync(dashboardFilePath, upscaledBuffer);
 
       logger.success(
-        `Downloaded & upscaled flat icon for ${pc.bold(pc.green(itemName))} -> src/icons/${itemName}.png (${UPSCALE_SIZE}px)`
+        `Downloaded & upscaled flat icon for ${pc.bold(pc.green(itemName))} -> src/icons/ & dashboard/public/icons/ (${UPSCALE_SIZE}px)`
       );
       return true;
     } catch (error) {

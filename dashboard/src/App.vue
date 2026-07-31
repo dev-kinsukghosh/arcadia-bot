@@ -4,6 +4,7 @@ import axios from 'axios';
 import MarketMonitor from './components/MarketMonitor.vue';
 import HistoryChart from './components/HistoryChart.vue';
 import ExchangeCalculator from './components/ExchangeCalculator.vue';
+import ConvoyStock from './components/ConvoyStock.vue';
 
 // Retrieve API URL from Vite environment variables (falls back to relative path '')
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -22,9 +23,15 @@ function initDeviceFingerprint() {
 // --- STATE MANAGEMENT ---
 const currentRoute = ref(window.location.pathname);
 
+if (currentRoute.value === '/' || currentRoute.value === '' || currentRoute.value === '/monitor') {
+  window.history.replaceState({}, '', '/live-market');
+  currentRoute.value = '/live-market';
+}
+
 function navigate(path) {
-  window.history.pushState({}, '', path);
-  currentRoute.value = path;
+  const targetPath = path === '/' || path === '' ? '/live-market' : path;
+  window.history.pushState({}, '', targetPath);
+  currentRoute.value = targetPath;
 }
 const currenciesStats = ref([]);
 const isLoading = ref(true);
@@ -35,7 +42,11 @@ async function fetchLatestStats() {
   isLoading.value = true;
   fetchError.value = null;
   try {
-    const res = await axios.get(`${API_BASE}/currencies/stats?days=120`);
+    const savedMarketDays = localStorage.getItem('market:days');
+    const parsedMarketDays = savedMarketDays ? parseInt(savedMarketDays, 10) : 30;
+    const limit = isNaN(parsedMarketDays) ? 30 : parsedMarketDays;
+
+    const res = await axios.get(`${API_BASE}/currencies/stats?days=${limit}`);
     currenciesStats.value = res.data;
   } catch (error) {
     console.error('API Fetch Error:', error);
@@ -103,7 +114,12 @@ onMounted(() => {
   fetchLatestStats();
   initWebSocket();
   window.addEventListener('popstate', () => {
-    currentRoute.value = window.location.pathname;
+    let path = window.location.pathname;
+    if (path === '/' || path === '' || path === '/monitor') {
+      window.history.replaceState({}, '', '/live-market');
+      path = '/live-market';
+    }
+    currentRoute.value = path;
   });
 });
 </script>
@@ -117,28 +133,28 @@ onMounted(() => {
       class="border-b border-slate-900 bg-[#090b11] py-4 px-6 md:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-50 shadow-md"
     >
       <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20"
-        >
-          <font-awesome-icon icon="coins" class="text-white text-lg" />
-        </div>
+        <img
+          src="/logo.png"
+          alt="ArcadiaMC Logo"
+          class="w-12 h-12 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.25)]"
+        />
         <div>
           <h1
             class="text-lg font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent"
           >
-            ArcadiaMC
+            ArcadiaMC Stats Panel
           </h1>
           <span class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold"
-            >Community Currency Telemetry</span
+            >Community Stats Dashboard</span
           >
         </div>
       </div>
 
       <nav class="flex items-center bg-slate-950/80 border border-slate-900 rounded-xl p-1 gap-1">
         <button
-          @click.prevent="navigate('/')"
+          @click.prevent="navigate('/live-market')"
           :class="
-            currentRoute === '/' || currentRoute === '/monitor'
+            currentRoute === '/live-market' || currentRoute === '/monitor'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
           "
@@ -170,6 +186,18 @@ onMounted(() => {
         >
           <font-awesome-icon icon="calculator" />
           Exchange
+        </button>
+        <button
+          @click.prevent="navigate('/convoy')"
+          :class="
+            currentRoute === '/convoy'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'text-slate-400 hover:text-slate-200'
+          "
+          class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer"
+        >
+          <font-awesome-icon icon="cube" />
+          Convoy Shop
         </button>
       </nav>
     </header>
@@ -203,20 +231,32 @@ onMounted(() => {
 
       <!-- Dashboard Pages -->
       <div v-else-if="!isLoading">
-        <!-- ================= MONITOR TAB ================= -->
-        <div v-if="currentRoute === '/' || currentRoute === '/monitor' || currentRoute === ''">
-          <MarketMonitor :currencies="currenciesStats" :api-base="API_BASE" />
-        </div>
+        <Transition name="fade" mode="out-in">
+          <div :key="currentRoute" class="space-y-6">
+            <div v-if="currentRoute === '/live-market' || currentRoute === '/monitor'">
+              <MarketMonitor
+                :currencies="currenciesStats"
+                :api-base="API_BASE"
+                @refresh-stats="fetchLatestStats"
+              />
+            </div>
 
-        <!-- ================= CURRENCY HISTORY TAB ================= -->
-        <div v-if="currentRoute === '/currency-history'" class="space-y-6">
-          <HistoryChart :currencies="currenciesStats" :api-base="API_BASE" />
-        </div>
+            <!-- ================= CURRENCY HISTORY TAB ================= -->
+            <div v-if="currentRoute === '/currency-history'">
+              <HistoryChart :currencies="currenciesStats" :api-base="API_BASE" />
+            </div>
 
-        <!-- ================= EXCHANGE TAB ================= -->
-        <div v-if="currentRoute === '/exchange'" class="space-y-6">
-          <ExchangeCalculator :currencies="currenciesStats" />
-        </div>
+            <!-- ================= EXCHANGE TAB ================= -->
+            <div v-if="currentRoute === '/exchange'">
+              <ExchangeCalculator :currencies="currenciesStats" />
+            </div>
+
+            <!-- ================= CONVOY TAB ================= -->
+            <div v-if="currentRoute === '/convoy'">
+              <ConvoyStock :api-base="API_BASE" />
+            </div>
+          </div>
+        </Transition>
       </div>
     </main>
 
@@ -252,5 +292,19 @@ onMounted(() => {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #334155;
+}
+
+/* Premium Tab Fade & Slide Animation */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

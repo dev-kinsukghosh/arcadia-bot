@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps({
   currencies: {
@@ -8,16 +8,26 @@ const props = defineProps({
   },
 });
 
-const amountInput = ref('1');
+const amountInput = ref(localStorage.getItem('exchange:amount') || '1');
 const amount = computed(() => parseFloat(amountInput.value) || 0);
-const taxEnabled = ref(false);
+const taxEnabled = ref(localStorage.getItem('exchange:tax_enabled') === 'true');
 
-const fromCurrencyId = ref('arc');
-const toCurrencyId = ref('');
+const fromCurrencyId = ref(localStorage.getItem('exchange:from') || 'arc');
+const toCurrencyId = ref(localStorage.getItem('exchange:to') || '');
 
-if (props.currencies && props.currencies.length > 0) {
+if (!toCurrencyId.value && props.currencies && props.currencies.length > 0) {
   toCurrencyId.value = props.currencies[0].id;
 }
+
+watch(
+  [amountInput, taxEnabled, fromCurrencyId, toCurrencyId],
+  ([newAmount, newTax, newFrom, newTo]) => {
+    localStorage.setItem('exchange:amount', newAmount);
+    localStorage.setItem('exchange:tax_enabled', String(newTax));
+    localStorage.setItem('exchange:from', newFrom || '');
+    localStorage.setItem('exchange:to', newTo || '');
+  }
+);
 
 const allOptions = computed(() => {
   const arcOption = {
@@ -140,7 +150,7 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
         <div class="md:col-span-1 flex justify-center pt-5">
           <button
             @click="swapCurrencies"
-            class="w-10 h-10 rounded-full bg-slate-900 border border-slate-850 hover:bg-slate-800 hover:border-slate-700 text-slate-300 flex items-center justify-center transition-all duration-200"
+            class="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-slate-300 flex items-center justify-center transition-all duration-200"
             title="Swap source and destination"
           >
             <font-awesome-icon icon="rotate" class="text-sm" />

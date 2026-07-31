@@ -7,7 +7,7 @@ const { slowDown } = require('express-slow-down');
 const { config } = require('./config.js');
 const logger = require('./utils/logger.js');
 const { db } = require('./utils/db.js');
-const { currencies, currencyHistory } = require('./db/schema.js');
+const { currencies, currencyHistory, convoyItems } = require('./db/schema.js');
 const { and, eq, gte, asc } = require('drizzle-orm');
 const pc = require('picocolors');
 const { WebSocketServer } = require('ws');
@@ -134,6 +134,36 @@ app.get('/currencies', async (req, res) => {
     res.json(enrichedList);
   } catch (err) {
     logger.error(`API Error fetching currencies: ${err.message}`);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// 2b. Get latest active convoy items
+app.get('/currencies/convoy', async (req, res) => {
+  if (!db) {
+    return res.status(503).json({ error: 'Database connection not available.' });
+  }
+
+  try {
+    const list = await db.select().from(convoyItems).where(eq(convoyItems.current_p, true));
+    res.json(list);
+  } catch (err) {
+    logger.error(`API Error fetching convoy items: ${err.message}`);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// 2c. Get all convoy items tracked historically
+app.get('/currencies/convoy/all', async (req, res) => {
+  if (!db) {
+    return res.status(503).json({ error: 'Database connection not available.' });
+  }
+
+  try {
+    const list = await db.select().from(convoyItems);
+    res.json(list);
+  } catch (err) {
+    logger.error(`API Error fetching all convoy items: ${err.message}`);
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
