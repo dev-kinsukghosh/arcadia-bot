@@ -1,31 +1,10 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
-import path from 'path';
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  // Load env file from parent directory (since Vite runs inside dashboard/ directory)
-  const env = loadEnv(mode, path.resolve(process.cwd(), '..'), '');
-  const port = env.PORT || 3000;
-
+export default defineConfig(() => {
   return {
     plugins: [vue(), tailwindcss()],
-    server: {
-      proxy: {
-        '/status': {
-          target: `http://127.0.0.1:${port}`,
-          changeOrigin: true,
-        },
-        '/currencies': {
-          target: `http://127.0.0.1:${port}`,
-          changeOrigin: true,
-        },
-        '/towny': {
-          target: `http://127.0.0.1:${port}`,
-          changeOrigin: true,
-        },
-      },
-    },
   };
 });
