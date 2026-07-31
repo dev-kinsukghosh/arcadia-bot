@@ -39,3 +39,4 @@ Dockerfile
 docker-compose*.yml
 # Build
 dist/
+dashboard

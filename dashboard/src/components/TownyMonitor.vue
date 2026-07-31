@@ -202,7 +202,9 @@ function closeModals() {
   <div class="space-y-6">
     <!-- Stats Cards Summary -->
     <div v-if="townyData && townyData.counts" class="grid grid-cols-2 gap-4 md:grid-cols-5">
-      <div class="relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm">
+      <div
+        class="relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm"
+      >
         <div class="flex items-center gap-2 text-slate-500">
           <font-awesome-icon icon="globe" class="text-blue-500" />
           <span class="text-[10px] font-bold tracking-wider uppercase">Total Towns</span>
@@ -212,7 +214,9 @@ function closeModals() {
         </div>
       </div>
 
-      <div class="relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm">
+      <div
+        class="relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm"
+      >
         <div class="flex items-center gap-2 text-slate-500">
           <font-awesome-icon icon="flag" class="text-indigo-500" />
           <span class="text-[10px] font-bold tracking-wider uppercase">Total Nations</span>
@@ -222,18 +226,26 @@ function closeModals() {
         </div>
       </div>
 
-      <div class="relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm">
+      <div
+        class="relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm"
+      >
         <div class="flex items-center gap-2 text-slate-500">
           <font-awesome-icon icon="coins" class="text-emerald-500" />
           <span class="text-[10px] font-bold tracking-wider uppercase">Residents</span>
         </div>
         <div class="mt-2 flex items-baseline gap-1.5 font-mono">
-          <span class="text-2xl font-extrabold text-slate-100">{{ townyData.counts.residents || 0 }}</span>
-          <span class="text-[10px] text-slate-500">({{ townyData.counts.onlineResidents || 0 }} online)</span>
+          <span class="text-2xl font-extrabold text-slate-100">{{
+            townyData.counts.residents || 0
+          }}</span>
+          <span class="text-[10px] text-slate-500"
+            >({{ townyData.counts.onlineResidents || 0 }} online)</span
+          >
         </div>
       </div>
 
-      <div class="relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm">
+      <div
+        class="relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm"
+      >
         <div class="flex items-center gap-2 text-slate-500">
           <font-awesome-icon icon="cube" class="text-amber-500" />
           <span class="text-[10px] font-bold tracking-wider uppercase">Claimed Chunks</span>
@@ -243,14 +255,20 @@ function closeModals() {
         </div>
       </div>
 
-      <div class="col-span-2 relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm md:col-span-1">
+      <div
+        class="col-span-2 relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm md:col-span-1"
+      >
         <div class="flex items-center gap-2 text-slate-500">
           <font-awesome-icon icon="sliders" class="text-rose-500" />
           <span class="text-[10px] font-bold tracking-wider uppercase">In Nations</span>
         </div>
         <div class="mt-2 flex items-baseline gap-1.5 font-mono">
-          <span class="text-2xl font-extrabold text-slate-100">{{ townyData.counts.townsInNation || 0 }}</span>
-          <span class="text-[10px] text-slate-500">({{ townyData.counts.townsNeutral || 0 }} neutral)</span>
+          <span class="text-2xl font-extrabold text-slate-100">{{
+            townyData.counts.townsInNation || 0
+          }}</span>
+          <span class="text-[10px] text-slate-500"
+            >({{ townyData.counts.townsNeutral || 0 }} neutral)</span
+          >
         </div>
       </div>
     </div>
@@ -258,7 +276,9 @@ function closeModals() {
     <!-- Top 4 Performers Section (Towns or Nations depending on tab) -->
     <div v-if="townyData" class="mt-6">
       <div v-if="activeTab === 'towns'">
-        <h3 class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2">
+        <h3
+          class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2"
+        >
           <font-awesome-icon icon="globe" class="text-blue-500" />
           Top 4 Towns by Population
         </h3>
@@ -270,16 +290,20 @@ function closeModals() {
             class="group cursor-pointer relative overflow-hidden rounded-xl border border-blue-500/10 bg-[#0c0d15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/30 hover:bg-[#11131f]/70 shadow-sm"
           >
             <!-- Badge indicators for rank -->
-            <div class="absolute right-3 top-3 text-[10px] font-extrabold text-blue-500 bg-blue-500/10 border border-blue-500/25 rounded-md px-1.5 py-0.5">
+            <div
+              class="absolute right-3 top-3 text-[10px] font-extrabold text-blue-500 bg-blue-500/10 border border-blue-500/25 rounded-md px-1.5 py-0.5"
+            >
               Rank #{{ idx + 1 }}
             </div>
-            
+
             <div class="flex items-center gap-3">
               <div
                 :class="getPlayerColor(town.mayor?.name)"
                 class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
               >
-                <span class="z-0 select-none text-[8px]">{{ getPlayerInitials(town.mayor?.name) }}</span>
+                <span class="z-0 select-none text-[8px]">{{
+                  getPlayerInitials(town.mayor?.name)
+                }}</span>
                 <img
                   v-if="!failedAvatars['top-town-' + town.id]"
                   :src="`${props.apiBase}/heads/${(town.mayor?.name || 'steve').toLowerCase()}.png`"
@@ -290,23 +314,31 @@ function closeModals() {
                 />
               </div>
               <div class="min-w-0 flex-1 pr-12">
-                <h4 class="text-xs font-bold text-slate-100 truncate group-hover:text-blue-400 transition-colors">
+                <h4
+                  class="text-xs font-bold text-slate-100 truncate group-hover:text-blue-400 transition-colors"
+                >
                   {{ cleanName(town.name) }}
                 </h4>
-                <p class="text-[9px] text-slate-500 truncate mt-0.5">Mayor: {{ town.mayor?.name }}</p>
+                <p class="text-[9px] text-slate-500 truncate mt-0.5">
+                  Mayor: {{ town.mayor?.name }}
+                </p>
               </div>
             </div>
-            
-            <div class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400">
+
+            <div
+              class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400"
+            >
               <span>👥 {{ town.residents || 0 }} residents</span>
               <span>📦 {{ town.claims?.claimedChunks || 0 }} chunks</span>
             </div>
           </div>
         </div>
       </div>
-      
+
       <div v-else-if="activeTab === 'nations'">
-        <h3 class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2">
+        <h3
+          class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2"
+        >
           <font-awesome-icon icon="flag" class="text-indigo-500" />
           Top 4 Nations by Population
         </h3>
@@ -318,16 +350,20 @@ function closeModals() {
             class="group cursor-pointer relative overflow-hidden rounded-xl border border-indigo-500/10 bg-[#0d0c15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-indigo-500/30 hover:bg-[#121120]/70 shadow-sm"
           >
             <!-- Badge indicators for rank -->
-            <div class="absolute right-3 top-3 text-[10px] font-extrabold text-indigo-500 bg-indigo-500/10 border border-indigo-500/25 rounded-md px-1.5 py-0.5">
+            <div
+              class="absolute right-3 top-3 text-[10px] font-extrabold text-indigo-500 bg-indigo-500/10 border border-indigo-500/25 rounded-md px-1.5 py-0.5"
+            >
               Rank #{{ idx + 1 }}
             </div>
-            
+
             <div class="flex items-center gap-3">
               <div
                 :class="getPlayerColor(nation.king?.name)"
                 class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
               >
-                <span class="z-0 select-none text-[8px]">{{ getPlayerInitials(nation.king?.name) }}</span>
+                <span class="z-0 select-none text-[8px]">{{
+                  getPlayerInitials(nation.king?.name)
+                }}</span>
                 <img
                   v-if="!failedAvatars['top-nation-' + nation.id]"
                   :src="`${props.apiBase}/heads/${(nation.king?.name || 'steve').toLowerCase()}.png`"
@@ -338,14 +374,20 @@ function closeModals() {
                 />
               </div>
               <div class="min-w-0 flex-1 pr-12">
-                <h4 class="text-xs font-bold text-slate-100 truncate group-hover:text-indigo-400 transition-colors">
+                <h4
+                  class="text-xs font-bold text-slate-100 truncate group-hover:text-indigo-400 transition-colors"
+                >
                   {{ cleanName(nation.name) }}
                 </h4>
-                <p class="text-[9px] text-slate-500 truncate mt-0.5">King: {{ nation.king?.name }}</p>
+                <p class="text-[9px] text-slate-500 truncate mt-0.5">
+                  King: {{ nation.king?.name }}
+                </p>
               </div>
             </div>
-            
-            <div class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400">
+
+            <div
+              class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400"
+            >
               <span>👥 {{ nation.residents || 0 }} residents</span>
               <span>🏘️ {{ nation.towns || 0 }} towns</span>
             </div>
@@ -355,20 +397,38 @@ function closeModals() {
     </div>
 
     <!-- Main Navigation controls & filters -->
-    <div class="flex flex-col justify-between gap-4 border-b border-slate-900 bg-[#090b11]/40 py-4 sm:flex-row sm:items-center">
+    <div
+      class="flex flex-col justify-between gap-4 border-b border-slate-900 bg-[#090b11]/40 py-4 sm:flex-row sm:items-center"
+    >
       <!-- Tabs segmented control -->
-      <div class="flex items-center gap-1 rounded-xl border border-slate-900 bg-slate-950/80 p-1 self-start">
+      <div
+        class="flex items-center gap-1 rounded-xl border border-slate-900 bg-slate-950/80 p-1 self-start"
+      >
         <button
-          @click="activeTab = 'towns'; sortBy = 'residents_desc'"
-          :class="activeTab === 'towns' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+          @click="
+            activeTab = 'towns';
+            sortBy = 'residents_desc';
+          "
+          :class="
+            activeTab === 'towns'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
+          "
           class="flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold transition-all duration-200"
         >
           <font-awesome-icon icon="globe" />
           Towns ({{ townyData?.towns?.length || 0 }})
         </button>
         <button
-          @click="activeTab = 'nations'; sortBy = 'residents_desc'"
-          :class="activeTab === 'nations' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+          @click="
+            activeTab = 'nations';
+            sortBy = 'residents_desc';
+          "
+          :class="
+            activeTab === 'nations'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
+          "
           class="flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold transition-all duration-200"
         >
           <font-awesome-icon icon="flag" />
@@ -411,20 +471,29 @@ function closeModals() {
           <option v-if="activeTab === 'towns'" value="claims_asc">Claims (Low to High)</option>
           <option v-if="activeTab === 'towns'" value="newest">Age (Newest)</option>
           <option v-if="activeTab === 'towns'" value="oldest">Age (Oldest)</option>
-          <option v-if="activeTab === 'nations'" value="towns_desc">Towns Count (High to Low)</option>
-          <option v-if="activeTab === 'nations'" value="allies_desc">Allies Count (High to Low)</option>
+          <option v-if="activeTab === 'nations'" value="towns_desc">
+            Towns Count (High to Low)
+          </option>
+          <option v-if="activeTab === 'nations'" value="allies_desc">
+            Allies Count (High to Low)
+          </option>
         </select>
       </div>
     </div>
 
     <!-- Loading State -->
     <div v-if="isLoading" class="flex flex-col items-center justify-center space-y-4 py-24">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500"></div>
+      <div
+        class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500"
+      ></div>
       <div class="text-center text-xs text-slate-400">Loading Towny Database...</div>
     </div>
 
     <!-- Error Alert -->
-    <div v-else-if="fetchError" class="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-xs text-red-400">
+    <div
+      v-else-if="fetchError"
+      class="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-xs text-red-400"
+    >
       {{ fetchError }}
     </div>
 
@@ -444,15 +513,25 @@ function closeModals() {
           >
             <div class="flex items-start justify-between">
               <div>
-                <h3 class="text-sm font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
+                <h3
+                  class="text-sm font-bold text-slate-100 group-hover:text-blue-400 transition-colors"
+                >
                   {{ cleanName(town.name) }}
                 </h3>
-                <span class="mt-0.5 inline-block text-[10px] text-slate-500">Mayor: {{ town.mayor?.name }}</span>
+                <span class="mt-0.5 inline-block text-[10px] text-slate-500"
+                  >Mayor: {{ town.mayor?.name }}</span
+                >
               </div>
-              <div v-if="town.nation" class="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[9px] font-bold text-indigo-400">
+              <div
+                v-if="town.nation"
+                class="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[9px] font-bold text-indigo-400"
+              >
                 {{ cleanName(town.nation.name) }}
               </div>
-              <div v-else class="rounded-full bg-slate-800 px-2 py-0.5 text-[9px] font-bold text-slate-400">
+              <div
+                v-else
+                class="rounded-full bg-slate-800 px-2 py-0.5 text-[9px] font-bold text-slate-400"
+              >
                 Neutral
               </div>
             </div>
@@ -462,7 +541,11 @@ function closeModals() {
                 <div class="text-[9px] font-semibold text-slate-500 uppercase">Residents</div>
                 <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
                   {{ town.residents || 0 }}
-                  <span v-if="town.onlineResidents > 0" class="text-[9px] text-emerald-400 font-normal">({{ town.onlineResidents }} online)</span>
+                  <span
+                    v-if="town.onlineResidents > 0"
+                    class="text-[9px] text-emerald-400 font-normal"
+                    >({{ town.onlineResidents }} online)</span
+                  >
                 </div>
               </div>
               <div>
@@ -475,7 +558,11 @@ function closeModals() {
                 <div class="text-[9px] font-semibold text-slate-500 uppercase">PVP Flag</div>
                 <div class="mt-0.5">
                   <span
-                    :class="town.flags?.pvp ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'"
+                    :class="
+                      town.flags?.pvp
+                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    "
                     class="inline-block rounded px-1.5 py-0.5 text-[9px] font-bold"
                   >
                     {{ town.flags?.pvp ? 'Enabled' : 'Disabled' }}
@@ -501,12 +588,19 @@ function closeModals() {
           >
             <div class="flex items-start justify-between">
               <div>
-                <h3 class="text-sm font-bold text-slate-100 group-hover:text-indigo-400 transition-colors">
+                <h3
+                  class="text-sm font-bold text-slate-100 group-hover:text-indigo-400 transition-colors"
+                >
                   {{ cleanName(nation.name) }}
                 </h3>
-                <span class="mt-0.5 inline-block text-[10px] text-slate-500">King: {{ nation.king?.name }}</span>
+                <span class="mt-0.5 inline-block text-[10px] text-slate-500"
+                  >King: {{ nation.king?.name }}</span
+                >
               </div>
-              <div v-if="nation.flags?.neutral" class="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-400">
+              <div
+                v-if="nation.flags?.neutral"
+                class="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-400"
+              >
                 Neutral State
               </div>
             </div>
@@ -522,7 +616,11 @@ function closeModals() {
                 <div class="text-[9px] font-semibold text-slate-500 uppercase">Residents</div>
                 <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
                   {{ nation.residents || 0 }}
-                  <span v-if="nation.onlineResidents > 0" class="text-[9px] text-emerald-400 font-normal">({{ nation.onlineResidents }} online)</span>
+                  <span
+                    v-if="nation.onlineResidents > 0"
+                    class="text-[9px] text-emerald-400 font-normal"
+                    >({{ nation.onlineResidents }} online)</span
+                  >
                 </div>
               </div>
               <div>
@@ -543,14 +641,21 @@ function closeModals() {
       class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       @click.self="closeModals"
     >
-      <div class="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl transition-all duration-300">
+      <div
+        class="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl transition-all duration-300"
+      >
         <!-- Modal Header -->
         <div class="flex items-center justify-between border-b border-slate-900 px-6 py-4">
           <div class="flex items-center gap-2">
             <font-awesome-icon icon="globe" class="text-blue-400" />
-            <h2 class="text-base font-bold text-slate-100">{{ cleanName(selectedTown.name) }} Details</h2>
+            <h2 class="text-base font-bold text-slate-100">
+              {{ cleanName(selectedTown.name) }} Details
+            </h2>
           </div>
-          <button @click="closeModals" class="text-slate-400 hover:text-slate-200 transition-colors">
+          <button
+            @click="closeModals"
+            class="text-slate-400 hover:text-slate-200 transition-colors"
+          >
             <font-awesome-icon icon="times" />
           </button>
         </div>
@@ -558,12 +663,16 @@ function closeModals() {
         <!-- Modal Body -->
         <div class="p-6 space-y-5">
           <!-- Mayor details & avatar -->
-           <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
+          <div
+            class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4"
+          >
             <div
               :class="getPlayerColor(selectedTown.mayor?.name)"
               class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
             >
-              <span class="z-0 select-none text-[10px]">{{ getPlayerInitials(selectedTown.mayor?.name) }}</span>
+              <span class="z-0 select-none text-[10px]">{{
+                getPlayerInitials(selectedTown.mayor?.name)
+              }}</span>
               <img
                 v-if="!failedAvatars['modal-town-' + selectedTown.id]"
                 :src="`${props.apiBase}/heads/${(selectedTown.mayor?.name || 'steve').toLowerCase()}.png`"
@@ -574,8 +683,12 @@ function closeModals() {
               />
             </div>
             <div>
-              <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Town Mayor</div>
-              <div class="text-sm font-bold text-slate-100">{{ selectedTown.mayor?.name || 'Unknown' }}</div>
+              <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Town Mayor
+              </div>
+              <div class="text-sm font-bold text-slate-100">
+                {{ selectedTown.mayor?.name || 'Unknown' }}
+              </div>
               <div class="font-mono text-[9px] text-slate-600 truncate max-w-[280px]">
                 {{ selectedTown.mayor?.uuid }}
               </div>
@@ -585,37 +698,69 @@ function closeModals() {
           <!-- Claims, residents, coordinates -->
           <div class="grid grid-cols-2 gap-4">
             <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Resident Telemetry</h4>
+              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Resident Telemetry
+              </h4>
               <div class="mt-2 font-mono text-sm text-slate-300">
-                • Total: <strong class="text-slate-100">{{ selectedTown.residents }}</strong><br />
-                • Online: <strong class="text-emerald-400">{{ selectedTown.onlineResidents }}</strong>
+                • Total: <strong class="text-slate-100">{{ selectedTown.residents }}</strong
+                ><br />
+                • Online:
+                <strong class="text-emerald-400">{{ selectedTown.onlineResidents }}</strong>
               </div>
             </div>
 
             <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Land & Claims</h4>
+              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Land & Claims
+              </h4>
               <div class="mt-2 font-mono text-xs text-slate-300 space-y-0.5">
-                <div>• Claimed Chunks: <strong class="text-slate-100">{{ selectedTown.claims?.claimedChunks }}</strong></div>
-                <div>• Bonus Chunks: <strong class="text-slate-100">{{ selectedTown.claims?.bonusChunks }}</strong></div>
-                <div>• Outposts: <strong class="text-slate-100">{{ selectedTown.claims?.outpostChunks }}</strong></div>
+                <div>
+                  • Claimed Chunks:
+                  <strong class="text-slate-100">{{ selectedTown.claims?.claimedChunks }}</strong>
+                </div>
+                <div>
+                  • Bonus Chunks:
+                  <strong class="text-slate-100">{{ selectedTown.claims?.bonusChunks }}</strong>
+                </div>
+                <div>
+                  • Outposts:
+                  <strong class="text-slate-100">{{ selectedTown.claims?.outpostChunks }}</strong>
+                </div>
               </div>
             </div>
 
             <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Spawn Coordinates</h4>
+              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Spawn Coordinates
+              </h4>
               <div class="mt-2 font-mono text-[11px] text-slate-300 space-y-0.5">
-                <div>• World: <strong class="text-slate-100">{{ selectedTown.spawn?.world }}</strong></div>
-                <div>• X: <strong class="text-slate-100">{{ selectedTown.spawn?.x?.toFixed(1) }}</strong></div>
-                <div>• Y: <strong class="text-slate-100">{{ selectedTown.spawn?.y?.toFixed(1) }}</strong></div>
-                <div>• Z: <strong class="text-slate-100">{{ selectedTown.spawn?.z?.toFixed(1) }}</strong></div>
+                <div>
+                  • World: <strong class="text-slate-100">{{ selectedTown.spawn?.world }}</strong>
+                </div>
+                <div>
+                  • X:
+                  <strong class="text-slate-100">{{ selectedTown.spawn?.x?.toFixed(1) }}</strong>
+                </div>
+                <div>
+                  • Y:
+                  <strong class="text-slate-100">{{ selectedTown.spawn?.y?.toFixed(1) }}</strong>
+                </div>
+                <div>
+                  • Z:
+                  <strong class="text-slate-100">{{ selectedTown.spawn?.z?.toFixed(1) }}</strong>
+                </div>
               </div>
             </div>
 
             <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Homeblock Chunk</h4>
+              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Homeblock Chunk
+              </h4>
               <div class="mt-2 font-mono text-xs text-slate-300">
-                • World: <strong class="text-slate-100">{{ selectedTown.homeblock?.world }}</strong><br />
-                • Block X: <strong class="text-slate-100">{{ selectedTown.homeblock?.x }}</strong><br />
+                • World: <strong class="text-slate-100">{{ selectedTown.homeblock?.world }}</strong
+                ><br />
+                • Block X: <strong class="text-slate-100">{{ selectedTown.homeblock?.x }}</strong
+                ><br />
                 • Block Z: <strong class="text-slate-100">{{ selectedTown.homeblock?.z }}</strong>
               </div>
             </div>
@@ -623,22 +768,32 @@ function closeModals() {
 
           <!-- Flags -->
           <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-            <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">Town Configuration Flags</h4>
+            <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">
+              Town Configuration Flags
+            </h4>
             <div class="grid grid-cols-3 gap-2">
               <div
                 v-for="(val, flag) in selectedTown.flags"
                 :key="flag"
-                :class="val ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400' : 'border-slate-800 bg-slate-900/10 text-slate-400'"
+                :class="
+                  val
+                    ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
+                    : 'border-slate-800 bg-slate-900/10 text-slate-400'
+                "
                 class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
               >
                 <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
-                <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{ val ? 'ON' : 'OFF' }}</span>
+                <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{
+                  val ? 'ON' : 'OFF'
+                }}</span>
               </div>
             </div>
           </div>
 
           <!-- Age telemetry -->
-          <div class="flex items-center justify-between border-t border-slate-900 pt-4 font-mono text-[10px] text-slate-500">
+          <div
+            class="flex items-center justify-between border-t border-slate-900 pt-4 font-mono text-[10px] text-slate-500"
+          >
             <div>Established: {{ formatDate(selectedTown.createdAt) }}</div>
             <div>Active: {{ formatDate(selectedTown.lastOnlineAt) }}</div>
           </div>
@@ -652,14 +807,21 @@ function closeModals() {
       class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       @click.self="closeModals"
     >
-      <div class="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl transition-all duration-300">
+      <div
+        class="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl transition-all duration-300"
+      >
         <!-- Modal Header -->
         <div class="flex items-center justify-between border-b border-slate-900 px-6 py-4">
           <div class="flex items-center gap-2">
             <font-awesome-icon icon="flag" class="text-indigo-400" />
-            <h2 class="text-base font-bold text-slate-100">{{ cleanName(selectedNation.name) }} Details</h2>
+            <h2 class="text-base font-bold text-slate-100">
+              {{ cleanName(selectedNation.name) }} Details
+            </h2>
           </div>
-          <button @click="closeModals" class="text-slate-400 hover:text-slate-200 transition-colors">
+          <button
+            @click="closeModals"
+            class="text-slate-400 hover:text-slate-200 transition-colors"
+          >
             <font-awesome-icon icon="times" />
           </button>
         </div>
@@ -667,12 +829,16 @@ function closeModals() {
         <!-- Modal Body -->
         <div class="p-6 space-y-5">
           <!-- King details & avatar -->
-          <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
+          <div
+            class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4"
+          >
             <div
               :class="getPlayerColor(selectedNation.king?.name)"
               class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
             >
-              <span class="z-0 select-none text-[10px]">{{ getPlayerInitials(selectedNation.king?.name) }}</span>
+              <span class="z-0 select-none text-[10px]">{{
+                getPlayerInitials(selectedNation.king?.name)
+              }}</span>
               <img
                 v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
                 :src="`${props.apiBase}/heads/${(selectedNation.king?.name || 'steve').toLowerCase()}.png`"
@@ -683,8 +849,12 @@ function closeModals() {
               />
             </div>
             <div>
-              <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Nation King</div>
-              <div class="text-sm font-bold text-slate-100">{{ selectedNation.king?.name || 'Unknown' }}</div>
+              <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Nation King
+              </div>
+              <div class="text-sm font-bold text-slate-100">
+                {{ selectedNation.king?.name || 'Unknown' }}
+              </div>
               <div class="font-mono text-[9px] text-slate-600 truncate max-w-[280px]">
                 {{ selectedNation.king?.uuid }}
               </div>
@@ -694,32 +864,52 @@ function closeModals() {
           <!-- Basic details -->
           <div class="grid grid-cols-2 gap-4">
             <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Nation Capital</h4>
+              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Nation Capital
+              </h4>
               <div class="mt-2 font-mono text-sm text-slate-300">
-                • Capital: <strong class="text-indigo-400">{{ cleanName(selectedNation.capital?.name) }}</strong>
+                • Capital:
+                <strong class="text-indigo-400">{{
+                  cleanName(selectedNation.capital?.name)
+                }}</strong>
               </div>
             </div>
 
             <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Federation Counts</h4>
+              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Federation Counts
+              </h4>
               <div class="mt-2 font-mono text-xs text-slate-300 space-y-0.5">
-                <div>• Towns Count: <strong class="text-slate-100">{{ selectedNation.towns }}</strong></div>
-                <div>• Total Residents: <strong class="text-slate-100">{{ selectedNation.residents }}</strong></div>
-                <div>• Online Residents: <strong class="text-emerald-400">{{ selectedNation.onlineResidents }}</strong></div>
+                <div>
+                  • Towns Count: <strong class="text-slate-100">{{ selectedNation.towns }}</strong>
+                </div>
+                <div>
+                  • Total Residents:
+                  <strong class="text-slate-100">{{ selectedNation.residents }}</strong>
+                </div>
+                <div>
+                  • Online Residents:
+                  <strong class="text-emerald-400">{{ selectedNation.onlineResidents }}</strong>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Diplomacy (Allies / Enemies) -->
           <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4 space-y-3">
-            <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Diplomatic Relations</h4>
-            
+            <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+              Diplomatic Relations
+            </h4>
+
             <!-- Allies -->
             <div>
               <div class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mb-1.5">
                 Allies ({{ selectedNation.diplomacy?.allies?.length || 0 }})
               </div>
-              <div v-if="!selectedNation.diplomacy?.allies?.length" class="text-xs text-slate-500 italic">
+              <div
+                v-if="!selectedNation.diplomacy?.allies?.length"
+                class="text-xs text-slate-500 italic"
+              >
                 No allies recorded.
               </div>
               <div v-else class="flex flex-wrap gap-1.5">
@@ -738,7 +928,10 @@ function closeModals() {
               <div class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mb-1.5">
                 Enemies ({{ selectedNation.diplomacy?.enemies?.length || 0 }})
               </div>
-              <div v-if="!selectedNation.diplomacy?.enemies?.length" class="text-xs text-slate-500 italic">
+              <div
+                v-if="!selectedNation.diplomacy?.enemies?.length"
+                class="text-xs text-slate-500 italic"
+              >
                 No active enemies.
               </div>
               <div v-else class="flex flex-wrap gap-1.5">
@@ -755,16 +948,24 @@ function closeModals() {
 
           <!-- Configuration Flags -->
           <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-            <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">Nation Flags</h4>
+            <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">
+              Nation Flags
+            </h4>
             <div class="grid grid-cols-3 gap-2">
               <div
                 v-for="(val, flag) in selectedNation.flags"
                 :key="flag"
-                :class="val ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400' : 'border-slate-800 bg-slate-900/10 text-slate-400'"
+                :class="
+                  val
+                    ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
+                    : 'border-slate-800 bg-slate-900/10 text-slate-400'
+                "
                 class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
               >
                 <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
-                <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{ val ? 'ON' : 'OFF' }}</span>
+                <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{
+                  val ? 'ON' : 'OFF'
+                }}</span>
               </div>
             </div>
           </div>
