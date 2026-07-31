@@ -452,3 +452,13 @@ The following rules MUST be followed at all times:
   - Linked to tab routing controls and added cubic-bezier page swaps inside `dashboard/src/App.vue`.
   - Removed dev proxy configurations from `dashboard/vite.config.mjs` entirely and configured Vite components to query `VITE_API_URL` absolute endpoints directly to bypass port conflicts and loopback connection refused (`ECONNREFUSED 127.0.0.1:3000`) errors. Updated default configuration ports in `.env.example` templates and updated the directory map in `fs.md`.
 
+### 31-07-2026
+
+- **Player Heads Cross-Origin Fix**:
+  - Set explicit `Cross-Origin-Resource-Policy: cross-origin` and `Access-Control-Allow-Origin: *` headers directly on the `/heads/:username.png` route response in `src/server.js` to guarantee cross-origin serving regardless of Helmet middleware state (resolves `ERR_BLOCKED_BY_RESPONSE.NotSameOrigin`).
+  - Configured Helmet globally with `crossOriginResourcePolicy: { policy: 'cross-origin' }` as an additional layer.
+  - Added `dashboard/public/heads/` to `.gitignore` to exclude cached player head binaries from version control.
+- **Command Deployment Duplicate Fix**:
+  - Updated `src/deploy-commands.js` DEV mode to auto-clear stale global commands after deploying to the dev guild, mirroring how PROD mode already clears guild commands after deploying globally. Prevents duplicate slash commands when switching between modes.
+- **Slash Commands — `/dev-slist` Enhancement**:
+  - Added guild owner mention (`<@ownerId>`) to the end of each server entry in the paginated listing.
