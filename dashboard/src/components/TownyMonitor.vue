@@ -277,7 +277,7 @@ function closeModals() {
             <div class="flex items-center gap-3">
               <img
                 v-if="!failedAvatars['top-town-' + town.id]"
-                :src="`https://mc-heads.net/avatar/${town.mayor?.name || town.mayor?.uuid || 'steve'}/32.png`"
+                :src="`https://mc-heads.net/avatar/${(town.mayor?.name || '').toLowerCase() || town.mayor?.uuid || 'steve'}/32.png`"
                 alt="Mayor Avatar"
                 class="h-8 w-8 rounded-lg border border-slate-850 bg-slate-900 object-cover"
                 @error="handleAvatarError('top-town-' + town.id)"
@@ -325,7 +325,7 @@ function closeModals() {
             <div class="flex items-center gap-3">
               <img
                 v-if="!failedAvatars['top-nation-' + nation.id]"
-                :src="`https://mc-heads.net/avatar/${nation.king?.name || nation.king?.uuid || 'steve'}/32.png`"
+                :src="`https://mc-heads.net/avatar/${(nation.king?.name || '').toLowerCase() || nation.king?.uuid || 'steve'}/32.png`"
                 alt="King Avatar"
                 class="h-8 w-8 rounded-lg border border-slate-850 bg-slate-900 object-cover"
                 @error="handleAvatarError('top-nation-' + nation.id)"
@@ -561,7 +561,7 @@ function closeModals() {
            <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
             <img
               v-if="!failedAvatars['modal-town-' + selectedTown.id]"
-              :src="`https://mc-heads.net/avatar/${selectedTown.mayor?.name || selectedTown.mayor?.uuid || 'steve'}/48.png`"
+              :src="`https://mc-heads.net/avatar/${(selectedTown.mayor?.name || '').toLowerCase() || selectedTown.mayor?.uuid || 'steve'}/48.png`"
               alt="Mayor Skin"
               class="h-12 w-12 rounded-lg border border-slate-850 shadow-md bg-slate-900 object-cover"
               @error="handleAvatarError('modal-town-' + selectedTown.id)"
@@ -670,7 +670,7 @@ function closeModals() {
           <div class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4">
             <img
               v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
-              :src="`https://mc-heads.net/avatar/${selectedNation.king?.name || selectedNation.king?.uuid || 'steve'}/48.png`"
+              :src="`https://mc-heads.net/avatar/${(selectedNation.king?.name || '').toLowerCase() || selectedNation.king?.uuid || 'steve'}/48.png`"
               alt="King Skin"
               class="h-12 w-12 rounded-lg border border-slate-850 shadow-md bg-slate-900 object-cover"
               @error="handleAvatarError('modal-nation-' + selectedNation.id)"

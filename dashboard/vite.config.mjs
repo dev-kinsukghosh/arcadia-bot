@@ -14,15 +14,15 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/status': {
-          target: `http://localhost:${port}`,
+          target: `http://127.0.0.1:${port}`,
           changeOrigin: true,
         },
         '/currencies': {
-          target: `http://localhost:${port}`,
+          target: `http://127.0.0.1:${port}`,
           changeOrigin: true,
         },
         '/towny': {
-          target: `http://localhost:${port}`,
+          target: `http://127.0.0.1:${port}`,
           changeOrigin: true,
         },
       },
