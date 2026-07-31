@@ -446,9 +446,6 @@ The following rules MUST be followed at all times:
   - Exposed `/towny` and `/api/towny` endpoints on the Express server (`src/server.js`) backed by a Redis-ex cache (and in-memory fallback) with a 2-minute TTL to throttle external Arcadia Towny API queries.
   - Built `dashboard/src/components/TownyMonitor.vue` featuring general stats cards, reactive town and nation list grids with multi-column sorting (population, chunks, age, allies), text search, and modal overlays.
   - Added a reactive "Top 4 Towns by Population" / "Top 4 Nations by Population" ranking grid depending on active tab.
-  - Fixed player head skin avatar loader by switching to `mc-heads.net`, converting usernames to lowercase to prevent generic Steve skin errors on case mismatches, and adding a self-healing built-in fallback system that automatically renders a colored gradient initials avatar block (color-seeded consistently by player name) if image loading fails (e.g., due to offline/cracked names or API downtime).
+  - Fixed player head skin avatar loader by switching to `mc-heads.net`, converting usernames to lowercase to prevent generic Steve skin errors on case mismatches, correcting image borders from unrecognized `border-slate-850` to `border-slate-800` to remove browser default white borders, and adding a self-healing built-in fallback system that automatically renders a colored gradient initials avatar block (color-seeded consistently by player name) if image loading fails (e.g., due to offline/cracked names or API downtime).
   - Linked to tab routing controls and added cubic-bezier page swaps inside `dashboard/src/App.vue`.
   - Registered proxy paths in `dashboard/vite.config.mjs` pointing to IPv4 `127.0.0.1` loopback to prevent Node/Vite IPv6 `ECONNREFUSED` loopback refusal errors, and updated the directory map in `fs.md`.
-
-
-
