@@ -381,6 +381,51 @@ const handleTownyRequest = async (req, res) => {
 apiRouter.get('/towny', handleTownyRequest);
 apiRouter.get('/api/towny', handleTownyRequest);
 
+// Local cache for Mojang username resolutions to minimize external API hits
+const resolvedUsernames = new Map();
+
+async function resolveUuidToUsername(uuid) {
+  if (!uuid) return 'Unknown';
+  const cleanUuid = uuid.replace(/-/g, '').toLowerCase();
+
+  if (resolvedUsernames.has(cleanUuid)) {
+    return resolvedUsernames.get(cleanUuid);
+  }
+
+  // Try Redis first if available
+  const redisClient = require('./utils/redis.js');
+  if (redisClient && redisClient.status === 'ready') {
+    try {
+      const cachedName = await redisClient.get(`uuid:name:${cleanUuid}`);
+      if (cachedName) {
+        resolvedUsernames.set(cleanUuid, cachedName);
+        return cachedName;
+      }
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  try {
+    const axios = require('axios');
+    const res = await axios.get(`https://sessionserver.mojang.com/session/minecraft/profile/${cleanUuid}`, { timeout: 3000 });
+    if (res.data && res.data.name) {
+      const username = res.data.name;
+      resolvedUsernames.set(cleanUuid, username);
+
+      // Cache in Redis for 7 days
+      if (redisClient && redisClient.status === 'ready') {
+        await redisClient.setex(`uuid:name:${cleanUuid}`, 7 * 24 * 60 * 60, username);
+      }
+      return username;
+    }
+  } catch (err) {
+    logger.warn(`Failed to resolve username for UUID ${uuid}: ${err.message}`);
+  }
+
+  return 'Unknown';
+}
+
 // Cache variables for shops fallback when Redis is offline
 let localShopsCache = null;
 let localShopsCacheTime = 0;
@@ -407,6 +452,18 @@ const handleShopsRequest = async (req, res) => {
 
   try {
     const data = await arcadiaApi.getShops();
+    const shopsList = Array.isArray(data.shops) ? data.shops : [];
+
+    // Resolve owner usernames in parallel
+    await Promise.all(
+      shopsList.map(async (shop) => {
+        if (shop.owner) {
+          shop.ownerName = await resolveUuidToUsername(shop.owner);
+        } else {
+          shop.ownerName = 'Unknown';
+        }
+      })
+    );
 
     // Save to Redis
     if (redisClient && redisClient.status === 'ready') {

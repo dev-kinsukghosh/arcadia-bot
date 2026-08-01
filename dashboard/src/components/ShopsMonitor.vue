@@ -213,10 +213,21 @@ onMounted(() => {
             </span>
           </div>
 
-          <!-- Owner UUID -->
-          <p class="mt-1 font-mono text-[9px] text-slate-500">
-            UUID: {{ shop.owner ? shop.owner.substring(0, 8) + '...' : 'Unknown' }}
-          </p>
+          <!-- Owner Head & Username -->
+          <div class="mt-2.5 flex items-center gap-2">
+            <img
+              :src="apiBase + '/heads/' + shop.ownerName + '.png'"
+              alt=""
+              class="h-5 w-5 rounded bg-slate-950 border border-slate-800"
+              @error="(e) => { e.target.src = apiBase + '/heads/steve.png' }"
+            />
+            <div class="flex flex-col">
+              <span class="text-xs font-semibold text-slate-300">{{ shop.ownerName }}</span>
+              <span class="font-mono text-[9px] text-slate-500">
+                UUID: {{ shop.owner ? shop.owner.substring(0, 8) + '...' : 'Unknown' }}
+              </span>
+            </div>
+          </div>
 
           <!-- Coordinates Coordinates -->
           <div class="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
@@ -264,11 +275,21 @@ onMounted(() => {
       >
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-800 bg-[#11131c] px-6 py-4">
-          <div>
-            <h3 class="text-base font-bold text-white">
-              🛒 Shop Details: {{ selectedShop.name.replace(/_/g, ' ') }}
-            </h3>
-            <p class="text-[10px] font-mono text-slate-500">Owner UUID: {{ selectedShop.owner || 'Unknown' }}</p>
+          <div class="flex items-center gap-3">
+            <img
+              :src="apiBase + '/heads/' + selectedShop.ownerName + '.png'"
+              alt=""
+              class="h-8 w-8 rounded bg-slate-950 border border-slate-800"
+              @error="(e) => { e.target.src = apiBase + '/heads/steve.png' }"
+            />
+            <div>
+              <h3 class="text-base font-bold text-white leading-tight">
+                🛒 Shop Details: {{ selectedShop.name.replace(/_/g, ' ') }}
+              </h3>
+              <p class="text-[10px] font-medium text-slate-400">
+                Owner: <span class="font-bold text-slate-300">{{ selectedShop.ownerName }}</span> · <span class="font-mono text-slate-500">UUID: {{ selectedShop.owner || 'Unknown' }}</span>
+              </p>
+            </div>
           </div>
           <button
             @click="closeModal"
