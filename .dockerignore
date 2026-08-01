@@ -45,4 +45,3 @@ dashboard/index.html
 dashboard/vite.config.mjs
 dashboard/.env*
 src/heads/
-src/icons/

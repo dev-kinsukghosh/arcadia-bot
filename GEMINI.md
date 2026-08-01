@@ -469,7 +469,8 @@ The following rules MUST be followed at all times:
   - Moved the dashboard icon download cache and player head cache entirely to the backend API server.
   - Configured `iconDownloader.js` to download and save upscaled Minecraft block/item texture icons strictly inside `src/icons/` and removed all copy operations targeting `dashboard/public/icons/`.
   - Configured `headManager.js` to save downloaded player head avatars directly to `src/heads/` instead of `dashboard/public/heads/`.
-  - Excluded both `src/icons/` and `src/heads/` directories from version control in `.gitignore` and build contexts in `.dockerignore`.
+  - Excluded `src/heads/` from Docker build context in `.dockerignore`, but allowed `src/icons/` to be sent in the build context so existing icons are baked directly into the Docker image.
+  - Deleted the obsolete `dashboard/public/icons/` directory and removed `src/icons/` from `.gitignore` so that cached icons are tracked in Git, ensuring they are always bundled and never need to be redownloaded.
   - Exposed `apiRouter.use('/icons', ...)` static directory serving on the Express server router.
   - Updated `ConvoyStock.vue` to fetch texture icons dynamically using the configuration `props.apiBase` URL.
 - **Advanced Host-Based Routing**:
@@ -483,5 +484,5 @@ The following rules MUST be followed at all times:
   - Swapped horizontal sliding animations (`translateX`) for vertical sliding animations (`translateY`) to completely eliminate temporary width expansion and prevent flickering horizontal scrollbars on table rows during live filtering.
 - **GitHub Actions & Container Bundling**:
   - Updated `.github/workflows/deploy.yml` to build the Vue dashboard using Vite with `VITE_API_URL` set to the production API domain (`https://arcapi.webdevkin.com`) in the build job.
-  - Packaged the compiled `dashboard/dist` inside the Docker image by adding it to `Dockerfile` and configuring `.dockerignore` to allow `dashboard/dist/` through while ignoring raw dashboard source paths.
+  - Packaged the compiled `dashboard/dist` and cached `src/icons/` inside the Docker image by adding them to `Dockerfile` and configuring `.dockerignore` to allow `dashboard/dist/` and `src/icons/` through while ignoring raw dashboard source paths and `src/heads/`.
   - Simplified the deployment steps in `deploy.yml` by removing remote SCP dashboard transfers and container volume mounts, keeping the Docker container completely self-contained.
