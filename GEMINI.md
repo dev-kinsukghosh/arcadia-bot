@@ -507,7 +507,7 @@ The following rules MUST be followed at all times:
     - Subcommand `/shops search [item]`: Searches for selling/buying listings across all shops, sorting them by price (cheapest first for sell listings, highest first for buy listings) and showing coordinates. Autocompletes listed item names.
   - Integrated a new **Player Shops** tab on the Vue dashboard (`dashboard/src/App.vue` and `dashboard/src/components/ShopsMonitor.vue`):
     - Displays shop cards with owner info, location coordinates, primary currency, and active listings count.
-    - Allows copying coordinates to clipboard instantly.
+    - Allows copying coordinates to clipboard instantly (with dynamic inline copy buttons on individual shop cards, using a secure-context textarea fallback to support insecure HTTP contexts).
     - Supports full text-based searching of shop names/owners, item listing filtering, and a toggle filter for selling/buying offers.
     - Displays detailed modals showing active buy/sell inventories and balances.
     - Resolves shop owner UUIDs to actual Minecraft usernames on the backend server (`src/server.js`) via Mojang's session server with Redis/local memory caching.
