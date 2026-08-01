@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { arcadiaApi } = require('../../utils/apiClient.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 
@@ -93,30 +93,26 @@ module.exports = {
 
       choices = filtered.slice(0, 25).map((s) => ({
         name: s.name.replace(/_/g, ' '),
-        value: s.key || s.name,
+        value: s.key || s.name.toLowerCase(),
       }));
     } else if (focusedOption.name === 'item') {
-      // Find all unique items listed in any shop (either selling or buying)
-      const itemsSet = new Set();
+      const allItems = new Set();
       for (const s of shops) {
         if (Array.isArray(s.sellListings)) {
-          for (const item of s.sellListings) {
-            if (item.item) itemsSet.add(item.item.toUpperCase());
-          }
+          s.sellListings.forEach((l) => {
+            if (l.item) allItems.add(l.item.toUpperCase());
+          });
         }
         if (Array.isArray(s.buyListings)) {
-          for (const item of s.buyListings) {
-            if (item.item) itemsSet.add(item.item.toUpperCase());
-          }
+          s.buyListings.forEach((l) => {
+            if (l.item) allItems.add(l.item.toUpperCase());
+          });
         }
       }
 
-      const allItems = Array.from(itemsSet).sort();
-      const filtered = allItems.filter((item) => {
-        const itemLower = item.toLowerCase();
-        const itemClean = itemLower.replace(/_/g, ' ');
-        return itemLower.includes(focusedValue) || itemClean.includes(focusedValue);
-      });
+      const filtered = Array.from(allItems).filter((item) =>
+        item.toLowerCase().includes(focusedValue)
+      );
 
       choices = filtered.slice(0, 25).map((item) => ({
         name: item.replace(/_/g, ' '),
@@ -137,6 +133,9 @@ module.exports = {
         embeds: [errorEmbed('No Shops Found', 'Could not retrieve player shops data. Try again later.')],
       });
     }
+
+    // Fetch Application Emojis to map block/item textures
+    const appEmojis = await interaction.client.application.emojis.fetch().catch(() => null);
 
     // Helper to format currency values
     const formatPrice = (val, currencyName = '₳') => {
@@ -172,17 +171,32 @@ module.exports = {
           const currency = s.currency ? s.currency.toUpperCase() : 'N/A';
 
           const sellItems = Array.isArray(s.sellListings)
-            ? s.sellListings.map((l) => (l.item ? l.item.replace(/_/g, ' ') : 'Unknown'))
+            ? s.sellListings.map((l) => (l.item ? l.item.toUpperCase() : 'UNKNOWN'))
             : [];
           
-          let sellingStr = 'None';
+          const sellItemsFormatted = [];
           if (sellItems.length > 0) {
             const uniqueSellItems = Array.from(new Set(sellItems));
             const limit = 4;
             const sliced = uniqueSellItems.slice(0, limit);
-            sellingStr = sliced.join(', ');
-            if (uniqueSellItems.length > limit) {
-              sellingStr += ` (+${uniqueSellItems.length - limit} more)`;
+            for (const rawItem of sliced) {
+              const cleanName = rawItem.replace(/_/g, ' ');
+              const targetEmojiName = rawItem.substring(0, 32);
+              const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
+              const emojiStr = appEmoji ? appEmoji.toString() : '📦';
+              const formattedName = cleanName.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
+              sellItemsFormatted.push(`${emojiStr} ${formattedName}`);
+            }
+          }
+
+          let sellingStr = 'None';
+          if (sellItemsFormatted.length > 0) {
+            sellingStr = sellItemsFormatted.join(', ');
+            if (sellItems.length > 4) {
+              const remaining = Array.from(new Set(sellItems)).length - 4;
+              if (remaining > 0) {
+                sellingStr += ` (+${remaining} more)`;
+              }
             }
           }
 
@@ -222,61 +236,65 @@ module.exports = {
 
       const message = await interaction.editReply({
         embeds: [buildEmbed(currentPage)],
-        components: [buildButtons(currentPage)],
+        components: totalPages > 1 ? [buildButtons(currentPage)] : [],
       });
 
-      const collector = message.createMessageComponentCollector({ time: 5 * 60 * 1000 });
+      if (totalPages > 1) {
+        const collector = message.createMessageComponentCollector({
+          time: 3 * 60 * 1000,
+        });
 
-      collector.on('collect', async (btn) => {
-        if (btn.user.id !== interaction.user.id) {
-          return btn.reply({
-            content: '❌ Only the command invoker can use these buttons.',
-            flags: MessageFlags.Ephemeral,
-          });
-        }
+        collector.on('collect', async (btn) => {
+          if (btn.user.id !== interaction.user.id) {
+            return btn.reply({
+              content: '❌ Only the command invoker can use these buttons.',
+              flags: MessageFlags.Ephemeral,
+            });
+          }
 
-        if (btn.customId === `shops_prev_${interaction.id}`) {
-          currentPage = Math.max(0, currentPage - 1);
-          await btn.update({
-            embeds: [buildEmbed(currentPage)],
-            components: [buildButtons(currentPage)],
-          });
-        } else if (btn.customId === `shops_next_${interaction.id}`) {
-          currentPage = Math.min(totalPages - 1, currentPage + 1);
-          await btn.update({
-            embeds: [buildEmbed(currentPage)],
-            components: [buildButtons(currentPage)],
-          });
-        }
-      });
+          if (btn.customId === `shops_prev_${interaction.id}`) {
+            currentPage = Math.max(0, currentPage - 1);
+            await btn.update({
+              embeds: [buildEmbed(currentPage)],
+              components: [buildButtons(currentPage)],
+            });
+          } else if (btn.customId === `shops_next_${interaction.id}`) {
+            currentPage = Math.min(totalPages - 1, currentPage + 1);
+            await btn.update({
+              embeds: [buildEmbed(currentPage)],
+              components: [buildButtons(currentPage)],
+            });
+          }
+        });
 
-      collector.on('end', async () => {
-        try {
-          const disabledRow = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-              .setCustomId('shops_prev_done')
-              .setLabel('◀ Prev')
-              .setStyle(ButtonStyle.Secondary)
-              .setDisabled(true),
-            new ButtonBuilder()
-              .setCustomId('shops_page_done')
-              .setLabel(`${currentPage + 1} / ${totalPages}`)
-              .setStyle(ButtonStyle.Primary)
-              .setDisabled(true),
-            new ButtonBuilder()
-              .setCustomId('shops_next_done')
-              .setLabel('Next ▶')
-              .setStyle(ButtonStyle.Secondary)
-              .setDisabled(true)
-          );
-          await interaction.editReply({
-            embeds: [buildEmbed(currentPage)],
-            components: [disabledRow],
-          });
-        } catch {
-          // Message deleted
-        }
-      });
+        collector.on('end', async () => {
+          try {
+            const disabledRow = new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setCustomId('shops_prev_done')
+                .setLabel('◀ Prev')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true),
+              new ButtonBuilder()
+                .setCustomId('shops_page_done')
+                .setLabel(`${currentPage + 1} / ${totalPages}`)
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(true),
+              new ButtonBuilder()
+                .setCustomId('shops_next_done')
+                .setLabel('Next ▶')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true)
+            );
+            await interaction.editReply({
+              embeds: [buildEmbed(currentPage)],
+              components: [disabledRow],
+            });
+          } catch {
+            // Message deleted
+          }
+        });
+      }
       return;
     }
 
@@ -312,8 +330,12 @@ module.exports = {
       const sellLines = [];
       if (Array.isArray(shop.sellListings) && shop.sellListings.length > 0) {
         for (const list of shop.sellListings) {
-          const name = list.item ? list.item.replace(/_/g, ' ') : 'Unknown';
-          sellLines.push(`• **${name}** — \`${list.amount} units\` @ \`${formatPrice(list.price, list.currency || shop.currency)}\``);
+          const rawItem = list.item || 'Unknown';
+          const name = rawItem.replace(/_/g, ' ');
+          const targetEmojiName = rawItem.substring(0, 32);
+          const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
+          const emojiStr = appEmoji ? appEmoji.toString() : '📦';
+          sellLines.push(`${emojiStr} **${name}** — \`${list.amount} units\` @ \`${formatPrice(list.price, list.currency || shop.currency)}\``);
         }
       } else {
         sellLines.push('• *No active sell listings*');
@@ -323,8 +345,12 @@ module.exports = {
       const buyLines = [];
       if (Array.isArray(shop.buyListings) && shop.buyListings.length > 0) {
         for (const list of shop.buyListings) {
-          const name = list.item ? list.item.replace(/_/g, ' ') : 'Unknown';
-          buyLines.push(`• **${name}** — Wants \`${list.amount} units\` @ \`${formatPrice(list.price, list.currency || shop.currency)}\``);
+          const rawItem = list.item || 'Unknown';
+          const name = rawItem.replace(/_/g, ' ');
+          const targetEmojiName = rawItem.substring(0, 32);
+          const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
+          const emojiStr = appEmoji ? appEmoji.toString() : '📥';
+          buyLines.push(`${emojiStr} **${name}** — Wants \`${list.amount} units\` @ \`${formatPrice(list.price, list.currency || shop.currency)}\``);
         }
       } else {
         buyLines.push('• *No active buy listings*');
@@ -433,9 +459,14 @@ module.exports = {
         buysStr = buysStr.substring(0, 950) + `\n... (+ ${buyLines.length - 20} more listings)`;
       }
 
+      // Fetch specific item emoji
+      const targetEmojiName = searchItem.substring(0, 32);
+      const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
+      const emojiPrefix = appEmoji ? appEmoji.toString() + ' ' : '';
+
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
-        .setTitle(`🔍 Listings Search: ${searchItemClean}`)
+        .setTitle(`${emojiPrefix}Listings Search: ${searchItemClean}`)
         .setDescription(`Active player listings found for item **${searchItemClean}**.`)
         .addFields(
           {
@@ -449,6 +480,10 @@ module.exports = {
             inline: false,
           }
         );
+
+      if (appEmoji) {
+        embed.setThumbnail(appEmoji.imageURL());
+      }
 
       return interaction.editReply({ embeds: [embed] });
     }
