@@ -245,13 +245,13 @@ onMounted(() => {
           <!-- Owner Head & Username -->
           <div class="mt-2.5 flex items-center gap-2">
             <img
-              :src="apiBase + '/heads/' + shop.ownerName + '.png'"
+              :src="apiBase + '/heads/' + (shop.ownerName || shop.owner) + '.png'"
               alt=""
               class="h-5 w-5 rounded bg-slate-950 border border-slate-800"
               @error="(e) => { e.target.src = apiBase + '/heads/steve.png' }"
             />
             <div class="flex flex-col">
-              <span class="text-xs font-semibold text-slate-300">{{ shop.ownerName }}</span>
+              <span class="text-xs font-semibold text-slate-300">{{ shop.ownerName || 'Shop Owner' }}</span>
               <span class="font-mono text-[9px] text-slate-500">
                 UUID: {{ shop.owner ? shop.owner.substring(0, 8) + '...' : 'Unknown' }}
               </span>
@@ -314,7 +314,7 @@ onMounted(() => {
         <div class="flex items-center justify-between border-b border-slate-800 bg-[#11131c] px-6 py-4">
           <div class="flex items-center gap-3">
             <img
-              :src="apiBase + '/heads/' + selectedShop.ownerName + '.png'"
+              :src="apiBase + '/heads/' + (selectedShop.ownerName || selectedShop.owner) + '.png'"
               alt=""
               class="h-8 w-8 rounded bg-slate-950 border border-slate-800"
               @error="(e) => { e.target.src = apiBase + '/heads/steve.png' }"
@@ -324,7 +324,7 @@ onMounted(() => {
                 🛒 Shop Details: {{ selectedShop.name.replace(/_/g, ' ') }}
               </h3>
               <p class="text-[10px] font-medium text-slate-400">
-                Owner: <span class="font-bold text-slate-300">{{ selectedShop.ownerName }}</span> · <span class="font-mono text-slate-500">UUID: {{ selectedShop.owner || 'Unknown' }}</span>
+                Owner: <span class="font-bold text-slate-300">{{ selectedShop.ownerName || 'Shop Owner' }}</span> · <span class="font-mono text-slate-500">UUID: {{ selectedShop.owner || 'Unknown' }}</span>
               </p>
             </div>
           </div>
