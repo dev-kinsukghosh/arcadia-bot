@@ -1191,7 +1191,7 @@ onMounted(() => {
   transform: translateY(4px);
 }
 .row-list-move {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 /* Hide horizontal scrollbar for clean aesthetics while preserving swipe scrolling */

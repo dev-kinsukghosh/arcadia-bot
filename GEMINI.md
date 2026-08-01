@@ -532,4 +532,23 @@ The following rules MUST be followed at all times:
 - **CI/CD Docker Image Pruning Optimization**:
   - Modified `.github/workflows/deploy.yml` deployment script to immediately clean up untagged `<none>` dangling images after starting a new container.
   - Replaced the time-restricted `docker image prune -af --filter "until=24h"` with an unconditional `docker image prune -f` to instantly purge untagged intermediate/previous build images from the remote host environment on every deployment push.
+- **Add Discord Bot Button & Scrollbar/Scroll Adjustments (dashboard/src/App.vue)**:
+  - Added a Discord Bot button inside the footer on the right side (inline with the status indicator and version number) with interactive animations (shining sweep overlay, pulse glow, and 360-degree rotating SVG Discord logo on hover).
+  - Wired a JS-based click event handler (`openBotInvite`) to open the bot invite URL (`https://discord.com/oauth2/authorize?client_id=1520676295187632318`) in a new tab, hiding the URL on link hover.
+  - Disabled default scrollbars globally on the page for all elements via CSS (`display: none !important`, `scrollbar-width: none !important`, `-ms-overflow-style: none !important`).
+  - Implemented a custom cubic-bezier JS smooth scrolling routine (`smoothScrollToTop`) using requestAnimationFrame to replace rough native scroll-to-top behaviors.
+  - Unified the loading screen and loaded content views under a single high-level `<Transition>` wrapper (using dynamic keys `loading` vs `currentRoute`). When loading completes, the loading indicator fades out smoothly, and the loaded page fades in, resolving instant page-popping issues.
+  - Enabled appear transition support (`appear` tag attributes) on the main workspace router so all pages (Market, History, Calculator, Convoy, Towny, Shops) run fade/slide entries on initial mount.
+  - Enhanced all main view transitions with a refined Cubic-Bezier curve (cubic-bezier(0.4, 0, 0.2, 1)) and increased timing (350ms) for ultra-fluid page swaps.
+  - Applied hover-scaling (`hover:scale-[1.03]`) and active click feedback (`active:scale-95`) micro-interactions on all primary navigation tabs.
+- **Towny, Convoy & Shops Sub-Tab Staggered Card Pop Transitions (dashboard/src/components/TownyMonitor.vue, ConvoyStock.vue & ShopsMonitor.vue)**:
+  - Streamlined `TownyMonitor.vue` template hierarchy by removing intermediate static wrapping `div` elements, moving the keys (`towns`/`nations`) directly to the active sub-tab conditional templates, and correcting the conditional directive on the Nations tab list from `v-if` to `v-else-if` to resolve the Vue transition compiler error. This allows Vue to correctly evaluate the mounting lifecycle and fire staggered pop-out animations on first load.
+  - Wrapped both the "Top 4 Performers" and "Main Lists" sections in `TownyMonitor.vue` in `<TransitionGroup>` blocks with `name="card-pop"` and `appear`.
+  - Converted the active item and catalog item grids in `ConvoyStock.vue` and the main shop cards grid in `ShopsMonitor.vue` to use `<TransitionGroup name="card-pop" tag="div" appear>`.
+  - Implemented dynamic `--card-idx` indices inside all card `v-for` loops.
+  - Programmed a custom `.card-pop` transition engine in the global style sheet utilizing CSS calculation variables. First card transitions over `0.5s`, and each subsequent card's duration decreases by `0.05s` (`--duration: calc(max(0.15s, 0.5s - var(--card-idx) * 0.05s))`) with a staggered delay (`calc(var(--card-idx) * 0.05s)`).
+  - Used an elastic spring-like back-out cubic-bezier curve (`cubic-bezier(0.34, 1.56, 0.64, 1)`) to deliver a smooth popping entry effect.
+  - Improved list and table row sorting FLIP transitions (`.card-pop-move` and `.row-list-move` in `App.vue` and `MarketMonitor.vue`) by tuning them to `0.5s` and appending `!important` to prevent element hover/transition-all utility specifications from blocking smooth sorting slide reflows.
+
+
 

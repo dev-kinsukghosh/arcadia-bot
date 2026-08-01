@@ -240,13 +240,17 @@ onMounted(() => {
     </div>
 
     <!-- Main Grid Cards -->
-    <div
+    <TransitionGroup
       v-else-if="filteredShops.length > 0"
+      tag="div"
+      name="card-pop"
+      appear
       class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
     >
       <div
-        v-for="shop in filteredShops"
+        v-for="(shop, idx) in filteredShops"
         :key="shop.name"
+        :style="{ '--card-idx': idx }"
         @click="openShopDetails(shop)"
         class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c]/40 p-4 shadow-xl backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-700/80 hover:bg-[#11131c]/60 cursor-pointer"
       >
@@ -325,7 +329,7 @@ onMounted(() => {
           Inspect listings &rarr;
         </div>
       </div>
-    </div>
+    </TransitionGroup>
 
     <!-- Empty State -->
     <div

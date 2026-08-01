@@ -246,7 +246,7 @@ function handleImageError(item) {
 
     <!-- Active Sections -->
     <div v-else>
-      <Transition name="fade" mode="out-in">
+      <Transition name="card-switch" mode="out-in">
         <!-- ================= SECTION 1: LIVE SHOP TRADES ================= -->
         <div v-if="activeSubView === 'live'" key="view-live" class="space-y-6">
           <div class="flex items-center justify-between border-b border-slate-900/60 pb-2">
@@ -293,10 +293,16 @@ function handleImageError(item) {
                 {{ rarity }} Tier
               </h4>
 
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+              <TransitionGroup
+                tag="div"
+                name="card-pop"
+                appear
+                class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+              >
                 <div
-                  v-for="item in items"
+                  v-for="(item, idx) in items"
                   :key="'live-' + item.item"
+                  :style="{ '--card-idx': idx }"
                   class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-slate-950/20 p-4 shadow-lg transition-all duration-300 hover:-translate-y-1"
                   :class="getRarityClasses(item.rarity)"
                 >
@@ -394,7 +400,7 @@ function handleImageError(item) {
                     </div>
                   </div>
                 </div>
-              </div>
+              </TransitionGroup>
             </div>
           </div>
         </div>
@@ -539,13 +545,15 @@ function handleImageError(item) {
                   </h4>
 
                   <TransitionGroup
-                    name="card-list"
+                    name="card-pop"
                     tag="div"
+                    appear
                     class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3"
                   >
                     <div
-                      v-for="item in items"
+                      v-for="(item, idx) in items"
                       :key="'all-' + item.item"
+                      :style="{ '--card-idx': idx }"
                       class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-4 shadow-lg transition-all duration-300 hover:-translate-y-1"
                       :class="getRarityClasses(item.rarity)"
                     >

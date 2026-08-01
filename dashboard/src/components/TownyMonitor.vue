@@ -275,125 +275,139 @@ function closeModals() {
 
     <!-- Top 4 Performers Section (Towns or Nations depending on tab) -->
     <div v-if="townyData" class="mt-6">
-      <div v-if="activeTab === 'towns'">
-        <h3
-          class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2"
-        >
-          <font-awesome-icon icon="globe" class="text-blue-500" />
-          Top 4 Towns by Population
-        </h3>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            v-for="(town, idx) in topTowns"
-            :key="'top-town-' + town.id"
-            @click="openTownDetails(town)"
-            class="group cursor-pointer relative overflow-hidden rounded-xl border border-blue-500/10 bg-[#0c0d15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/30 hover:bg-[#11131f]/70 shadow-sm"
-          >
-            <!-- Badge indicators for rank -->
-            <div
-              class="absolute right-3 top-3 text-[10px] font-extrabold text-blue-500 bg-blue-500/10 border border-blue-500/25 rounded-md px-1.5 py-0.5"
+      <Transition name="card-switch" mode="out-in" appear>
+        <div v-if="activeTab === 'towns'" key="towns">
+            <h3
+              class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2"
             >
-              Rank #{{ idx + 1 }}
-            </div>
-
-            <div class="flex items-center gap-3">
+              <font-awesome-icon icon="globe" class="text-blue-500" />
+              Top 4 Towns by Population
+            </h3>
+            <TransitionGroup
+              tag="div"
+              name="card-pop"
+              appear
+              class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            >
               <div
-                :class="getPlayerColor(town.mayor?.name)"
-                class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
+                v-for="(town, idx) in topTowns"
+                :key="'top-town-' + town.id"
+                :style="{ '--card-idx': idx }"
+                @click="openTownDetails(town)"
+                class="group cursor-pointer relative overflow-hidden rounded-xl border border-blue-500/10 bg-[#0c0d15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/30 hover:bg-[#11131f]/70 shadow-sm"
               >
-                <span class="z-0 select-none text-[8px]">{{
-                  getPlayerInitials(town.mayor?.name)
-                }}</span>
-                <img
-                  v-if="!failedAvatars['top-town-' + town.id]"
-                  :src="`${props.apiBase}/heads/${(town.mayor?.name || 'steve').toLowerCase()}.png`"
-                  alt="Mayor Avatar"
-                  class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
-                  @load="$event.target.classList.remove('opacity-0')"
-                  @error="handleAvatarError('top-town-' + town.id)"
-                />
-              </div>
-              <div class="min-w-0 flex-1 pr-12">
-                <h4
-                  class="text-xs font-bold text-slate-100 truncate group-hover:text-blue-400 transition-colors"
+                <!-- Badge indicators for rank -->
+                <div
+                  class="absolute right-3 top-3 text-[10px] font-extrabold text-blue-500 bg-blue-500/10 border border-blue-500/25 rounded-md px-1.5 py-0.5"
                 >
-                  {{ cleanName(town.name) }}
-                </h4>
-                <p class="text-[9px] text-slate-500 truncate mt-0.5">
-                  Mayor: {{ town.mayor?.name }}
-                </p>
+                  Rank #{{ idx + 1 }}
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <div
+                    :class="getPlayerColor(town.mayor?.name)"
+                    class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
+                  >
+                    <span class="z-0 select-none text-[8px]">{{
+                      getPlayerInitials(town.mayor?.name)
+                    }}</span>
+                    <img
+                      v-if="!failedAvatars['top-town-' + town.id]"
+                      :src="`${props.apiBase}/heads/${(town.mayor?.name || 'steve').toLowerCase()}.png`"
+                      alt="Mayor Avatar"
+                      class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                      @load="$event.target.classList.remove('opacity-0')"
+                      @error="handleAvatarError('top-town-' + town.id)"
+                    />
+                  </div>
+                  <div class="min-w-0 flex-1 pr-12">
+                    <h4
+                      class="text-xs font-bold text-slate-100 truncate group-hover:text-blue-400 transition-colors"
+                    >
+                      {{ cleanName(town.name) }}
+                    </h4>
+                    <p class="text-[9px] text-slate-500 truncate mt-0.5">
+                      Mayor: {{ town.mayor?.name }}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400"
+                >
+                  <span>👥 {{ town.residents || 0 }} residents</span>
+                  <span>📦 {{ town.claims?.claimedChunks || 0 }} chunks</span>
+                </div>
               </div>
-            </div>
-
-            <div
-              class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400"
-            >
-              <span>👥 {{ town.residents || 0 }} residents</span>
-              <span>📦 {{ town.claims?.claimedChunks || 0 }} chunks</span>
-            </div>
+            </TransitionGroup>
           </div>
-        </div>
-      </div>
 
-      <div v-else-if="activeTab === 'nations'">
-        <h3
-          class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2"
-        >
-          <font-awesome-icon icon="flag" class="text-indigo-500" />
-          Top 4 Nations by Population
-        </h3>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            v-for="(nation, idx) in topNations"
-            :key="'top-nation-' + nation.id"
-            @click="openNationDetails(nation)"
-            class="group cursor-pointer relative overflow-hidden rounded-xl border border-indigo-500/10 bg-[#0d0c15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-indigo-500/30 hover:bg-[#121120]/70 shadow-sm"
-          >
-            <!-- Badge indicators for rank -->
-            <div
-              class="absolute right-3 top-3 text-[10px] font-extrabold text-indigo-500 bg-indigo-500/10 border border-indigo-500/25 rounded-md px-1.5 py-0.5"
+          <div v-else-if="activeTab === 'nations'" key="nations">
+            <h3
+              class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2"
             >
-              Rank #{{ idx + 1 }}
-            </div>
-
-            <div class="flex items-center gap-3">
+              <font-awesome-icon icon="flag" class="text-indigo-500" />
+              Top 4 Nations by Population
+            </h3>
+            <TransitionGroup
+              tag="div"
+              name="card-pop"
+              appear
+              class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            >
               <div
-                :class="getPlayerColor(nation.king?.name)"
-                class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
+                v-for="(nation, idx) in topNations"
+                :key="'top-nation-' + nation.id"
+                :style="{ '--card-idx': idx }"
+                @click="openNationDetails(nation)"
+                class="group cursor-pointer relative overflow-hidden rounded-xl border border-indigo-500/10 bg-[#0d0c15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-indigo-500/30 hover:bg-[#121120]/70 shadow-sm"
               >
-                <span class="z-0 select-none text-[8px]">{{
-                  getPlayerInitials(nation.king?.name)
-                }}</span>
-                <img
-                  v-if="!failedAvatars['top-nation-' + nation.id]"
-                  :src="`${props.apiBase}/heads/${(nation.king?.name || 'steve').toLowerCase()}.png`"
-                  alt="King Avatar"
-                  class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
-                  @load="$event.target.classList.remove('opacity-0')"
-                  @error="handleAvatarError('top-nation-' + nation.id)"
-                />
-              </div>
-              <div class="min-w-0 flex-1 pr-12">
-                <h4
-                  class="text-xs font-bold text-slate-100 truncate group-hover:text-indigo-400 transition-colors"
+                <!-- Badge indicators for rank -->
+                <div
+                  class="absolute right-3 top-3 text-[10px] font-extrabold text-indigo-500 bg-indigo-500/10 border border-indigo-500/25 rounded-md px-1.5 py-0.5"
                 >
-                  {{ cleanName(nation.name) }}
-                </h4>
-                <p class="text-[9px] text-slate-500 truncate mt-0.5">
-                  King: {{ nation.king?.name }}
-                </p>
-              </div>
-            </div>
+                  Rank #{{ idx + 1 }}
+                </div>
 
-            <div
-              class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400"
-            >
-              <span>👥 {{ nation.residents || 0 }} residents</span>
-              <span>🏘️ {{ nation.towns || 0 }} towns</span>
-            </div>
+                <div class="flex items-center gap-3">
+                  <div
+                    :class="getPlayerColor(nation.king?.name)"
+                    class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
+                  >
+                    <span class="z-0 select-none text-[8px]">{{
+                      getPlayerInitials(nation.king?.name)
+                    }}</span>
+                    <img
+                      v-if="!failedAvatars['top-nation-' + nation.id]"
+                      :src="`${props.apiBase}/heads/${(nation.king?.name || 'steve').toLowerCase()}.png`"
+                      alt="King Avatar"
+                      class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                      @load="$event.target.classList.remove('opacity-0')"
+                      @error="handleAvatarError('top-nation-' + nation.id)"
+                    />
+                  </div>
+                  <div class="min-w-0 flex-1 pr-12">
+                    <h4
+                      class="text-xs font-bold text-slate-100 truncate group-hover:text-indigo-400 transition-colors"
+                    >
+                      {{ cleanName(nation.name) }}
+                    </h4>
+                    <p class="text-[9px] text-slate-500 truncate mt-0.5">
+                      King: {{ nation.king?.name }}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400"
+                >
+                  <span>👥 {{ nation.residents || 0 }} residents</span>
+                  <span>🏘️ {{ nation.towns || 0 }} towns</span>
+                </div>
+              </div>
+            </TransitionGroup>
           </div>
-        </div>
-      </div>
+      </Transition>
     </div>
 
     <!-- Main Navigation controls & filters -->
@@ -499,140 +513,154 @@ function closeModals() {
 
     <!-- Main Lists -->
     <div v-else>
-      <!-- TOWNS TAB LIST -->
-      <div v-if="activeTab === 'towns'">
-        <div v-if="processedTowns.length === 0" class="py-12 text-center text-xs text-slate-500">
-          No towns match your search filters.
-        </div>
-        <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div
-            v-for="town in processedTowns"
-            :key="town.id"
-            @click="openTownDetails(town)"
-            class="group cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-slate-800 hover:bg-[#111420]/60 hover:shadow-lg"
-          >
-            <div class="flex items-start justify-between">
-              <div>
-                <h3
-                  class="text-sm font-bold text-slate-100 group-hover:text-blue-400 transition-colors"
-                >
-                  {{ cleanName(town.name) }}
-                </h3>
-                <span class="mt-0.5 inline-block text-[10px] text-slate-500"
-                  >Mayor: {{ town.mayor?.name }}</span
-                >
-              </div>
-              <div
-                v-if="town.nation"
-                class="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[9px] font-bold text-indigo-400"
-              >
-                {{ cleanName(town.nation.name) }}
-              </div>
-              <div
-                v-else
-                class="rounded-full bg-slate-800 px-2 py-0.5 text-[9px] font-bold text-slate-400"
-              >
-                Neutral
-              </div>
+      <Transition name="card-switch" mode="out-in" appear>
+        <!-- TOWNS TAB LIST -->
+        <div v-if="activeTab === 'towns'" key="towns">
+            <div v-if="processedTowns.length === 0" class="py-12 text-center text-xs text-slate-500">
+              No towns match your search filters.
             </div>
+            <TransitionGroup
+              tag="div"
+              name="card-pop"
+              appear
+              class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              <div
+                v-for="(town, idx) in processedTowns"
+                :key="town.id"
+                :style="{ '--card-idx': idx }"
+                @click="openTownDetails(town)"
+                class="group cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-slate-800 hover:bg-[#111420]/60 hover:shadow-lg"
+              >
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h3
+                      class="text-sm font-bold text-slate-100 group-hover:text-blue-400 transition-colors"
+                    >
+                      {{ cleanName(town.name) }}
+                    </h3>
+                    <span class="mt-0.5 inline-block text-[10px] text-slate-500"
+                      >Mayor: {{ town.mayor?.name }}</span
+                    >
+                  </div>
+                  <div
+                    v-if="town.nation"
+                    class="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[9px] font-bold text-indigo-400"
+                  >
+                    {{ cleanName(town.nation.name) }}
+                  </div>
+                  <div
+                    v-else
+                    class="rounded-full bg-slate-800 px-2 py-0.5 text-[9px] font-bold text-slate-400"
+                  >
+                    Neutral
+                  </div>
+                </div>
 
-            <div class="mt-4 grid grid-cols-3 gap-2 border-t border-slate-900/60 pt-3 text-center">
-              <div>
-                <div class="text-[9px] font-semibold text-slate-500 uppercase">Residents</div>
-                <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
-                  {{ town.residents || 0 }}
-                  <span
-                    v-if="town.onlineResidents > 0"
-                    class="text-[9px] text-emerald-400 font-normal"
-                    >({{ town.onlineResidents }} online)</span
-                  >
+                <div class="mt-4 grid grid-cols-3 gap-2 border-t border-slate-900/60 pt-3 text-center">
+                  <div>
+                    <div class="text-[9px] font-semibold text-slate-500 uppercase">Residents</div>
+                    <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
+                      {{ town.residents || 0 }}
+                      <span
+                        v-if="town.onlineResidents > 0"
+                        class="text-[9px] text-emerald-400 font-normal"
+                        >({{ town.onlineResidents }} online)</span
+                      >
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] font-semibold text-slate-500 uppercase">Claims</div>
+                    <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
+                      {{ town.claims?.claimedChunks || 0 }}
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] font-semibold text-slate-500 uppercase">PVP Flag</div>
+                    <div class="mt-0.5">
+                      <span
+                        :class="
+                          town.flags?.pvp
+                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        "
+                        class="inline-block rounded px-1.5 py-0.5 text-[9px] font-bold"
+                      >
+                        {{ town.flags?.pvp ? 'Enabled' : 'Disabled' }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div class="text-[9px] font-semibold text-slate-500 uppercase">Claims</div>
-                <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
-                  {{ town.claims?.claimedChunks || 0 }}
-                </div>
-              </div>
-              <div>
-                <div class="text-[9px] font-semibold text-slate-500 uppercase">PVP Flag</div>
-                <div class="mt-0.5">
-                  <span
-                    :class="
-                      town.flags?.pvp
-                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                    "
-                    class="inline-block rounded px-1.5 py-0.5 text-[9px] font-bold"
-                  >
-                    {{ town.flags?.pvp ? 'Enabled' : 'Disabled' }}
-                  </span>
-                </div>
-              </div>
-            </div>
+            </TransitionGroup>
           </div>
-        </div>
-      </div>
 
-      <!-- NATIONS TAB LIST -->
-      <div v-if="activeTab === 'nations'">
-        <div v-if="processedNations.length === 0" class="py-12 text-center text-xs text-slate-500">
-          No nations match your search filters.
-        </div>
-        <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div
-            v-for="nation in processedNations"
-            :key="nation.id"
-            @click="openNationDetails(nation)"
-            class="group cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-slate-800 hover:bg-[#151325]/50 hover:shadow-lg"
-          >
-            <div class="flex items-start justify-between">
-              <div>
-                <h3
-                  class="text-sm font-bold text-slate-100 group-hover:text-indigo-400 transition-colors"
-                >
-                  {{ cleanName(nation.name) }}
-                </h3>
-                <span class="mt-0.5 inline-block text-[10px] text-slate-500"
-                  >King: {{ nation.king?.name }}</span
-                >
-              </div>
+          <!-- NATIONS TAB LIST -->
+          <div v-else-if="activeTab === 'nations'" key="nations">
+            <div v-if="processedNations.length === 0" class="py-12 text-center text-xs text-slate-500">
+              No nations match your search filters.
+            </div>
+            <TransitionGroup
+              tag="div"
+              name="card-pop"
+              appear
+              class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            >
               <div
-                v-if="nation.flags?.neutral"
-                class="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-400"
+                v-for="(nation, idx) in processedNations"
+                :key="nation.id"
+                :style="{ '--card-idx': idx }"
+                @click="openNationDetails(nation)"
+                class="group cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-slate-800 hover:bg-[#151325]/50 hover:shadow-lg"
               >
-                Neutral State
-              </div>
-            </div>
-
-            <div class="mt-4 grid grid-cols-3 gap-2 border-t border-slate-900/60 pt-3 text-center">
-              <div>
-                <div class="text-[9px] font-semibold text-slate-500 uppercase">Towns</div>
-                <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
-                  {{ nation.towns || 0 }}
-                </div>
-              </div>
-              <div>
-                <div class="text-[9px] font-semibold text-slate-500 uppercase">Residents</div>
-                <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
-                  {{ nation.residents || 0 }}
-                  <span
-                    v-if="nation.onlineResidents > 0"
-                    class="text-[9px] text-emerald-400 font-normal"
-                    >({{ nation.onlineResidents }} online)</span
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h3
+                      class="text-sm font-bold text-slate-100 group-hover:text-indigo-400 transition-colors"
+                    >
+                      {{ cleanName(nation.name) }}
+                    </h3>
+                    <span class="mt-0.5 inline-block text-[10px] text-slate-500"
+                      >King: {{ nation.king?.name }}</span
+                    >
+                  </div>
+                  <div
+                    v-if="nation.flags?.neutral"
+                    class="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-400"
                   >
+                    Neutral State
+                  </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-3 gap-2 border-t border-slate-900/60 pt-3 text-center">
+                  <div>
+                    <div class="text-[9px] font-semibold text-slate-500 uppercase">Towns</div>
+                    <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
+                      {{ nation.towns || 0 }}
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] font-semibold text-slate-500 uppercase">Residents</div>
+                    <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
+                      {{ nation.residents || 0 }}
+                      <span
+                        v-if="nation.onlineResidents > 0"
+                        class="text-[9px] text-emerald-400 font-normal"
+                        >({{ nation.onlineResidents }} online)</span
+                      >
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] font-semibold text-slate-500 uppercase">Allies</div>
+                    <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
+                      {{ nation.diplomacy?.alliesCount || 0 }}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div class="text-[9px] font-semibold text-slate-500 uppercase">Allies</div>
-                <div class="mt-0.5 font-mono text-xs font-bold text-slate-300">
-                  {{ nation.diplomacy?.alliesCount || 0 }}
-                </div>
-              </div>
-            </div>
+            </TransitionGroup>
           </div>
-        </div>
-      </div>
+      </Transition>
     </div>
 
     <!-- TOWN DETAILS MODAL OVERLAY -->
