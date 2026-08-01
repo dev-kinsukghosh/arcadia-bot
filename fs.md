@@ -17,6 +17,12 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── vite.config.mjs
 │   ├── .env
 │   ├── .env.example
+│   ├── public/
+│   │   ├── 403.html
+│   │   ├── 404.html
+│   │   ├── 500.html
+│   │   ├── 502.html
+│   │   └── 503.html
 │   └── src/
 │       ├── App.vue
 │       ├── main.js
@@ -141,6 +147,12 @@ This file serves as a reference guide for the directory structure and file respo
 - [dashboard/index.html](./dashboard/index.html): Web entrypoint template for mounting the dashboard.
 - [dashboard/vite.config.mjs](./dashboard/vite.config.mjs): Vite compilation config with proxy endpoints.
 - [dashboard/.env.example](./dashboard/.env.example): Frontend environment configuration template containing `VITE_API_URL`.
+- 📂 **dashboard/public/**: Static public assets and custom gitignored HTML error pages.
+  - [dashboard/public/403.html](./dashboard/public/403.html): Custom Access Forbidden (403) error page.
+  - [dashboard/public/404.html](./dashboard/public/404.html): Custom Page Not Found (404) error page.
+  - [dashboard/public/500.html](./dashboard/public/500.html): Custom Internal Server Error (500) page.
+  - [dashboard/public/502.html](./dashboard/public/502.html): Custom Bad Gateway (502) error page.
+  - [dashboard/public/503.html](./dashboard/public/503.html): Custom Service Unavailable/Maintenance (503) error page.
 - 📂 **dashboard/src/**: Frontend Vue codebases.
   - [dashboard/src/App.vue](./dashboard/src/App.vue): Main dashboard component containing Watchlist, Metrics filters, and tab layouts.
   - [dashboard/src/main.js](./dashboard/src/main.js): Vue bootstrap file registering FontAwesome icons.

@@ -34,13 +34,13 @@ function smoothScrollToTop(duration = 600) {
   const start = window.scrollY || window.pageYOffset;
   const startTime = 'now' in window.performance ? performance.now() : new Date().getTime();
 
-  const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+  const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1);
 
   const animateScroll = (time) => {
     const timeElapsed = time - startTime;
     const progress = Math.min(timeElapsed / duration, 1);
     const easedProgress = easeInOutCubic(progress);
-    window.scrollTo(0, start + (-start) * easedProgress);
+    window.scrollTo(0, start + -start * easedProgress);
 
     if (progress < 1) {
       requestAnimationFrame(animateScroll);
@@ -275,7 +275,11 @@ onMounted(() => {
       <!-- Dashboard Pages / Loading Wrapper -->
       <Transition name="fade" mode="out-in" appear>
         <!-- Loading State -->
-        <div v-if="isLoading" key="loading" class="flex flex-col items-center justify-center space-y-4 py-24">
+        <div
+          v-if="isLoading"
+          key="loading"
+          class="flex flex-col items-center justify-center space-y-4 py-24"
+        >
           <div
             class="h-10 w-10 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500"
           ></div>
@@ -343,11 +347,18 @@ onMounted(() => {
             title="Add Discord Bot to your Guild"
           >
             <!-- Shine transition overlay -->
-            <span class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shine"></span>
+            <span
+              class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shine"
+            ></span>
 
             <!-- Discord SVG Icon -->
-            <svg class="h-3.5 w-3.5 fill-current transition-transform duration-500 group-hover:rotate-[360deg]" viewBox="0 0 127.14 96.36">
-              <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.4-5c.87-.64,1.71-1.32,2.51-2a75.46,75.46,0,0,0,72.6,0c.8,0.7,1.64,1.38,2.51,2a68.18,68.18,0,0,1-10.4,5,77.63,77.63,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.24,49.25,123,26.47,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
+            <svg
+              class="h-3.5 w-3.5 fill-current transition-transform duration-500 group-hover:rotate-[360deg]"
+              viewBox="0 0 127.14 96.36"
+            >
+              <path
+                d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.4-5c.87-.64,1.71-1.32,2.51-2a75.46,75.46,0,0,0,72.6,0c.8,0.7,1.64,1.38,2.51,2a68.18,68.18,0,0,1-10.4,5,77.63,77.63,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.24,49.25,123,26.47,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"
+              />
             </svg>
             <span>Add Bot</span>
           </button>
@@ -403,13 +414,16 @@ body::-webkit-scrollbar,
 
 /* Premium Card Pop Out Stagger Animation */
 .card-pop-enter-active {
-  transition: opacity var(--duration, 0.5s) cubic-bezier(0.34, 1.56, 0.64, 1),
-              transform var(--duration, 0.5s) cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition:
+    opacity var(--duration, 0.5s) cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform var(--duration, 0.5s) cubic-bezier(0.34, 1.56, 0.64, 1);
   transition-delay: calc(var(--card-idx, 0) * 0.05s);
   --duration: calc(max(0.15s, 0.5s - var(--card-idx, 0) * 0.05s));
 }
 .card-pop-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 .card-pop-enter-from {
   opacity: 0;
@@ -438,11 +452,14 @@ body::-webkit-scrollbar,
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
   }
   50% {
-    box-shadow: 0 0 25px rgba(99, 102, 241, 0.8), 0 0 10px rgba(168, 85, 247, 0.4);
+    box-shadow:
+      0 0 25px rgba(99, 102, 241, 0.8),
+      0 0 10px rgba(168, 85, 247, 0.4);
   }
 }
 

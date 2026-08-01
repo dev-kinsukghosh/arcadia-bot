@@ -549,6 +549,9 @@ The following rules MUST be followed at all times:
   - Programmed a custom `.card-pop` transition engine in the global style sheet utilizing CSS calculation variables. First card transitions over `0.5s`, and each subsequent card's duration decreases by `0.05s` (`--duration: calc(max(0.15s, 0.5s - var(--card-idx) * 0.05s))`) with a staggered delay (`calc(var(--card-idx) * 0.05s)`).
   - Used an elastic spring-like back-out cubic-bezier curve (`cubic-bezier(0.34, 1.56, 0.64, 1)`) to deliver a smooth popping entry effect.
   - Improved list and table row sorting FLIP transitions (`.card-pop-move` and `.row-list-move` in `App.vue` and `MarketMonitor.vue`) by tuning them to `0.5s` and appending `!important` to prevent element hover/transition-all utility specifications from blocking smooth sorting slide reflows.
-
-
-
+- **Static Dashboard Error Pages**:
+  - Created five premium, custom, responsive static HTML error pages matching the style of `dashboard/src/App.vue` (`403.html`, `404.html`, `500.html`, `502.html`, and `503.html`) inside the `dashboard/public/` directory.
+  - Styled error pages with the deep dark cyber theme, customized Outfit and Inter Google Fonts, glassmorphic floating cards, and glowing backdrop gradients.
+  - Removed all button navigation elements from the error cards to keep layouts clean and focused strictly on the visual alert states.
+  - Added these error HTML pages to the project's root `.gitignore` file to ensure they are ignored from version control.
+  - Updated the repository directory mapping inside `fs.md` to include these files.

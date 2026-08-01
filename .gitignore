@@ -25,3 +25,11 @@ dist/
 # Player head cache images
 src/heads/
 
+# Custom static error files in dashboard (ignored in git)
+dashboard/public/404.html
+dashboard/public/502.html
+dashboard/public/500.html
+dashboard/public/503.html
+dashboard/public/403.html
+
+
