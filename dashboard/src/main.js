@@ -31,6 +31,7 @@ import {
   faChevronUp,
   faFlag,
   faCube,
+  faShop,
 } from '@fortawesome/free-solid-svg-icons';
 
 // Add icons to library
@@ -59,7 +60,8 @@ library.add(
   faChevronDown,
   faChevronUp,
   faFlag,
-  faCube
+  faCube,
+  faShop
 );
 
 const app = createApp(App);

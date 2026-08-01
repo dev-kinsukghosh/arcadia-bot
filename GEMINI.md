@@ -481,8 +481,37 @@ The following rules MUST be followed at all times:
   - Re-enabled robust CORS preflight configurations on the Express server, allowing the custom `X-Device-Fingerprint` header to bypass browser checks during cross-origin dashboard requests.
 - **Table Transition Jitter & Scrollbar Flickering Fix**:
   - Modified the custom Tailwind transition animations on the Live Currency Market table in `MarketMonitor.vue`.
-  - Swapped horizontal sliding animations (`translateX`) for vertical sliding animations (`translateY`) to completely eliminate temporary width expansion and prevent flickering horizontal scrollbars on table rows during live filtering.
+  - Swapped horizontal sliding animations (`translateX`) for vertical sliding animations (`translateY`) to completely eliminate temporary width expansion.
+  - Removed `hover:scale-[1.002]` scale transitions on table rows, which were triggering browser sub-pixel layout rounding errors and overflowing parent containers.
+  - Added a `.no-scrollbar` style wrapper on the table's `overflow-x-auto` container to permanently prevent the horizontal scrollbar from flickering/showing on hover or filtering while maintaining horizontal touch-swiping functionality on mobile viewports.
 - **GitHub Actions & Container Bundling**:
   - Updated `.github/workflows/deploy.yml` to build the Vue dashboard using Vite with `VITE_API_URL` set to the production API domain (`https://arcapi.webdevkin.com`) in the build job.
   - Packaged the compiled `dashboard/dist` and cached `src/icons/` inside the Docker image by adding them to `Dockerfile` and configuring `.dockerignore` to allow `dashboard/dist/` and `src/icons/` through while ignoring raw dashboard source paths and `src/heads/`.
   - Simplified the deployment steps in `deploy.yml` by removing remote SCP dashboard transfers and container volume mounts, keeping the Docker container completely self-contained.
+- **Visual Analytics Slash Commands**:
+  - Created a reusable canvas rendering helper `src/utils/canvasGraph.js` using `@napi-rs/canvas` to draw dark-themed horizontal bar charts and multi-dataset line charts.
+  - Enhanced the `/towny` command (`src/commands/general/towny.js`):
+    - Added the `/towny top [metric]` subcommand, generating horizontal bar charts of the top 10 towns/nations by population or chunks and embedding them as image attachments.
+    - Added the `/towny compare [town1] [town2]` subcommand, comparing two towns side-by-side using custom comparative split-bar charts and rendering mayor/population/chunk details.
+    - Made the existing `/towny stats`, `/towny town [name]`, and `/towny nation [name]` command embeds significantly cleaner, adding status indicators, monospaced tabular sections, and visual chunk capacity progress bars.
+  - Created the `/ccompare` economy command (`src/commands/general/ccompare.js`) to compare up to 5 nation currencies simultaneously:
+    - Queries `currency_history` database records for a customizable range of 7 to 120 days.
+    - Renders a multi-series historical line graph comparing daily unit rates on canvas and attaches it directly.
+    - Performs statistical analysis (calculating averages, peak/lowest rates, and volatility standard deviation) for all compared currencies.
+  - Upgraded the `/chistory` slash command (`src/commands/general/chistory.js`) to automatically generate and attach a historical line graph of the currency's rates over time directly onto the paginated embeds.
+- **Player Shops Directory & Search Integration**:
+  - Exposed a cached `/api/shops` endpoint on the Express server (`src/server.js`) that fetches live player shops data from the ArcadiaMC API, caching it in Redis or in-memory for 5 minutes.
+  - Created the `/shops` slash command (`src/commands/general/shops.js`):
+    - Subcommand `/shops list`: Lists registered shops, coordinate locations, currency, active listing counts, and key items currently on sale (deduplicated, up to 4 items) with pagination buttons.
+    - Subcommand `/shops info [shop]`: Displays owner UUID, plot location coordinates, primary currency, active balances, and active sell/buy listings. Autocompletes active shop names.
+    - Subcommand `/shops search [item]`: Searches for selling/buying listings across all shops, sorting them by price (cheapest first for sell listings, highest first for buy listings) and showing coordinates. Autocompletes listed item names.
+  - Integrated a new **Player Shops** tab on the Vue dashboard (`dashboard/src/App.vue` and `dashboard/src/components/ShopsMonitor.vue`):
+    - Displays shop cards with owner info, location coordinates, primary currency, and active listings count.
+    - Allows copying coordinates to clipboard instantly.
+    - Supports full text-based searching of shop names/owners, item listing filtering, and a toggle filter for selling/buying offers.
+    - Displays detailed modals showing active buy/sell inventories and balances.
+    - Imported and registered the FontAwesome `faShop` icon.
+- **Web Dashboard Navigation Slash Command**:
+  - Created the `/dashboard` slash command (`src/commands/general/dashboard.js`) returning a premium Discord embed explaining all stats panel modules along with a link button redirecting users to `https://arcc.webdevkin.com/live-market`.
+
+

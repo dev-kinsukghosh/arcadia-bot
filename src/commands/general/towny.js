@@ -1,6 +1,7 @@
-const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags, AttachmentBuilder } = require('discord.js');
 const { arcadiaApi } = require('../../utils/apiClient.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
+const { drawTopChart, drawCompareChart } = require('../../utils/canvasGraph.js');
 
 // Map for autocomplete debouncing per user (500ms)
 const userLastAutocomplete = new Map();
@@ -32,7 +33,7 @@ async function fetchTownyData() {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('towny')
-    .setDescription('View Arcadia Towny statistics, towns, and nations')
+    .setDescription('View Arcadia Towny statistics, rankings, comparisons, and profiles')
     .addSubcommand((sub) =>
       sub.setName('stats').setDescription('Display overall Arcadia Towny server statistics')
     )
@@ -56,6 +57,42 @@ module.exports = {
           opt
             .setName('name')
             .setDescription('The name or slug of the nation')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('top')
+        .setDescription('Display rankings and comparison charts for towns or nations')
+        .addStringOption((opt) =>
+          opt
+            .setName('metric')
+            .setDescription('The ranking criteria')
+            .setRequired(true)
+            .addChoices(
+              { name: 'Towns by Population', value: 'towns_population' },
+              { name: 'Towns by Territory Size (Chunks)', value: 'towns_chunks' },
+              { name: 'Nations by Population', value: 'nations_population' },
+              { name: 'Nations by Town Count', value: 'nations_towns' }
+            )
+        )
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('compare')
+        .setDescription('Compare two towns side-by-side with a graph')
+        .addStringOption((opt) =>
+          opt
+            .setName('town1')
+            .setDescription('The first town to compare')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('town2')
+            .setDescription('The second town to compare')
             .setRequired(true)
             .setAutocomplete(true)
         )
@@ -86,7 +123,7 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
     let choices = [];
 
-    if (subcommand === 'town') {
+    if (focusedOption.name === 'name' || focusedOption.name === 'town1' || focusedOption.name === 'town2') {
       const towns = Array.isArray(data.towns) ? data.towns : [];
       const filtered = towns.filter((t) => {
         if (!t) return false;
@@ -108,7 +145,7 @@ module.exports = {
           value: t.name || t.slug || t.id,
         };
       });
-    } else if (subcommand === 'nation') {
+    } else if (focusedOption.name === 'name' && subcommand === 'nation') {
       const nations = Array.isArray(data.nations) ? data.nations : [];
       const filtered = nations.filter((n) => {
         if (!n) return false;
@@ -164,46 +201,48 @@ module.exports = {
       });
     }
 
+    // ── Subcommand: Stats ─────────────────────────────────────────────
     if (subcommand === 'stats') {
       const counts = data.counts || {};
       const claimedChunks = counts.claimedChunks || {};
       const byWorldObj = claimedChunks.byWorld || {};
 
       const byWorldLines = Object.entries(byWorldObj).map(
-        ([world, count]) => `• **${world}**: ${Number(count).toLocaleString()} chunks`
+        ([world, count]) => `• \`${world.padEnd(10)}\` **${Number(count).toLocaleString()}** chunks`
       );
       const byWorldStr = byWorldLines.length > 0 ? byWorldLines.join('\n') : 'No world chunk data';
 
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
-        .setTitle('🏘️ Arcadia Towny Statistics')
-        .setDescription(
-          'Overview of active towns, nations, residents, and claimed chunks on ArcadiaMC.'
-        )
+        .setTitle('🏘️ ArcadiaMC Towny Stats')
+        .setDescription('Overview of active towns, nations, residents, and claimed territory.')
         .addFields(
           {
-            name: '🏘️ Towns',
-            value: `**${Number(counts.towns ?? 0).toLocaleString()}**\n*(${counts.townsInNation ?? 0} in nations • ${counts.townsNeutral ?? 0} neutral)*`,
+            name: '🏘️ Towns Coverage',
+            value:
+              `• **Total Towns:** \`${counts.towns ?? 0}\`\n` +
+              `• **In Nations:** \`${counts.townsInNation ?? 0}\`\n` +
+              `• **Neutral:** \`${counts.townsNeutral ?? 0}\``,
             inline: true,
           },
           {
-            name: '🏳️ Nations',
-            value: `**${Number(counts.nations ?? 0).toLocaleString()}**`,
+            name: '🏳️ Nations Coverage',
+            value: `• **Total Nations:** \`${counts.nations ?? 0}\``,
             inline: true,
           },
           {
-            name: '👥 Residents',
-            value: `**${Number(counts.onlineResidents ?? 0).toLocaleString()}** / **${Number(counts.residents ?? 0).toLocaleString()}** Online`,
+            name: '👥 Residents Activity',
+            value:
+              `• **Online:** \`${counts.onlineResidents ?? 0}\`\n` +
+              `• **Total Registered:** \`${counts.residents ?? 0}\``,
             inline: true,
           },
           {
-            name: '📦 Claimed Chunks',
-            value: `**${Number(claimedChunks.total ?? 0).toLocaleString()}** total chunks`,
-            inline: false,
-          },
-          {
-            name: '🌐 Chunks Breakdown by World',
-            value: byWorldStr,
+            name: '📦 Claimed Territory Chunks',
+            value:
+              `**Total Chunks:** \`${Number(claimedChunks.total ?? 0).toLocaleString()}\`\n\n` +
+              `**Breakdown by World:**\n` +
+              `\`\`\`text\n${byWorldStr}\n\`\`\``,
             inline: false,
           }
         );
@@ -211,6 +250,7 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
+    // ── Subcommand: Town ──────────────────────────────────────────────
     if (subcommand === 'town') {
       const query = interaction.options.getString('name')?.trim();
       const queryLower = query?.toLowerCase() || '';
@@ -257,13 +297,13 @@ module.exports = {
       const nationName = nation?.name ? nation.name.replace(/_/g, ' ') : 'None (Neutral)';
 
       const flagsStr = [
-        `• **PVP:** ${flags.pvp ? '🟢 On' : '🔴 Off'}`,
-        `• **Mobs:** ${flags.mobs ? '🟢 On' : '🔴 Off'}`,
-        `• **Fire:** ${flags.fire ? '🟢 On' : '🔴 Off'}`,
-        `• **Explosions:** ${flags.explosion ? '🟢 On' : '🔴 Off'}`,
-        `• **Open:** ${flags.open ? '🟢 Yes' : '🔴 No'}`,
-        `• **Public:** ${flags.public ? '🟢 Yes' : '🔴 No'}`,
-      ].join('\n');
+        `${flags.pvp ? '🟢' : '🔴'} PVP`,
+        `${flags.mobs ? '🟢' : '🔴'} Mobs`,
+        `${flags.fire ? '🟢' : '🔴'} Fire`,
+        `${flags.explosion ? '🟢' : '🔴'} Explosions`,
+        `${flags.open ? '🟢' : '🔴'} Open`,
+        `${flags.public ? '🟢' : '🔴'} Public`,
+      ].join('  ·  ');
 
       const spawnLoc = spawn.world
         ? `\`${spawn.world}\` (X: ${Math.round(spawn.x ?? 0)}, Y: ${Math.round(spawn.y ?? 0)}, Z: ${Math.round(spawn.z ?? 0)})`
@@ -281,39 +321,50 @@ module.exports = {
         ? `<t:${lastOnlineTs}:F> (<t:${lastOnlineTs}:R>)`
         : 'Unknown';
 
+      // Chunks visual bar helper
+      const claimedVal = claims.claimedChunks ?? 0;
+      const bonusVal = claims.bonusChunks ?? 0;
+      const totalCapacity = claimedVal + bonusVal || 1;
+      const claimedBarCount = Math.round((claimedVal / totalCapacity) * 10);
+      const visualBar = '🟩'.repeat(claimedBarCount) + '⬜'.repeat(10 - claimedBarCount);
+
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
-        .setTitle(`🏘️ Town: ${formattedName}`)
+        .setTitle(`🏘️ Town Profile: ${formattedName}`)
         .setDescription(`Detailed profile telemetry for town **${formattedName}**.`)
         .addFields(
           {
             name: '👑 Leadership & Nation',
-            value: `• **Mayor:** ${mayorName}\n• **Mayor UUID:** \`${mayorUuid}\`\n• **Nation:** ${nationName}`,
+            value: `• **Mayor:** \`${mayorName}\`\n• **Mayor UUID:** \`${mayorUuid.substring(0, 8)}...\`\n• **Nation:** \`${nationName}\``,
             inline: true,
           },
           {
             name: '👥 Population',
-            value: `• **Online:** ${town.onlineResidents ?? 0}\n• **Total Residents:** ${town.residents ?? 0}`,
+            value: `• **Online:** \`${town.onlineResidents ?? 0}\`\n• **Total Residents:** \`${town.residents ?? 0}\``,
             inline: true,
           },
           {
-            name: '📦 Territory Chunks',
-            value: `• **Claimed:** ${Number(claims.claimedChunks ?? 0).toLocaleString()}\n• **Bonus:** ${Number(claims.bonusChunks ?? 0).toLocaleString()}\n• **Outpost:** ${Number(claims.outpostChunks ?? 0).toLocaleString()}`,
-            inline: true,
-          },
-          {
-            name: '🚩 Town Flags',
+            name: '🚩 Town Permissions & Flags',
             value: flagsStr,
-            inline: true,
-          },
-          {
-            name: '📍 Coordinates',
-            value: `• **Spawn:** ${spawnLoc}\n• **Homeblock:** ${homeLoc}`,
             inline: false,
           },
           {
-            name: '📅 Timeline & Activity',
-            value: `• **Created:** ${createdStr}\n• **Last Online:** ${lastOnlineStr}`,
+            name: '📦 Chunks Capacity & Territory',
+            value:
+              `• **Claimed:** \`${Number(claims.claimedChunks ?? 0).toLocaleString()}\` chunks\n` +
+              `• **Bonus:** \`${Number(claims.bonusChunks ?? 0).toLocaleString()}\` chunks\n` +
+              `• **Outpost:** \`${Number(claims.outpostChunks ?? 0).toLocaleString()}\` chunks\n` +
+              `• **Capacity Distribution:**\n${visualBar}`,
+            inline: false,
+          },
+          {
+            name: '📍 Coordinates & Coordinates',
+            value: `• **Homeblock:** ${homeLoc}\n• **Spawn Location:** ${spawnLoc}`,
+            inline: false,
+          },
+          {
+            name: '📅 Timeline',
+            value: `• **Created:** ${createdStr}\n• **Last Online Activity:** ${lastOnlineStr}`,
             inline: false,
           }
         );
@@ -321,6 +372,7 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
+    // ── Subcommand: Nation ────────────────────────────────────────────
     if (subcommand === 'nation') {
       const query = interaction.options.getString('name')?.trim();
       const queryLower = query?.toLowerCase() || '';
@@ -365,10 +417,10 @@ module.exports = {
       const capitalName = capital.name ? capital.name.replace(/_/g, ' ') : 'N/A';
 
       const flagsStr = [
-        `• **PVP:** ${flags.pvp ? '🟢 On' : '🔴 Off'}`,
-        `• **Neutral:** ${flags.neutral ? '🟢 Yes' : '🔴 No'}`,
-        `• **Public:** ${flags.public ? '🟢 Yes' : '🔴 No'}`,
-      ].join('\n');
+        `${flags.pvp ? '🟢' : '🔴'} PVP`,
+        `${flags.neutral ? '🟢' : '🔴'} Neutrality`,
+        `${flags.public ? '🟢' : '🔴'} Public Taxing`,
+      ].join('  ·  ');
 
       const alliesList = Array.isArray(diplomacy.allies) ? diplomacy.allies : [];
       let alliesText =
@@ -394,37 +446,208 @@ module.exports = {
 
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
-        .setTitle(`🏳️ Nation: ${formattedName}`)
-        .setDescription(`Detailed telemetry for nation **${formattedName}**.`)
+        .setTitle(`🏳️ Nation Profile: ${formattedName}`)
+        .setDescription(`Detailed profile telemetry for nation **${formattedName}**.`)
         .addFields(
           {
             name: '👑 Leadership & Capital',
-            value: `• **King:** ${kingName}\n• **King UUID:** \`${kingUuid}\`\n• **Capital Town:** ${capitalName}`,
+            value: `• **King:** \`${kingName}\`\n• **King UUID:** \`${kingUuid.substring(0, 8)}...\`\n• **Capital Town:** \`${capitalName}\``,
             inline: true,
           },
           {
-            name: '📊 Towns & Residents',
-            value: `• **Towns:** ${Number(nation.towns ?? 0).toLocaleString()}\n• **Online Residents:** ${Number(nation.onlineResidents ?? 0).toLocaleString()}\n• **Total Residents:** ${Number(nation.residents ?? 0).toLocaleString()}`,
+            name: '📊 Coverage & Population',
+            value: `• **Member Towns:** \`${Number(nation.towns ?? 0).toLocaleString()}\`\n• **Online Residents:** \`${Number(nation.onlineResidents ?? 0).toLocaleString()}\`\n• **Total Residents:** \`${Number(nation.residents ?? 0).toLocaleString()}\``,
             inline: true,
           },
           {
             name: '🚩 Nation Flags',
             value: flagsStr,
-            inline: true,
+            inline: false,
           },
           {
             name: `🤝 Allies (${diplomacy.alliesCount ?? alliesList.length})`,
-            value: alliesText,
+            value: `\`\`\`text\n${alliesText}\n\`\`\``,
             inline: false,
           },
           {
             name: `⚔️ Enemies (${diplomacy.enemiesCount ?? enemiesList.length})`,
-            value: enemiesText,
+            value: `\`\`\`text\n${enemiesText}\n\`\`\``,
             inline: false,
           }
         );
 
       return interaction.editReply({ embeds: [embed] });
+    }
+
+    // ── Subcommand: Top ───────────────────────────────────────────────
+    if (subcommand === 'top') {
+      const metric = interaction.options.getString('metric');
+      let title = '';
+      let subtitle = '';
+      let labels = [];
+      let values = [];
+      let listLines = [];
+      let suffix = '';
+
+      if (metric === 'towns_population') {
+        const sorted = [...(data.towns || [])]
+          .filter((t) => t && t.name)
+          .sort((a, b) => (b.residents ?? 0) - (a.residents ?? 0))
+          .slice(0, 10);
+        title = '🏘️ Top Towns by Population';
+        subtitle = 'Ranked by total resident population on ArcadiaMC';
+        suffix = ' Residents';
+        labels = sorted.map((t) => t.name);
+        values = sorted.map((t) => t.residents ?? 0);
+        listLines = sorted.map((t, idx) => `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(t.residents ?? 0).toLocaleString()}** residents`);
+      } else if (metric === 'towns_chunks') {
+        const sorted = [...(data.towns || [])]
+          .filter((t) => t && t.name)
+          .sort((a, b) => (b.claims?.claimedChunks ?? 0) - (a.claims?.claimedChunks ?? 0))
+          .slice(0, 10);
+        title = '📦 Top Towns by Territory size';
+        subtitle = 'Ranked by total claimed chunks count on ArcadiaMC';
+        suffix = ' Chunks';
+        labels = sorted.map((t) => t.name);
+        values = sorted.map((t) => t.claims?.claimedChunks ?? 0);
+        listLines = sorted.map((t, idx) => `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(t.claims?.claimedChunks ?? 0).toLocaleString()}** chunks`);
+      } else if (metric === 'nations_population') {
+        const sorted = [...(data.nations || [])]
+          .filter((n) => n && n.name)
+          .sort((a, b) => (b.residents ?? 0) - (a.residents ?? 0))
+          .slice(0, 10);
+        title = '🏳️ Top Nations by Population';
+        subtitle = 'Ranked by combined resident population on ArcadiaMC';
+        suffix = ' Residents';
+        labels = sorted.map((n) => n.name);
+        values = sorted.map((n) => n.residents ?? 0);
+        listLines = sorted.map((n, idx) => `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(n.residents ?? 0).toLocaleString()}** residents`);
+      } else if (metric === 'nations_towns') {
+        const sorted = [...(data.nations || [])]
+          .filter((n) => n && n.name)
+          .sort((a, b) => (b.towns ?? 0) - (a.towns ?? 0))
+          .slice(0, 10);
+        title = '🏘️ Top Nations by Town Count';
+        subtitle = 'Ranked by total member towns count on ArcadiaMC';
+        suffix = ' Towns';
+        labels = sorted.map((n) => n.name);
+        values = sorted.map((n) => n.towns ?? 0);
+        listLines = sorted.map((n, idx) => `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(n.towns ?? 0).toLocaleString()}** towns`);
+      }
+
+      // Generate the visual bar chart
+      let chartBuffer;
+      try {
+        chartBuffer = drawTopChart(labels, values, title.substring(3), subtitle, suffix);
+      } catch (err) {
+        return interaction.editReply({
+          embeds: [errorEmbed('Chart Render Failure', `Failed to render bar chart image: ${err.message}`)],
+        });
+      }
+
+      const attachment = new AttachmentBuilder(chartBuffer, { name: 'top-chart.png' });
+
+      const embed = createBaseEmbed()
+        .setColor(EMBED_COLORS.CYBER)
+        .setTitle(title)
+        .setDescription(
+          `**Top 10 Rankings Overview:**\n\n` +
+          `\`\`\`text\n${listLines.join('\n')}\n\`\`\``
+        )
+        .setImage('attachment://top-chart.png');
+
+      return interaction.editReply({ embeds: [embed], files: [attachment] });
+    }
+
+    // ── Subcommand: Compare ───────────────────────────────────────────
+    if (subcommand === 'compare') {
+      const query1 = interaction.options.getString('town1')?.trim().toLowerCase();
+      const query2 = interaction.options.getString('town2')?.trim().toLowerCase();
+
+      const towns = Array.isArray(data.towns) ? data.towns : [];
+      const t1 = towns.find(
+        (t) =>
+          t &&
+          (t.name?.toLowerCase() === query1 ||
+            t.slug?.toLowerCase() === query1 ||
+            t.id?.toLowerCase() === query1)
+      );
+      const t2 = towns.find(
+        (t) =>
+          t &&
+          (t.name?.toLowerCase() === query2 ||
+            t.slug?.toLowerCase() === query2 ||
+            t.id?.toLowerCase() === query2)
+      );
+
+      if (!t1 || !t2) {
+        return interaction.editReply({
+          embeds: [
+            errorEmbed(
+              'Towns Not Found',
+              'One or both specified towns could not be found. Please check your query or use autocomplete.'
+            ),
+          ],
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+
+      if (t1.id === t2.id) {
+        return interaction.editReply({
+          embeds: [
+            errorEmbed('Invalid Comparison', 'You cannot compare a town with itself. Please select two different towns.'),
+          ],
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+
+      // Prepare stats for visual compare card
+      const item1 = {
+        name: t1.name || 'Town 1',
+        leaderTitle: 'Mayor',
+        leaderName: t1.mayor?.name || 'Unknown',
+        residents: t1.residents ?? 0,
+        chunks: t1.claims?.claimedChunks ?? 0,
+        status: t1.nation?.name ? t1.nation.name.replace(/_/g, ' ') : 'Neutral',
+        statusColor: t1.nation?.name ? '#3b82f6' : '#64748b',
+      };
+
+      const item2 = {
+        name: t2.name || 'Town 2',
+        leaderTitle: 'Mayor',
+        leaderName: t2.mayor?.name || 'Unknown',
+        residents: t2.residents ?? 0,
+        chunks: t2.claims?.claimedChunks ?? 0,
+        status: t2.nation?.name ? t2.nation.name.replace(/_/g, ' ') : 'Neutral',
+        statusColor: t2.nation?.name ? '#10b981' : '#64748b',
+      };
+
+      let compareBuffer;
+      try {
+        compareBuffer = drawCompareChart(
+          item1,
+          item2,
+          `Comparing: ${t1.name.replace(/_/g, ' ')} vs ${t2.name.replace(/_/g, ' ')}`
+        );
+      } catch (err) {
+        return interaction.editReply({
+          embeds: [errorEmbed('Comparison Chart Failure', `Failed to render comparison card: ${err.message}`)],
+        });
+      }
+
+      const attachment = new AttachmentBuilder(compareBuffer, { name: 'compare-chart.png' });
+
+      const embed = createBaseEmbed()
+        .setColor(EMBED_COLORS.CYBER)
+        .setTitle(`⚔️ Town Comparison: ${t1.name.replace(/_/g, ' ')} vs ${t2.name.replace(/_/g, ' ')}`)
+        .setDescription(
+          `Comparative profile analysis for **${t1.name.replace(/_/g, ' ')}** and **${t2.name.replace(/_/g, ' ')}**.\n` +
+          `• Left Panel Color (**Blue**): **${t1.name.replace(/_/g, ' ')}**\n` +
+          `• Right Panel Color (**Green**): **${t2.name.replace(/_/g, ' ')}**`
+        )
+        .setImage('attachment://compare-chart.png');
+
+      return interaction.editReply({ embeds: [embed], files: [attachment] });
     }
   },
 };

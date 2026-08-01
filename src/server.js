@@ -381,6 +381,60 @@ const handleTownyRequest = async (req, res) => {
 apiRouter.get('/towny', handleTownyRequest);
 apiRouter.get('/api/towny', handleTownyRequest);
 
+// Cache variables for shops fallback when Redis is offline
+let localShopsCache = null;
+let localShopsCacheTime = 0;
+const SHOPS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+
+const handleShopsRequest = async (req, res) => {
+  const { arcadiaApi } = require('./utils/apiClient.js');
+  const redisClient = require('./utils/redis.js');
+  const now = Date.now();
+
+  // Try Redis first
+  if (redisClient && redisClient.status === 'ready') {
+    try {
+      const cached = await redisClient.get('cache:shops');
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (err) {
+      logger.warn(`Failed to fetch Shops data from Redis: ${err.message}`);
+    }
+  } else if (localShopsCache && now - localShopsCacheTime < SHOPS_CACHE_TTL) {
+    return res.json(localShopsCache);
+  }
+
+  try {
+    const data = await arcadiaApi.getShops();
+
+    // Save to Redis
+    if (redisClient && redisClient.status === 'ready') {
+      try {
+        await redisClient.setex('cache:shops', 300, JSON.stringify(data)); // 5 minutes TTL
+      } catch (err) {
+        logger.warn(`Failed to save Shops data to Redis: ${err.message}`);
+      }
+    }
+
+    // Save to local cache
+    localShopsCache = data;
+    localShopsCacheTime = now;
+
+    res.json(data);
+  } catch (err) {
+    logger.error(`API Error fetching Shops: ${err.message}`);
+    // If external call fails, serve stale local cache if exists
+    if (localShopsCache) {
+      return res.json(localShopsCache);
+    }
+    res.status(502).json({ error: 'Failed to fetch Shops data from external API.' });
+  }
+};
+
+apiRouter.get('/shops', handleShopsRequest);
+apiRouter.get('/api/shops', handleShopsRequest);
+
 // Local player heads cache serving and downloader proxy
 apiRouter.get('/heads/:username.png', async (req, res) => {
   // Explicit cross-origin headers to bypass helmet CORP restrictions

@@ -4,18 +4,19 @@ const {
   ButtonBuilder,
   ButtonStyle,
   MessageFlags,
+  AttachmentBuilder,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { currencies: currenciesTable, currencyHistory } = require('../../db/schema.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
 const { eq, gte, and, asc } = require('drizzle-orm');
+const { drawHistoryLineChart } = require('../../utils/canvasGraph.js');
 
 const userLastAutocomplete = new Map();
 
 /**
  * Construct a text-based sparkline visualization using Unicode block elements.
- * Blocks: ' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'
  */
 function generateSparkline(values) {
   if (!values || values.length === 0) return '[ No Data ]';
@@ -71,7 +72,7 @@ function buildTable(items, mode) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('chistory')
-    .setDescription('View price history, sparklines, and trends for a nation currency')
+    .setDescription('View price history, sparklines, and visual charts for a nation currency')
     .addStringOption((option) =>
       option
         .setName('currency')
@@ -159,7 +160,7 @@ module.exports = {
           currencyObj = dbRows[0];
         }
       } catch {
-        // Fallback handled below if not found
+        // Fallback handled below
       }
     }
 
@@ -171,6 +172,7 @@ module.exports = {
             `The currency \`${currencyInput}\` was not found. Please select a valid currency from the autocomplete list.`
           ),
         ],
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -261,9 +263,31 @@ module.exports = {
     const pctChange = startLive > 0 ? ((endLive - startLive) / startLive) * 100 : 0;
     const pctChangeStr = `${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%`;
 
-    // 6. Pagination setup (newest records first for tabular view)
+    // 6. Generate the visual line chart
+    let chartBuffer;
+    try {
+      const modeLabel = mode === 'percentage' ? ' (%)' : ' (₳)';
+      chartBuffer = drawHistoryLineChart(
+        records.map((r) => r.dateStr),
+        [
+          {
+            label: `${currencyName} (${currencyObj.id.toUpperCase()})${modeLabel}`,
+            rates: records.map((r) => r.value),
+          },
+        ],
+        `${currencyName} Historical Rates (${days}d)`
+      );
+    } catch (err) {
+      return interaction.editReply({
+        embeds: [errorEmbed('Chart Render Failure', `Failed to render price history line chart: ${err.message}`)],
+      });
+    }
+
+    const file = new AttachmentBuilder(chartBuffer, { name: 'history-chart.png' });
+
+    // 7. Pagination setup (newest records first for tabular view)
     const displayRecords = [...records].reverse();
-    const ITEMS_PER_PAGE = 10;
+    const ITEMS_PER_PAGE = 8; // Slightly smaller to leave room for graph
     const pages = [];
     for (let i = 0; i < displayRecords.length; i += ITEMS_PER_PAGE) {
       pages.push(displayRecords.slice(i, i + ITEMS_PER_PAGE));
@@ -322,7 +346,8 @@ module.exports = {
             value: buildTable(chunk, mode),
             inline: false,
           }
-        );
+        )
+        .setImage('attachment://history-chart.png');
     };
 
     const buildButtons = (pageIdx) => {
@@ -348,6 +373,7 @@ module.exports = {
     const message = await interaction.editReply({
       embeds: [buildEmbed(currentPage)],
       components: totalPages > 1 ? [buildButtons(currentPage)] : [],
+      files: [file],
     });
 
     if (totalPages > 1) {

@@ -1022,7 +1022,7 @@ onMounted(() => {
         <div
           class="overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c] shadow-2xl backdrop-blur-md"
         >
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto no-scrollbar">
             <table class="w-full border-collapse text-left">
               <thead>
                 <tr
@@ -1043,8 +1043,8 @@ onMounted(() => {
                   :key="curr.id"
                   :class="[
                     Math.abs(curr.percentageChange || 0) >= volatilityAlertThreshold
-                      ? 'bg-red-500/5 hover:scale-[1.002] hover:bg-red-500/10 hover:shadow-lg'
-                      : 'hover:scale-[1.002] hover:bg-slate-900/40 hover:shadow-lg',
+                      ? 'bg-red-500/5 hover:bg-red-500/10 hover:shadow-lg'
+                      : 'hover:bg-slate-900/60 hover:shadow-lg',
                     'group transition-all duration-150',
                   ]"
                 >
@@ -1192,5 +1192,14 @@ onMounted(() => {
 }
 .row-list-move {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Hide horizontal scrollbar for clean aesthetics while preserving swipe scrolling */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 </style>

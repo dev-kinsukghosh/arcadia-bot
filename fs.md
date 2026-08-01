@@ -38,6 +38,8 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── commands/
 │   │   └── general/
 │   │       ├── blacklist.js
+│   │       ├── ccompare.js
+│   │       ├── dashboard.js
 │   │       ├── chistory.js
 │   │       ├── cis-info.js
 │   │       ├── cstats.js
@@ -51,6 +53,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── ncurrency.js
 │   │       ├── notifyiic.js
 │   │       ├── ping.js
+│   │       ├── shops.js
 │   │       ├── stats-dev.js
 │   │       ├── test.js
 │   │       └── towny.js
@@ -72,6 +75,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   └── utils/
 │       ├── apiClient.js
 │       ├── blacklistHelper.js
+│       ├── canvasGraph.js
 │       ├── db.js
 │       ├── embedHelper.js
 │       ├── emitter.js
@@ -143,6 +147,7 @@ This file serves as a reference guide for the directory structure and file respo
     - [dashboard/src/components/ExchangeCalculator.vue](./dashboard/src/components/ExchangeCalculator.vue): Conversion widget to calculate rates between nation currencies.
     - [dashboard/src/components/HistoryChart.vue](./dashboard/src/components/HistoryChart.vue): Comparison Line chart graphing historical rates over 7-120 days.
     - [dashboard/src/components/MarketMonitor.vue](./dashboard/src/components/MarketMonitor.vue): Unified market table view displaying pinned favorites and category filters.
+    - [dashboard/src/components/ShopsMonitor.vue](./dashboard/src/components/ShopsMonitor.vue): Player Shops directory with searching, item filtering, coordinates copy tool, and detail modal.
     - [dashboard/src/components/TownyMonitor.vue](./dashboard/src/components/TownyMonitor.vue): Towny monitor displaying overview counts, towns, and nations with detail modals.
 
 ### 📂 src/
@@ -152,6 +157,8 @@ This file serves as a reference guide for the directory structure and file respo
   - 📂 **src/commands/**: Contains category subfolders containing Discord Slash Commands.
     - 📂 **src/commands/general/**:
       - [src/commands/general/blacklist.js](./src/commands/general/blacklist.js): `/blacklist` — Manage user blacklist add, remove, and list (Developer Only).
+      - [src/commands/general/ccompare.js](./src/commands/general/ccompare.js): `/ccompare` — Compare the exchange rates of two nation currencies side-by-side with a graph.
+      - [src/commands/general/dashboard.js](./src/commands/general/dashboard.js): `/dashboard` — Returns direct link to the web stats panel.
       - [src/commands/general/chistory.js](./src/commands/general/chistory.js): `/chistory` — View historical price charts and trend sparklines for nation currencies with raw/percentage mode.
       - [src/commands/general/cis-info.js](./src/commands/general/cis-info.js): `/cis-info` — Displays historical, rarity, and frequency telemetry for convoy items.
       - [src/commands/general/cstats.js](./src/commands/general/cstats.js): `/cstats` — View currency market health metrics and performers ranking.
@@ -165,6 +172,7 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/ncurrency.js](./src/commands/general/ncurrency.js): `/ncurrency` — Set this server's nation currency config (Admin Only).
       - [src/commands/general/notifyiic.js](./src/commands/general/notifyiic.js): `/notifyiic` — Subscribe to item stock notifications in a specific channel.
       - [src/commands/general/ping.js](./src/commands/general/ping.js): Ping/latency check.
+      - [src/commands/general/shops.js](./src/commands/general/shops.js): `/shops` — List player shops, view shop listings/coordinates, and search for active item offers.
       - [src/commands/general/stats-dev.js](./src/commands/general/stats-dev.js): `/stats-dev` — Displays command execution telemetry and active servers count (Developer Only).
       - [src/commands/general/test.js](./src/commands/general/test.js): `/test` — Runs Bot integration and connection test suites from Discord (Developer Only).
       - [src/commands/general/towny.js](./src/commands/general/towny.js): `/towny` — Displays Towny stats, town info, and nation info with autocomplete.
@@ -186,6 +194,7 @@ This file serves as a reference guide for the directory structure and file respo
 - 📂 **src/utils/**: Helper modules.
   - [src/utils/apiClient.js](./src/utils/apiClient.js): Axios HTTP wrapper configured for ArcadiaMC.
   - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.
+  - [src/utils/canvasGraph.js](./src/utils/canvasGraph.js): Generates high-quality bar and line charts using @napi-rs/canvas.
   - [src/utils/db.js](./src/utils/db.js): Drizzle ORM database instance client.
   - [src/utils/embedHelper.js](./src/utils/embedHelper.js): Central helper module to build styled, uniform Discord embeds.
   - [src/utils/emitter.js](./src/utils/emitter.js): Central EventEmitter instance for cross-module real-time communications.
