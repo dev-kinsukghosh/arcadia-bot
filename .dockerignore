@@ -39,4 +39,10 @@ Dockerfile
 docker-compose*.yml
 # Build
 dist/
-dashboard
+dashboard/src/
+dashboard/public/
+dashboard/index.html
+dashboard/vite.config.mjs
+dashboard/.env*
+src/heads/
+src/icons/

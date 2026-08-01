@@ -9,3 +9,10 @@
 # todo 2
 
 1. add Maintence mode to main bot so can work on it
+
+# todo 3
+[x] move dashboard icon and head display cache & all icons to api server
+[x] serve dashboard in container & build via GitHub Actions (instead of host SCP deploy)
+[x] add back cors  policy
+[] EMBED discord etc
+[x] fix Table in live-market showing scrollbar for some reason sometimes / it flickers

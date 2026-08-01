@@ -22,6 +22,7 @@ lerna-debug.log*
 Thumbs.db
 dist/
 
-# Player head cache images
-dashboard/public/heads/
+# Player head and icon cache images
+src/icons/
+src/heads/
 

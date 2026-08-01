@@ -24,11 +24,13 @@ app.use(
   })
 );
 
-// 2. CORS configuration
+// 2. CORS configuration (allowing X-Device-Fingerprint header)
 app.use(
   cors({
-    origin: '*', // Customize this if you want to restrict to specific origins
-    methods: ['GET', 'POST'], // Allow GET and POST requests
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Fingerprint'],
+    credentials: true,
   })
 );
 
@@ -81,8 +83,10 @@ app.use(ipRateLimiter);
 app.use(deviceRateLimiter);
 app.use(speedLimiter);
 
+const apiRouter = express.Router();
+
 // 0. Base API info route
-app.get('/', (req, res) => {
+apiRouter.get('/', (req, res) => {
   res.json({
     name: 'ArcadiaMC Community Currency API',
     status: 'online',
@@ -97,11 +101,8 @@ app.get('/', (req, res) => {
   });
 });
 
-// Serve compiled static files
-app.use(express.static(path.join(__dirname, '../dashboard/dist')));
-
 // 1. Get status of server & bot
-app.get('/status', (req, res) => {
+apiRouter.get('/status', (req, res) => {
   res.json({
     status: 'online',
     uptime: process.uptime(),
@@ -110,7 +111,7 @@ app.get('/status', (req, res) => {
 });
 
 // 2. Get list of latest currencies
-app.get('/currencies', async (req, res) => {
+apiRouter.get('/currencies', async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -141,7 +142,7 @@ app.get('/currencies', async (req, res) => {
 });
 
 // 2b. Get latest active convoy items
-app.get('/currencies/convoy', async (req, res) => {
+apiRouter.get('/currencies/convoy', async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -156,7 +157,7 @@ app.get('/currencies/convoy', async (req, res) => {
 });
 
 // 2c. Get all convoy items tracked historically
-app.get('/currencies/convoy/all', async (req, res) => {
+apiRouter.get('/currencies/convoy/all', async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -171,7 +172,7 @@ app.get('/currencies/convoy/all', async (req, res) => {
 });
 
 // 3. Get historical rates for a currency
-app.get('/currencies/history', async (req, res) => {
+apiRouter.get('/currencies/history', async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -206,7 +207,7 @@ app.get('/currencies/history', async (req, res) => {
 });
 
 // 4. Get stability indices & performance metrics
-app.get('/currencies/stats', async (req, res) => {
+apiRouter.get('/currencies/stats', async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -377,11 +378,11 @@ const handleTownyRequest = async (req, res) => {
   }
 };
 
-app.get('/towny', handleTownyRequest);
-app.get('/api/towny', handleTownyRequest);
+apiRouter.get('/towny', handleTownyRequest);
+apiRouter.get('/api/towny', handleTownyRequest);
 
 // Local player heads cache serving and downloader proxy
-app.get('/heads/:username.png', async (req, res) => {
+apiRouter.get('/heads/:username.png', async (req, res) => {
   // Explicit cross-origin headers to bypass helmet CORP restrictions
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -405,12 +406,26 @@ app.get('/heads/:username.png', async (req, res) => {
   res.status(404).send('Not Found');
 });
 
-// Fallback to SPA routing (serve index.html for unrecognized GET routes)
+// Static serving for icons on the API router
+apiRouter.use('/icons', express.static(path.join(process.cwd(), 'src', 'icons')));
+
+// Conditional host routing middleware
 app.use((req, res, next) => {
-  if (req.method === 'GET') {
-    res.sendFile(path.join(__dirname, '../dashboard/dist/index.html'));
+  const hostname = req.hostname;
+
+  if (hostname === 'arcc.webdevkin.com') {
+    // Dashboard host: serve static files and SPA fallback
+    express.static(path.join(__dirname, '../dashboard/dist'))(req, res, () => {
+      if (req.method === 'GET') {
+        return res.sendFile(path.join(__dirname, '../dashboard/dist/index.html'));
+      }
+      res.status(404).json({ error: 'Not Found' });
+    });
   } else {
-    next();
+    // API host, localhost, or any other host: serve API router only
+    apiRouter(req, res, () => {
+      res.status(404).json({ error: 'Not Found' });
+    });
   }
 });
 

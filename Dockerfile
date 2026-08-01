@@ -28,6 +28,7 @@ COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY drizzle/ ./drizzle/
 COPY drizzle.config.js ./
+COPY dashboard/dist/ ./dashboard/dist/
 
 # Create dirs for runtime artifacts (icons cache, logs)
 RUN mkdir -p src/icons logs && chown -R arcadia:arcadia /app

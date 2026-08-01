@@ -322,7 +322,7 @@ function handleImageError(item) {
                   >
                     <img
                       v-if="!item.imageError"
-                      :src="'/icons/' + item.item + '.png'"
+                      :src="props.apiBase + '/icons/' + item.item + '.png'"
                       @error="handleImageError(item)"
                       class="image-rendering-pixelated h-14 w-14 object-contain transition-transform duration-300 group-hover:scale-110"
                       :alt="item.item"
@@ -583,7 +583,7 @@ function handleImageError(item) {
                       >
                         <img
                           v-if="!item.imageError"
-                          :src="'/icons/' + item.item + '.png'"
+                          :src="props.apiBase + '/icons/' + item.item + '.png'"
                           @error="handleImageError(item)"
                           class="image-rendering-pixelated h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-110"
                           :alt="item.item"

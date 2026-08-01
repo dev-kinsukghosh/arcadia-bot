@@ -54,6 +54,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── stats-dev.js
 │   │       ├── test.js
 │   │       └── towny.js
+│   ├── heads/
 │   ├── db/
 │   │   ├── schema.js
 │   │   └── redisSchema.js
@@ -168,6 +169,7 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/test.js](./src/commands/general/test.js): `/test` — Runs Bot integration and connection test suites from Discord (Developer Only).
       - [src/commands/general/towny.js](./src/commands/general/towny.js): `/towny` — Displays Towny stats, town info, and nation info with autocomplete.
   - 📂 **src/icons/**: Cache directory containing block and item texture PNG images downloaded from mcasset.cloud.
+  - 📂 **src/heads/**: Cache directory containing player head skin avatars downloaded from minotar.net.
   - 📂 **src/db/**: Database schema definitions.
   - [src/db/schema.js](./src/db/schema.js): Drizzle ORM model schemas for MySQL databases.
   - [src/db/redisSchema.js](./src/db/redisSchema.js): Schema models and repositories mapping for Redis-OM.

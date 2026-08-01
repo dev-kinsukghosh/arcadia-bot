@@ -462,3 +462,26 @@ The following rules MUST be followed at all times:
   - Updated `src/deploy-commands.js` DEV mode to auto-clear stale global commands after deploying to the dev guild, mirroring how PROD mode already clears guild commands after deploying globally. Prevents duplicate slash commands when switching between modes.
 - **Slash Commands — `/dev-slist` Enhancement**:
   - Added guild owner mention (`<@ownerId>`) to the end of each server entry in the paginated listing.
+
+### 01-08-2026
+
+- **API Asset Caching Consolidation**:
+  - Moved the dashboard icon download cache and player head cache entirely to the backend API server.
+  - Configured `iconDownloader.js` to download and save upscaled Minecraft block/item texture icons strictly inside `src/icons/` and removed all copy operations targeting `dashboard/public/icons/`.
+  - Configured `headManager.js` to save downloaded player head avatars directly to `src/heads/` instead of `dashboard/public/heads/`.
+  - Excluded both `src/icons/` and `src/heads/` directories from version control in `.gitignore` and build contexts in `.dockerignore`.
+  - Exposed `apiRouter.use('/icons', ...)` static directory serving on the Express server router.
+  - Updated `ConvoyStock.vue` to fetch texture icons dynamically using the configuration `props.apiBase` URL.
+- **Advanced Host-Based Routing**:
+  - Separated bot API endpoints onto a dedicated Express `apiRouter` object to enforce routing scopes.
+  - Configured an Express host-routing middleware in `src/server.js` to serve API routes exclusively for the `arcapi.webdevkin.com` and `localhost`/`127.0.0.1` domains, while serving the built Vue dashboard statically for the `arcc.webdevkin.com` domain.
+  - Configured localhost/127.0.0.1 requests to always serve API responses and never fallback to dashboard files (allowing local development via `npm run dashboard:dev` on its own port).
+- **CORS Headers Fix**:
+  - Re-enabled robust CORS preflight configurations on the Express server, allowing the custom `X-Device-Fingerprint` header to bypass browser checks during cross-origin dashboard requests.
+- **Table Transition Jitter & Scrollbar Flickering Fix**:
+  - Modified the custom Tailwind transition animations on the Live Currency Market table in `MarketMonitor.vue`.
+  - Swapped horizontal sliding animations (`translateX`) for vertical sliding animations (`translateY`) to completely eliminate temporary width expansion and prevent flickering horizontal scrollbars on table rows during live filtering.
+- **GitHub Actions & Container Bundling**:
+  - Updated `.github/workflows/deploy.yml` to build the Vue dashboard using Vite with `VITE_API_URL` set to the production API domain (`https://arcapi.webdevkin.com`) in the build job.
+  - Packaged the compiled `dashboard/dist` inside the Docker image by adding it to `Dockerfile` and configuring `.dockerignore` to allow `dashboard/dist/` through while ignoring raw dashboard source paths.
+  - Simplified the deployment steps in `deploy.yml` by removing remote SCP dashboard transfers and container volume mounts, keeping the Docker container completely self-contained.

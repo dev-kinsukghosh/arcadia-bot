@@ -4,7 +4,7 @@ const axios = require('axios');
 const redisClient = require('../utils/redis.js');
 const logger = require('../utils/logger.js');
 
-const headsDir = path.join(__dirname, '../../dashboard/public/heads');
+const headsDir = path.join(process.cwd(), 'src', 'heads');
 
 if (!fs.existsSync(headsDir)) {
   fs.mkdirSync(headsDir, { recursive: true });

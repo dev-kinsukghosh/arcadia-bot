@@ -1174,7 +1174,6 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
 <style scoped>
 /* Premium Table Row Enter/Leave Transitions */
 .row-list-enter-active,
@@ -1185,11 +1184,11 @@ onMounted(() => {
 }
 .row-list-enter-from {
   opacity: 0;
-  transform: translateX(-4px);
+  transform: translateY(-4px);
 }
 .row-list-leave-to {
   opacity: 0;
-  transform: translateX(4px);
+  transform: translateY(4px);
 }
 .row-list-move {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
