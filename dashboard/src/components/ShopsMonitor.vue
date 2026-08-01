@@ -47,8 +47,8 @@ function closeModal() {
 // Copy coordinates utility
 const copiedText = ref(null);
 function copyCoordinates(x, z) {
-  navigator.clipboard.writeText(`${x}, ${z}`);
-  copiedText.value = `${x}, ${z}`;
+  navigator.clipboard.writeText(`x${x}, z${z}`);
+  copiedText.value = `x${x}, z${z}`;
   setTimeout(() => {
     copiedText.value = null;
   }, 2000);
