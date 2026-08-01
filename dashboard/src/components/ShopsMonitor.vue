@@ -44,14 +44,43 @@ function closeModal() {
   isModalOpen.value = false;
 }
 
-// Copy coordinates utility
+// Copy coordinates utility with fallback for insecure HTTP contexts
 const copiedText = ref(null);
 function copyCoordinates(x, z) {
-  navigator.clipboard.writeText(`x${x}, z${z}`);
-  copiedText.value = `x${x}, z${z}`;
-  setTimeout(() => {
-    copiedText.value = null;
-  }, 2000);
+  const text = `${x}, ${z}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      copiedText.value = text;
+      setTimeout(() => {
+        copiedText.value = null;
+      }, 2000);
+    }).catch(() => {
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
+}
+
+function fallbackCopyText(text) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.top = '0';
+  textArea.style.left = '0';
+  textArea.style.position = 'fixed';
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    document.execCommand('copy');
+    copiedText.value = text;
+    setTimeout(() => {
+      copiedText.value = null;
+    }, 2000);
+  } catch (err) {
+    console.error('Fallback copy failed:', err);
+  }
+  document.body.removeChild(textArea);
 }
 
 // Filter and search logic
@@ -230,9 +259,17 @@ onMounted(() => {
           </div>
 
           <!-- Coordinates Coordinates -->
-          <div class="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
-            <font-awesome-icon icon="globe" class="text-slate-500" />
-            <span>X: {{ shop.plotX }} · Z: {{ shop.plotZ }}</span>
+          <div class="mt-3 flex items-center justify-between text-xs text-slate-400">
+            <div class="flex items-center gap-1.5">
+              <font-awesome-icon icon="globe" class="text-slate-500" />
+              <span>X: {{ shop.plotX }} · Z: {{ shop.plotZ }}</span>
+            </div>
+            <button
+              @click.stop="copyCoordinates(shop.plotX, shop.plotZ)"
+              class="rounded bg-slate-900/60 px-1.5 py-0.5 text-[9px] font-bold text-slate-400 transition-all hover:bg-slate-800 hover:text-blue-400"
+            >
+              {{ copiedText === `${shop.plotX}, ${shop.plotZ}` ? 'Copied!' : 'Copy' }}
+            </button>
           </div>
 
           <!-- Listings count -->
