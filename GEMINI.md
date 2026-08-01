@@ -510,6 +510,8 @@ The following rules MUST be followed at all times:
     - Allows copying coordinates to clipboard instantly.
     - Supports full text-based searching of shop names/owners, item listing filtering, and a toggle filter for selling/buying offers.
     - Displays detailed modals showing active buy/sell inventories and balances.
+    - Resolves shop owner UUIDs to actual Minecraft usernames on the backend server (`src/server.js`) via Mojang's session server with Redis/local memory caching.
+    - Displays owner's skin head avatar (proxied via `/heads/:username.png`) and resolved player name inside both shop cards and detail inspection modals.
     - Imported and registered the FontAwesome `faShop` icon.
 - **Web Dashboard Navigation Slash Command**:
   - Created the `/dashboard` slash command (`src/commands/general/dashboard.js`) returning a premium Discord embed explaining all stats panel modules along with a link button redirecting users to `https://arcc.webdevkin.com/live-market`.
