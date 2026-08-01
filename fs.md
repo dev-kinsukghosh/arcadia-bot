@@ -31,7 +31,8 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── setup.js
 │   ├── migrate-safe.js
 │   ├── export-wiki-table.js
-│   └── upload-emojis.js
+│   ├── upload-emojis.js
+│   └── sync-missing-shop-icons.js
 ├── src/
 │   ├── server.js
 │   ├── deploy-commands.js
@@ -132,6 +133,7 @@ This file serves as a reference guide for the directory structure and file respo
 - [scripts/migrate-safe.js](./scripts/migrate-safe.js): Programmatic schema migrator for Drizzle ORM.
 - [scripts/export-wiki-table.js](./scripts/export-wiki-table.js): Utility script to fetch and export all convoy items to a MediaWiki-formatted table in a markdown file.
 - [scripts/upload-emojis.js](./scripts/upload-emojis.js): Utility script to upload cached item icon PNGs to Discord Application Emojis.
+- [scripts/sync-missing-shop-icons.js](./scripts/sync-missing-shop-icons.js): Script to dynamically identify active player shop trade items, download any missing textures from Mojang/mcasset APIs, and upload them to Discord.
 
 ### 📂 dashboard/
 
