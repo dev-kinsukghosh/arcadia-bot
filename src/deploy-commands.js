@@ -97,9 +97,10 @@ const rest = new REST({ version: '10' }).setToken(token);
     logger.info(`Started refreshing ${commands.length} application (/) commands.`);
 
     const mode = (process.env.MODE || 'PROD').toUpperCase();
-    logger.info(`Deployment mode: ${mode}`);
+    const forceGlobal = args.includes('--global');
+    logger.info(`Deployment mode: ${mode}${forceGlobal ? ' (Forced Global)' : ''}`);
 
-    if (mode === 'DEV') {
+    if (mode === 'DEV' && !forceGlobal) {
       if (guildId) {
         logger.info(`[DEV MODE] Deploying commands to development guild: ${guildId}`);
         const data = await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
@@ -123,19 +124,15 @@ const rest = new REST({ version: '10' }).setToken(token);
         );
       }
     } else {
-      // PROD Mode
-      logger.info('[PROD MODE] Deploying commands globally...');
+      // PROD Mode or Forced Global
+      logger.info('Deploying commands globally...');
       const data = await rest.put(Routes.applicationCommands(clientId), { body: commands });
-      logger.success(
-        `[PROD MODE] Successfully reloaded ${data.length} global application (/) commands.`
-      );
+      logger.success(`Successfully reloaded ${data.length} global application (/) commands.`);
 
       if (guildId) {
-        logger.info(`[PROD MODE] Clearing old guild-specific commands for guild: ${guildId}...`);
+        logger.info(`Clearing old guild-specific commands for guild: ${guildId}...`);
         await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] });
-        logger.success(
-          `[PROD MODE] Successfully cleared guild-specific commands for guild ${guildId}.`
-        );
+        logger.success(`Successfully cleared guild-specific commands for guild ${guildId}.`);
       }
     }
 

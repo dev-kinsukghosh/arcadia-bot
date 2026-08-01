@@ -1,10 +1,26 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const {
+  SlashCommandBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ApplicationIntegrationType,
+  InteractionContextType,
+} = require('discord.js');
 const { createBaseEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('dashboard')
-    .setDescription('Get the direct link to the ArcadiaMC Community Stats Dashboard'),
+    .setDescription('Get the direct link to the ArcadiaMC Community Stats Dashboard')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    ),
 
   async execute(interaction) {
     const embed = createBaseEmbed()

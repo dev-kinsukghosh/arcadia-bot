@@ -1,10 +1,23 @@
-const { SlashCommandBuilder } = require('discord.js');
+const {
+  SlashCommandBuilder,
+  ApplicationIntegrationType,
+  InteractionContextType,
+} = require('discord.js');
 const { createBaseEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('ping')
-    .setDescription("Check the bot's latency and connection status"),
+    .setDescription("Check the bot's latency and connection status")
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    ),
   async execute(interaction) {
     await interaction.reply({ content: 'Pinging...' });
     const sent = await interaction.fetchReply();

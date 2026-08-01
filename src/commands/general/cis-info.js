@@ -5,6 +5,8 @@ const {
   ButtonBuilder,
   ButtonStyle,
   MessageFlags,
+  ApplicationIntegrationType,
+  InteractionContextType,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { convoyItems, nguildData } = require('../../db/schema.js');
@@ -116,6 +118,15 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('cis-info')
     .setDescription('View detailed convoy rotation information for items')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    )
     .addStringOption((option) =>
       option
         .setName('item')

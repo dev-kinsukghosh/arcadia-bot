@@ -1,4 +1,10 @@
-const { SlashCommandBuilder, MessageFlags, AttachmentBuilder } = require('discord.js');
+const {
+  SlashCommandBuilder,
+  MessageFlags,
+  AttachmentBuilder,
+  ApplicationIntegrationType,
+  InteractionContextType,
+} = require('discord.js');
 const { arcadiaApi } = require('../../utils/apiClient.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { drawTopChart, drawCompareChart } = require('../../utils/canvasGraph.js');
@@ -34,6 +40,15 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('towny')
     .setDescription('View Arcadia Towny statistics, rankings, comparisons, and profiles')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    )
     .addSubcommand((sub) =>
       sub.setName('stats').setDescription('Display overall Arcadia Towny server statistics')
     )
@@ -124,7 +139,7 @@ module.exports = {
     let choices = [];
 
     if (
-      focusedOption.name === 'name' ||
+      (focusedOption.name === 'name' && subcommand === 'town') ||
       focusedOption.name === 'town1' ||
       focusedOption.name === 'town2'
     ) {

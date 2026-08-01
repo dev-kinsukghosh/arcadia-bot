@@ -1,10 +1,10 @@
 {
   "name": "arc-community-bot",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "",
   "main": "bot.js",
   "scripts": {
-    "start": "node src/deploy-commands.js && node bot.js",
+    "start": "node src/deploy-commands.js --global && node bot.js",
     "dev": "nodemon bot.js",
     "setup": "node scripts/setup.js",
     "deploy": "node src/deploy-commands.js",

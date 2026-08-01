@@ -1,19 +1,6 @@
-# Todo
-
-1. Currency monitor and Exchange rate cmd
-2. graph with Arc value of currency
-3. Add a feature to track historical exchange rates
-4. add cmds for /api/towny
-5. add cmds for /api/currencies
-
-# todo 2
-
-1. add Maintence mode to main bot so can work on it
-
 # todo 3
 
-[x] move dashboard icon and head display cache & all icons to api server
-[x] serve dashboard in container & build via GitHub Actions (instead of host SCP deploy)
-[x] add back cors policy
-[] EMBED discord etc
-[x] fix Table in live-market showing scrollbar for some reason sometimes / it flickers
+auto Remove old
+ghcr.io/dev-kinsukghosh/arcadia-bot:<none> when new cointainer gets deployed
+
+# todo 4

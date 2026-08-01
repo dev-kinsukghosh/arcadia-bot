@@ -517,3 +517,19 @@ The following rules MUST be followed at all times:
   - Created the `/dashboard` slash command (`src/commands/general/dashboard.js`) returning a premium Discord embed explaining all stats panel modules along with a link button redirecting users to `https://arcc.webdevkin.com/live-market`.
 - **Shops Active Icons & Emojis Synchronization Script**:
   - Created a standalone utility script `scripts/sync-missing-shop-icons.js` that scans player shops active inventories, downloads and upscales any missing texture icons from Mojang/mcasset APIs, and programmatically uploads them to Discord application emojis.
+- **Developer Broadcast Slash Command (`/broadcast`)**:
+  - Created developer-only slash command `src/commands/general/broadcast.js` to dispatch announcement embeds without pings to all servers.
+  - Implemented automatic best-channel selection in each server using a prioritized fallback strategy (checking announcement-themed channel names, database-active item notification channels, general chat channels, and guild system channels before falling back to the first writeable text channel).
+  - Configured command options allowing customization of the embed title, message, theme colors (Cyber Purple, Success Green, Info Blue, Warning Yellow, Error Red), large images, thumbnails, and target guild ID (for isolated guild testing).
+  - Standardized slash command registration to run successfully in DEV/PROD deployment scopes.
+- **User-Installable App Configuration (User Apps)**:
+  - Enabled User-Installable Application (User App) support for general commands: `/ping`, `/ccompare`, `/chistory`, `/cstats`, `/cstock`, `/currencies`, `/dashboard`, `/exchange`, `/shops`, `/towny`, and `/cis-info`.
+  - Configured these commands with `ApplicationIntegrationType.UserInstall` and contexts `Guild`, `BotDM`, and `PrivateChannel` (group DMs), allowing users to execute them anywhere on Discord without requiring the bot to be present in the server.
+  - Ensured server-related stats configurations (such as currency conversion overrides) fall back cleanly when run in non-guild contexts (DMs).
+  - Modified `src/deploy-commands.js` to accept a new `--global` CLI flag, allowing developers in `DEV` mode to force global command registration (enabling User App execution testing) while clearing development guild commands to prevent duplicate listings.
+- **Towny Autocomplete Bug Fix**:
+  - Resolved a logic issue in `/towny` (`src/commands/general/towny.js`) autocomplete where the first branch matching `focusedOption.name === 'name'` suggested towns even when querying the `/towny nation` subcommand. Restructured the check to evaluate subcommand names, enabling correct nation name predictions.
+- **CI/CD Docker Image Pruning Optimization**:
+  - Modified `.github/workflows/deploy.yml` deployment script to immediately clean up untagged `<none>` dangling images after starting a new container.
+  - Replaced the time-restricted `docker image prune -af --filter "until=24h"` with an unconditional `docker image prune -f` to instantly purge untagged intermediate/previous build images from the remote host environment on every deployment push.
+

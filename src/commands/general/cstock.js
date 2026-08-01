@@ -11,6 +11,8 @@ const {
   SeparatorBuilder,
   SeparatorSpacingSize,
   MessageFlags,
+  ApplicationIntegrationType,
+  InteractionContextType,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { convoyItems, nguildData } = require('../../db/schema.js');
@@ -213,7 +215,16 @@ module.exports = {
   cooldown: 10,
   data: new SlashCommandBuilder()
     .setName('cstock')
-    .setDescription('View the current Convoy shop stock and prices'),
+    .setDescription('View the current Convoy shop stock and prices')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    ),
 
   async execute(interaction) {
     await interaction.deferReply();

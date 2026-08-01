@@ -1,4 +1,8 @@
-const { SlashCommandBuilder } = require('discord.js');
+const {
+  SlashCommandBuilder,
+  ApplicationIntegrationType,
+  InteractionContextType,
+} = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { currencies: currenciesTable, currencyHistory } = require('../../db/schema.js');
 const { gte, asc } = require('drizzle-orm');
@@ -78,6 +82,15 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('cstats')
     .setDescription('View currency market stability, performers, and statistical metrics')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    )
     .addIntegerOption((option) =>
       option
         .setName('days')

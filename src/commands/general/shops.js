@@ -4,6 +4,8 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  ApplicationIntegrationType,
+  InteractionContextType,
 } = require('discord.js');
 const { arcadiaApi } = require('../../utils/apiClient.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
@@ -38,6 +40,15 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('shops')
     .setDescription('Explore Arcadia player shops, search item listings, and find coordinates')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    )
     .addSubcommand((sub) =>
       sub.setName('list').setDescription('List all registered player shops and locations')
     )

@@ -39,6 +39,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── commands/
 │   │   └── general/
 │   │       ├── blacklist.js
+│   │       ├── broadcast.js
 │   │       ├── ccompare.js
 │   │       ├── dashboard.js
 │   │       ├── chistory.js
@@ -159,6 +160,7 @@ This file serves as a reference guide for the directory structure and file respo
   - 📂 **src/commands/**: Contains category subfolders containing Discord Slash Commands.
     - 📂 **src/commands/general/**:
       - [src/commands/general/blacklist.js](./src/commands/general/blacklist.js): `/blacklist` — Manage user blacklist add, remove, and list (Developer Only).
+      - [src/commands/general/broadcast.js](./src/commands/general/broadcast.js): `/broadcast` — Broadcast an announcement embed to all servers (Developer Only).
       - [src/commands/general/ccompare.js](./src/commands/general/ccompare.js): `/ccompare` — Compare the exchange rates of two nation currencies side-by-side with a graph.
       - [src/commands/general/dashboard.js](./src/commands/general/dashboard.js): `/dashboard` — Returns direct link to the web stats panel.
       - [src/commands/general/chistory.js](./src/commands/general/chistory.js): `/chistory` — View historical price charts and trend sparklines for nation currencies with raw/percentage mode.

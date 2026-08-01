@@ -1,4 +1,8 @@
-const { SlashCommandBuilder } = require('discord.js');
+const {
+  SlashCommandBuilder,
+  ApplicationIntegrationType,
+  InteractionContextType,
+} = require('discord.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
 
@@ -8,6 +12,15 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('exchange')
     .setDescription('Calculate exchange rate conversion between nation currencies')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    )
     .addNumberOption((option) =>
       option
         .setName('amount')

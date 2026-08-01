@@ -4,6 +4,8 @@ const {
   ButtonBuilder,
   ButtonStyle,
   MessageFlags,
+  ApplicationIntegrationType,
+  InteractionContextType,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { currencies: currenciesTable } = require('../../db/schema.js');
@@ -41,7 +43,16 @@ async function getAppEmojis(client) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('currencies')
-    .setDescription('View active list of nation currencies and their exchange rates'),
+    .setDescription('View active list of nation currencies and their exchange rates')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    ),
 
   async execute(interaction) {
     await interaction.deferReply();

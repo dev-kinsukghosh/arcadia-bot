@@ -100,7 +100,7 @@ jobs:
               ${{ env.IMAGE_NAME }}:latest
 
             # ── Cleanup: remove old dangling images to free disk ──
-            docker image prune -af --filter "until=24h"
+            docker image prune -f
 
             echo "✅ Arcadia Bot and Dashboard deployed successfully"
 

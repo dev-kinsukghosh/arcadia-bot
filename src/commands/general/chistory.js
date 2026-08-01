@@ -5,6 +5,8 @@ const {
   ButtonStyle,
   MessageFlags,
   AttachmentBuilder,
+  ApplicationIntegrationType,
+  InteractionContextType,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { currencies: currenciesTable, currencyHistory } = require('../../db/schema.js');
@@ -73,6 +75,15 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('chistory')
     .setDescription('View price history, sparklines, and visual charts for a nation currency')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    )
     .addStringOption((option) =>
       option
         .setName('currency')

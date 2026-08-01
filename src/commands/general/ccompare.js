@@ -1,4 +1,10 @@
-const { SlashCommandBuilder, AttachmentBuilder, MessageFlags } = require('discord.js');
+const {
+  SlashCommandBuilder,
+  AttachmentBuilder,
+  MessageFlags,
+  ApplicationIntegrationType,
+  InteractionContextType,
+} = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { currencies: currenciesTable, currencyHistory } = require('../../db/schema.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
@@ -12,6 +18,15 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('ccompare')
     .setDescription('Compare the exchange rates of up to 5 nation currencies with a graph')
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    )
     .addStringOption((option) =>
       option
         .setName('currency1')
