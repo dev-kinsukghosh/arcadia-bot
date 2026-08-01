@@ -13,7 +13,7 @@ const pc = require('picocolors');
 const { WebSocketServer } = require('ws');
 
 const app = express();
-
+app.set('trust proxy', 1);
 // --- SECURITY & DOS/DDOS DEFENSE ---
 
 // 1. Helmet to secure headers
