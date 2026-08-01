@@ -123,7 +123,11 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
     let choices = [];
 
-    if (focusedOption.name === 'name' || focusedOption.name === 'town1' || focusedOption.name === 'town2') {
+    if (
+      focusedOption.name === 'name' ||
+      focusedOption.name === 'town1' ||
+      focusedOption.name === 'town2'
+    ) {
       const towns = Array.isArray(data.towns) ? data.towns : [];
       const filtered = towns.filter((t) => {
         if (!t) return false;
@@ -499,7 +503,10 @@ module.exports = {
         suffix = ' Residents';
         labels = sorted.map((t) => t.name);
         values = sorted.map((t) => t.residents ?? 0);
-        listLines = sorted.map((t, idx) => `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(t.residents ?? 0).toLocaleString()}** residents`);
+        listLines = sorted.map(
+          (t, idx) =>
+            `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(t.residents ?? 0).toLocaleString()}** residents`
+        );
       } else if (metric === 'towns_chunks') {
         const sorted = [...(data.towns || [])]
           .filter((t) => t && t.name)
@@ -510,7 +517,10 @@ module.exports = {
         suffix = ' Chunks';
         labels = sorted.map((t) => t.name);
         values = sorted.map((t) => t.claims?.claimedChunks ?? 0);
-        listLines = sorted.map((t, idx) => `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(t.claims?.claimedChunks ?? 0).toLocaleString()}** chunks`);
+        listLines = sorted.map(
+          (t, idx) =>
+            `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(t.claims?.claimedChunks ?? 0).toLocaleString()}** chunks`
+        );
       } else if (metric === 'nations_population') {
         const sorted = [...(data.nations || [])]
           .filter((n) => n && n.name)
@@ -521,7 +531,10 @@ module.exports = {
         suffix = ' Residents';
         labels = sorted.map((n) => n.name);
         values = sorted.map((n) => n.residents ?? 0);
-        listLines = sorted.map((n, idx) => `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(n.residents ?? 0).toLocaleString()}** residents`);
+        listLines = sorted.map(
+          (n, idx) =>
+            `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(n.residents ?? 0).toLocaleString()}** residents`
+        );
       } else if (metric === 'nations_towns') {
         const sorted = [...(data.nations || [])]
           .filter((n) => n && n.name)
@@ -532,7 +545,10 @@ module.exports = {
         suffix = ' Towns';
         labels = sorted.map((n) => n.name);
         values = sorted.map((n) => n.towns ?? 0);
-        listLines = sorted.map((n, idx) => `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(n.towns ?? 0).toLocaleString()}** towns`);
+        listLines = sorted.map(
+          (n, idx) =>
+            `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(n.towns ?? 0).toLocaleString()}** towns`
+        );
       }
 
       // Generate the visual bar chart
@@ -541,7 +557,9 @@ module.exports = {
         chartBuffer = drawTopChart(labels, values, title.substring(3), subtitle, suffix);
       } catch (err) {
         return interaction.editReply({
-          embeds: [errorEmbed('Chart Render Failure', `Failed to render bar chart image: ${err.message}`)],
+          embeds: [
+            errorEmbed('Chart Render Failure', `Failed to render bar chart image: ${err.message}`),
+          ],
         });
       }
 
@@ -551,8 +569,7 @@ module.exports = {
         .setColor(EMBED_COLORS.CYBER)
         .setTitle(title)
         .setDescription(
-          `**Top 10 Rankings Overview:**\n\n` +
-          `\`\`\`text\n${listLines.join('\n')}\n\`\`\``
+          `**Top 10 Rankings Overview:**\n\n` + `\`\`\`text\n${listLines.join('\n')}\n\`\`\``
         )
         .setImage('attachment://top-chart.png');
 
@@ -595,7 +612,10 @@ module.exports = {
       if (t1.id === t2.id) {
         return interaction.editReply({
           embeds: [
-            errorEmbed('Invalid Comparison', 'You cannot compare a town with itself. Please select two different towns.'),
+            errorEmbed(
+              'Invalid Comparison',
+              'You cannot compare a town with itself. Please select two different towns.'
+            ),
           ],
           flags: MessageFlags.Ephemeral,
         });
@@ -631,7 +651,12 @@ module.exports = {
         );
       } catch (err) {
         return interaction.editReply({
-          embeds: [errorEmbed('Comparison Chart Failure', `Failed to render comparison card: ${err.message}`)],
+          embeds: [
+            errorEmbed(
+              'Comparison Chart Failure',
+              `Failed to render comparison card: ${err.message}`
+            ),
+          ],
         });
       }
 
@@ -639,11 +664,13 @@ module.exports = {
 
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
-        .setTitle(`⚔️ Town Comparison: ${t1.name.replace(/_/g, ' ')} vs ${t2.name.replace(/_/g, ' ')}`)
+        .setTitle(
+          `⚔️ Town Comparison: ${t1.name.replace(/_/g, ' ')} vs ${t2.name.replace(/_/g, ' ')}`
+        )
         .setDescription(
           `Comparative profile analysis for **${t1.name.replace(/_/g, ' ')}** and **${t2.name.replace(/_/g, ' ')}**.\n` +
-          `• Left Panel Color (**Blue**): **${t1.name.replace(/_/g, ' ')}**\n` +
-          `• Right Panel Color (**Green**): **${t2.name.replace(/_/g, ' ')}**`
+            `• Left Panel Color (**Blue**): **${t1.name.replace(/_/g, ' ')}**\n` +
+            `• Right Panel Color (**Green**): **${t2.name.replace(/_/g, ' ')}**`
         )
         .setImage('attachment://compare-chart.png');
 

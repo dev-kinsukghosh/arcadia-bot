@@ -408,7 +408,10 @@ async function resolveUuidToUsername(uuid) {
 
   try {
     const axios = require('axios');
-    const res = await axios.get(`https://sessionserver.mojang.com/session/minecraft/profile/${cleanUuid}`, { timeout: 3000 });
+    const res = await axios.get(
+      `https://sessionserver.mojang.com/session/minecraft/profile/${cleanUuid}`,
+      { timeout: 3000 }
+    );
     if (res.data && res.data.name) {
       const username = res.data.name;
       resolvedUsernames.set(cleanUuid, username);

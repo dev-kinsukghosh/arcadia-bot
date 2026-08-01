@@ -224,7 +224,7 @@ function drawCompareChart(item1, item2, title) {
 
     drawSubStat(yStart + 120, '👥', 'RESIDENTS', formatNumber(item.residents));
     drawSubStat(yStart + 185, '📦', 'TERRITORY CHUNKS', formatNumber(item.chunks));
-    
+
     // Status flag
     ctx.fillStyle = '#475569';
     ctx.font = '10px sans-serif';
@@ -241,7 +241,7 @@ function drawCompareChart(item1, item2, title) {
 
   // Middle comparison section
   const midX = 40 + panelW;
-  
+
   // Draw VS Circle
   ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
   ctx.beginPath();
@@ -274,7 +274,7 @@ function drawCompareChart(item1, item2, title) {
     ctx.fill();
 
     // Calculation ratio
-    const sum = (val1 + val2) || 1;
+    const sum = val1 + val2 || 1;
     const splitX = barStartX + (val1 / sum) * barW;
 
     // Left fill (Item 1)

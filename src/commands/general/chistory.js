@@ -279,7 +279,12 @@ module.exports = {
       );
     } catch (err) {
       return interaction.editReply({
-        embeds: [errorEmbed('Chart Render Failure', `Failed to render price history line chart: ${err.message}`)],
+        embeds: [
+          errorEmbed(
+            'Chart Render Failure',
+            `Failed to render price history line chart: ${err.message}`
+          ),
+        ],
       });
     }
 

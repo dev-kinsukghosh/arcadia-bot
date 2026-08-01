@@ -517,5 +517,3 @@ The following rules MUST be followed at all times:
   - Created the `/dashboard` slash command (`src/commands/general/dashboard.js`) returning a premium Discord embed explaining all stats panel modules along with a link button redirecting users to `https://arcc.webdevkin.com/live-market`.
 - **Shops Active Icons & Emojis Synchronization Script**:
   - Created a standalone utility script `scripts/sync-missing-shop-icons.js` that scans player shops active inventories, downloads and upscales any missing texture icons from Mojang/mcasset APIs, and programmatically uploads them to Discord application emojis.
-
-

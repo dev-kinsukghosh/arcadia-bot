@@ -49,14 +49,17 @@ const copiedText = ref(null);
 function copyCoordinates(x, z) {
   const text = `${x}, ${z}`;
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      copiedText.value = text;
-      setTimeout(() => {
-        copiedText.value = null;
-      }, 2000);
-    }).catch(() => {
-      fallbackCopyText(text);
-    });
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        copiedText.value = text;
+        setTimeout(() => {
+          copiedText.value = null;
+        }, 2000);
+      })
+      .catch(() => {
+        fallbackCopyText(text);
+      });
   } else {
     fallbackCopyText(text);
   }
@@ -92,8 +95,7 @@ const filteredShops = computed(() => {
     const term = searchQuery.value.toLowerCase().trim();
     result = result.filter(
       (s) =>
-        s.name.toLowerCase().includes(term) ||
-        (s.owner && s.owner.toLowerCase().includes(term))
+        s.name.toLowerCase().includes(term) || (s.owner && s.owner.toLowerCase().includes(term))
     );
   }
 
@@ -158,7 +160,9 @@ onMounted(() => {
     </div>
 
     <!-- Filters & Search Controls -->
-    <div class="grid gap-4 rounded-2xl border border-slate-800/80 bg-[#11131c]/50 p-4 backdrop-blur-md md:grid-cols-3">
+    <div
+      class="grid gap-4 rounded-2xl border border-slate-800/80 bg-[#11131c]/50 p-4 backdrop-blur-md md:grid-cols-3"
+    >
       <!-- Search Shop Name -->
       <div class="relative">
         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
@@ -189,21 +193,33 @@ onMounted(() => {
       <div class="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-[#07080c] p-1">
         <button
           @click="selectedCategory = 'all'"
-          :class="selectedCategory === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'"
+          :class="
+            selectedCategory === 'all'
+              ? 'bg-slate-800 text-white'
+              : 'text-slate-400 hover:text-slate-200'
+          "
           class="flex-1 rounded-lg py-1.5 text-[10px] font-bold uppercase transition-all duration-150"
         >
           All
         </button>
         <button
           @click="selectedCategory = 'selling'"
-          :class="selectedCategory === 'selling' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'"
+          :class="
+            selectedCategory === 'selling'
+              ? 'bg-slate-800 text-white'
+              : 'text-slate-400 hover:text-slate-200'
+          "
           class="flex-1 rounded-lg py-1.5 text-[10px] font-bold uppercase transition-all duration-150"
         >
           Selling
         </button>
         <button
           @click="selectedCategory = 'buying'"
-          :class="selectedCategory === 'buying' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'"
+          :class="
+            selectedCategory === 'buying'
+              ? 'bg-slate-800 text-white'
+              : 'text-slate-400 hover:text-slate-200'
+          "
           class="flex-1 rounded-lg py-1.5 text-[10px] font-bold uppercase transition-all duration-150"
         >
           Buying
@@ -224,7 +240,10 @@ onMounted(() => {
     </div>
 
     <!-- Main Grid Cards -->
-    <div v-else-if="filteredShops.length > 0" class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <div
+      v-else-if="filteredShops.length > 0"
+      class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+    >
       <div
         v-for="shop in filteredShops"
         :key="shop.name"
@@ -237,7 +256,9 @@ onMounted(() => {
             <h3 class="font-semibold text-slate-200 group-hover:text-blue-400 transition-colors">
               {{ shop.name.replace(/_/g, ' ') }}
             </h3>
-            <span class="rounded-full bg-slate-900 px-2 py-0.5 text-[9px] font-bold text-slate-400 uppercase">
+            <span
+              class="rounded-full bg-slate-900 px-2 py-0.5 text-[9px] font-bold text-slate-400 uppercase"
+            >
               {{ shop.currency ? shop.currency : 'N/A' }}
             </span>
           </div>
@@ -248,10 +269,16 @@ onMounted(() => {
               :src="apiBase + '/heads/' + (shop.ownerName || shop.owner) + '.png'"
               alt=""
               class="h-5 w-5 rounded bg-slate-950 border border-slate-800"
-              @error="(e) => { e.target.src = apiBase + '/heads/steve.png' }"
+              @error="
+                (e) => {
+                  e.target.src = apiBase + '/heads/steve.png';
+                }
+              "
             />
             <div class="flex flex-col">
-              <span class="text-xs font-semibold text-slate-300">{{ shop.ownerName || 'Shop Owner' }}</span>
+              <span class="text-xs font-semibold text-slate-300">{{
+                shop.ownerName || 'Shop Owner'
+              }}</span>
               <span class="font-mono text-[9px] text-slate-500">
                 UUID: {{ shop.owner ? shop.owner.substring(0, 8) + '...' : 'Unknown' }}
               </span>
@@ -273,25 +300,38 @@ onMounted(() => {
           </div>
 
           <!-- Listings count -->
-          <div class="mt-4 flex items-center gap-4 border-t border-slate-800/40 pt-3 text-[10px] text-slate-400">
+          <div
+            class="mt-4 flex items-center gap-4 border-t border-slate-800/40 pt-3 text-[10px] text-slate-400"
+          >
             <div>
-              <span class="text-xs font-bold text-emerald-400">{{ shop.sellListings?.length || 0 }}</span> Selling
+              <span class="text-xs font-bold text-emerald-400">{{
+                shop.sellListings?.length || 0
+              }}</span>
+              Selling
             </div>
             <div>
-              <span class="text-xs font-bold text-blue-400">{{ shop.buyListings?.length || 0 }}</span> Buying
+              <span class="text-xs font-bold text-blue-400">{{
+                shop.buyListings?.length || 0
+              }}</span>
+              Buying
             </div>
           </div>
         </div>
 
         <!-- View Button indicator -->
-        <div class="mt-4 flex items-center justify-end text-xs font-bold text-blue-500 group-hover:translate-x-0.5 transition-all">
+        <div
+          class="mt-4 flex items-center justify-end text-xs font-bold text-blue-500 group-hover:translate-x-0.5 transition-all"
+        >
           Inspect listings &rarr;
         </div>
       </div>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="!isLoading" class="flex flex-col items-center justify-center space-y-3 rounded-2xl border border-slate-800/80 bg-[#11131c]/20 py-24 text-center">
+    <div
+      v-else-if="!isLoading"
+      class="flex flex-col items-center justify-center space-y-3 rounded-2xl border border-slate-800/80 bg-[#11131c]/20 py-24 text-center"
+    >
       <font-awesome-icon icon="circle-info" class="text-4xl text-slate-600" />
       <div>
         <h4 class="text-sm font-semibold text-slate-300">No Shops Found</h4>
@@ -311,20 +351,33 @@ onMounted(() => {
         class="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl transition-all"
       >
         <!-- Header -->
-        <div class="flex items-center justify-between border-b border-slate-800 bg-[#11131c] px-6 py-4">
+        <div
+          class="flex items-center justify-between border-b border-slate-800 bg-[#11131c] px-6 py-4"
+        >
           <div class="flex items-center gap-3">
             <img
               :src="apiBase + '/heads/' + (selectedShop.ownerName || selectedShop.owner) + '.png'"
               alt=""
               class="h-8 w-8 rounded bg-slate-950 border border-slate-800"
-              @error="(e) => { e.target.src = apiBase + '/heads/steve.png' }"
+              @error="
+                (e) => {
+                  e.target.src = apiBase + '/heads/steve.png';
+                }
+              "
             />
             <div>
               <h3 class="text-base font-bold text-white leading-tight">
                 🛒 Shop Details: {{ selectedShop.name.replace(/_/g, ' ') }}
               </h3>
               <p class="text-[10px] font-medium text-slate-400">
-                Owner: <span class="font-bold text-slate-300">{{ selectedShop.ownerName || 'Shop Owner' }}</span> · <span class="font-mono text-slate-500">UUID: {{ selectedShop.owner || 'Unknown' }}</span>
+                Owner:
+                <span class="font-bold text-slate-300">{{
+                  selectedShop.ownerName || 'Shop Owner'
+                }}</span>
+                ·
+                <span class="font-mono text-slate-500"
+                  >UUID: {{ selectedShop.owner || 'Unknown' }}</span
+                >
               </p>
             </div>
           </div>
@@ -342,7 +395,9 @@ onMounted(() => {
           <div class="grid gap-4 sm:grid-cols-2">
             <!-- Coords Box -->
             <div class="rounded-xl border border-slate-800 bg-[#07080c] p-4">
-              <span class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">Spawn Coordinate</span>
+              <span class="text-[9px] font-bold tracking-wider text-slate-500 uppercase"
+                >Spawn Coordinate</span
+              >
               <div class="mt-1 flex items-center justify-between">
                 <span class="font-mono text-sm text-slate-200">
                   X: {{ selectedShop.plotX }} , Z: {{ selectedShop.plotZ }}
@@ -351,15 +406,23 @@ onMounted(() => {
                   @click="copyCoordinates(selectedShop.plotX, selectedShop.plotZ)"
                   class="rounded bg-slate-800 px-2 py-1 text-[10px] font-bold text-blue-400 hover:bg-slate-750"
                 >
-                  {{ copiedText === `${selectedShop.plotX}, ${selectedShop.plotZ}` ? 'Copied!' : 'Copy Coords' }}
+                  {{
+                    copiedText === `${selectedShop.plotX}, ${selectedShop.plotZ}`
+                      ? 'Copied!'
+                      : 'Copy Coords'
+                  }}
                 </button>
               </div>
-              <p class="mt-1 text-[10px] text-slate-500">World: {{ selectedShop.world || 'currentarc' }}</p>
+              <p class="mt-1 text-[10px] text-slate-500">
+                World: {{ selectedShop.world || 'currentarc' }}
+              </p>
             </div>
 
             <!-- Currency box -->
             <div class="rounded-xl border border-slate-800 bg-[#07080c] p-4">
-              <span class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">Primary Currency</span>
+              <span class="text-[9px] font-bold tracking-wider text-slate-500 uppercase"
+                >Primary Currency</span
+              >
               <p class="mt-1 text-sm font-semibold text-slate-200 uppercase">
                 {{ selectedShop.currency ? selectedShop.currency : 'Not configured' }}
               </p>
@@ -379,7 +442,9 @@ onMounted(() => {
           <div class="grid gap-6 md:grid-cols-2">
             <!-- Selling -->
             <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800 pb-2">
+              <h4
+                class="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800 pb-2"
+              >
                 🛒 Selling Offers ({{ selectedShop.sellListings?.length || 0 }})
               </h4>
               <div class="mt-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
@@ -396,7 +461,10 @@ onMounted(() => {
                     {{ formatCurrency(list.price, list.currency || selectedShop.currency) }}
                   </div>
                 </div>
-                <p v-if="!selectedShop.sellListings || selectedShop.sellListings.length === 0" class="text-xs italic text-slate-600 py-4">
+                <p
+                  v-if="!selectedShop.sellListings || selectedShop.sellListings.length === 0"
+                  class="text-xs italic text-slate-600 py-4"
+                >
                   No active items on sale.
                 </p>
               </div>
@@ -404,7 +472,9 @@ onMounted(() => {
 
             <!-- Buying -->
             <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-2">
+              <h4
+                class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-2"
+              >
                 📥 Buying Requests ({{ selectedShop.buyListings?.length || 0 }})
               </h4>
               <div class="mt-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
@@ -421,7 +491,10 @@ onMounted(() => {
                     {{ formatCurrency(list.price, list.currency || selectedShop.currency) }}
                   </div>
                 </div>
-                <p v-if="!selectedShop.buyListings || selectedShop.buyListings.length === 0" class="text-xs italic text-slate-600 py-4">
+                <p
+                  v-if="!selectedShop.buyListings || selectedShop.buyListings.length === 0"
+                  class="text-xs italic text-slate-600 py-4"
+                >
                   No active buying requests.
                 </p>
               </div>

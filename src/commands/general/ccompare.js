@@ -110,13 +110,16 @@ module.exports = {
     ];
 
     // Filter and sanitize selected IDs
-    const ids = Array.from(
-      new Set(idsRaw.filter((id) => id).map((id) => id.toLowerCase().trim()))
-    );
+    const ids = Array.from(new Set(idsRaw.filter((id) => id).map((id) => id.toLowerCase().trim())));
 
     if (ids.length < 2) {
       return interaction.editReply({
-        embeds: [errorEmbed('Invalid Inputs', 'You must select at least two different currencies to compare.')],
+        embeds: [
+          errorEmbed(
+            'Invalid Inputs',
+            'You must select at least two different currencies to compare.'
+          ),
+        ],
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -166,13 +169,18 @@ module.exports = {
             const history = await db
               .select()
               .from(currencyHistory)
-              .where(and(gte(currencyHistory.date, cutoffStr), eq(currencyHistory.currencyId, c.id)))
+              .where(
+                and(gte(currencyHistory.date, cutoffStr), eq(currencyHistory.currencyId, c.id))
+              )
               .orderBy(asc(currencyHistory.date));
 
             histories[c.id] = history;
 
             const map = new Map(
-              history.map((h) => [h.date.toISOString().split('T')[0], parseFloat(h.avgArcPerUnitLive || h.arcPerUnitLive)])
+              history.map((h) => [
+                h.date.toISOString().split('T')[0],
+                parseFloat(h.avgArcPerUnitLive || h.arcPerUnitLive),
+              ])
             );
             dateMaps[c.id] = map;
 
@@ -253,7 +261,12 @@ module.exports = {
       );
     } catch (err) {
       return interaction.editReply({
-        embeds: [errorEmbed('Chart Generation Error', `Failed to render comparison line chart: ${err.message}`)],
+        embeds: [
+          errorEmbed(
+            'Chart Generation Error',
+            `Failed to render comparison line chart: ${err.message}`
+          ),
+        ],
       });
     }
 

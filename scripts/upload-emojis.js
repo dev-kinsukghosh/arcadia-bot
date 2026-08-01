@@ -76,10 +76,22 @@ async function checkAndUploadEmojis(client) {
           attachment: emoji.filePath,
           name: emoji.name,
         });
+
+        // Keep cache up to date
+        existingEmojis.set(createdEmoji.id, createdEmoji);
+
         logger.success(
           `Successfully uploaded custom emoji: ${createdEmoji.name} (<:${createdEmoji.name}:${createdEmoji.id}>)`
         );
       } catch (uploadError) {
+        if (
+          uploadError.code === 50035 &&
+          uploadError.message.includes('APPLICATION_EMOJI_NAME_ALREADY_TAKEN')
+        ) {
+          logger.warn(`${emoji.name} already exists. Skipping.`);
+          continue;
+        }
+
         logger.error(`Failed to upload ${emoji.name}:`, uploadError);
       }
 

@@ -12,13 +12,13 @@ module.exports = {
       .setTitle('📊 ArcadiaMC Web Dashboard')
       .setDescription(
         'Access real-time telemetry, transaction charts, shop listing databases, and network monitors on our web panel.\n\n' +
-        '**Available Modules:**\n' +
-        '• 🪙 **Live Currency Market:** Live exchange rate ticker tracking nation currencies relative to ARC.\n' +
-        '• 📈 **Currency History:** Historical rates comparison charts over 7-120 days.\n' +
-        '• 🧮 **Exchange Calculator:** Conversion rates and transaction tax calculator.\n' +
-        '• 📦 **Convoy Shop:** Current Convoy shop inventory, stock limits, and rarity lists.\n' +
-        '• 🏘️ **Towny monitor:** Search player towns, nations, mayors, and chunk territory sizes.\n' +
-        '• 🛒 **Player Shops:** Full directory of player shops, active buy/sell inventories, and coordinates.'
+          '**Available Modules:**\n' +
+          '• 🪙 **Live Currency Market:** Live exchange rate ticker tracking nation currencies relative to ARC.\n' +
+          '• 📈 **Currency History:** Historical rates comparison charts over 7-120 days.\n' +
+          '• 🧮 **Exchange Calculator:** Conversion rates and transaction tax calculator.\n' +
+          '• 📦 **Convoy Shop:** Current Convoy shop inventory, stock limits, and rarity lists.\n' +
+          '• 🏘️ **Towny monitor:** Search player towns, nations, mayors, and chunk territory sizes.\n' +
+          '• 🛒 **Player Shops:** Full directory of player shops, active buy/sell inventories, and coordinates.'
       );
 
     const row = new ActionRowBuilder().addComponents(

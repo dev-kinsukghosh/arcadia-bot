@@ -1,4 +1,10 @@
-const { SlashCommandBuilder, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const {
+  SlashCommandBuilder,
+  MessageFlags,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} = require('discord.js');
 const { arcadiaApi } = require('../../utils/apiClient.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 
@@ -130,7 +136,9 @@ module.exports = {
     const shops = await fetchShopsData();
     if (!shops || shops.length === 0) {
       return interaction.editReply({
-        embeds: [errorEmbed('No Shops Found', 'Could not retrieve player shops data. Try again later.')],
+        embeds: [
+          errorEmbed('No Shops Found', 'Could not retrieve player shops data. Try again later.'),
+        ],
       });
     }
 
@@ -161,7 +169,9 @@ module.exports = {
         const embed = createBaseEmbed()
           .setColor(EMBED_COLORS.CYBER)
           .setTitle('🛒 Registered Player Shops')
-          .setDescription(`Page ${pageIdx + 1} of ${totalPages} · Active player shops listed on ArcadiaMC.`);
+          .setDescription(
+            `Page ${pageIdx + 1} of ${totalPages} · Active player shops listed on ArcadiaMC.`
+          );
 
         const listLines = chunk.map((s) => {
           const shopName = s.name.replace(/_/g, ' ');
@@ -173,7 +183,7 @@ module.exports = {
           const sellItems = Array.isArray(s.sellListings)
             ? s.sellListings.map((l) => (l.item ? l.item.toUpperCase() : 'UNKNOWN'))
             : [];
-          
+
           const sellItemsFormatted = [];
           if (sellItems.length > 0) {
             const uniqueSellItems = Array.from(new Set(sellItems));
@@ -184,7 +194,9 @@ module.exports = {
               const targetEmojiName = rawItem.substring(0, 32);
               const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
               const emojiStr = appEmoji ? appEmoji.toString() : '📦';
-              const formattedName = cleanName.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
+              const formattedName = cleanName
+                .toLowerCase()
+                .replace(/\b\w/g, (l) => l.toUpperCase());
               sellItemsFormatted.push(`${emojiStr} ${formattedName}`);
             }
           }
@@ -301,11 +313,18 @@ module.exports = {
     // ── Subcommand: Info ──────────────────────────────────────────────
     if (subcommand === 'info') {
       const query = interaction.options.getString('shop').trim().toLowerCase();
-      const shop = shops.find((s) => s.key?.toLowerCase() === query || s.name?.toLowerCase() === query);
+      const shop = shops.find(
+        (s) => s.key?.toLowerCase() === query || s.name?.toLowerCase() === query
+      );
 
       if (!shop) {
         return interaction.editReply({
-          embeds: [errorEmbed('Shop Not Found', `No shop named \`${query}\` could be found. Please use autocomplete.`)],
+          embeds: [
+            errorEmbed(
+              'Shop Not Found',
+              `No shop named \`${query}\` could be found. Please use autocomplete.`
+            ),
+          ],
           flags: MessageFlags.Ephemeral,
         });
       }
@@ -335,7 +354,9 @@ module.exports = {
           const targetEmojiName = rawItem.substring(0, 32);
           const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
           const emojiStr = appEmoji ? appEmoji.toString() : '📦';
-          sellLines.push(`${emojiStr} **${name}** — \`${list.amount} units\` @ \`${formatPrice(list.price, list.currency || shop.currency)}\``);
+          sellLines.push(
+            `${emojiStr} **${name}** — \`${list.amount} units\` @ \`${formatPrice(list.price, list.currency || shop.currency)}\``
+          );
         }
       } else {
         sellLines.push('• *No active sell listings*');
@@ -350,7 +371,9 @@ module.exports = {
           const targetEmojiName = rawItem.substring(0, 32);
           const appEmoji = appEmojis ? appEmojis.find((e) => e.name === targetEmojiName) : null;
           const emojiStr = appEmoji ? appEmoji.toString() : '📥';
-          buyLines.push(`${emojiStr} **${name}** — Wants \`${list.amount} units\` @ \`${formatPrice(list.price, list.currency || shop.currency)}\``);
+          buyLines.push(
+            `${emojiStr} **${name}** — Wants \`${list.amount} units\` @ \`${formatPrice(list.price, list.currency || shop.currency)}\``
+          );
         }
       } else {
         buyLines.push('• *No active buy listings*');
@@ -443,18 +466,24 @@ module.exports = {
       buyMatches.sort((a, b) => b.price - a.price);
 
       const sellLines = sellMatches.map(
-        (m) => `• **${m.shopName}** \`${m.coords}\`: \`${m.amount} units\` @ \`${formatPrice(m.price, m.currency)}\``
+        (m) =>
+          `• **${m.shopName}** \`${m.coords}\`: \`${m.amount} units\` @ \`${formatPrice(m.price, m.currency)}\``
       );
       const buyLines = buyMatches.map(
-        (m) => `• **${m.shopName}** \`${m.coords}\`: Wants \`${m.amount} units\` @ \`${formatPrice(m.price, m.currency)}\``
+        (m) =>
+          `• **${m.shopName}** \`${m.coords}\`: Wants \`${m.amount} units\` @ \`${formatPrice(m.price, m.currency)}\``
       );
 
-      let sellsStr = sellLines.length > 0 ? sellLines.join('\n') : '• *No shops are currently selling this item.*';
+      let sellsStr =
+        sellLines.length > 0
+          ? sellLines.join('\n')
+          : '• *No shops are currently selling this item.*';
       if (sellsStr.length > 1000) {
         sellsStr = sellsStr.substring(0, 950) + `\n... (+ ${sellLines.length - 20} more listings)`;
       }
 
-      let buysStr = buyLines.length > 0 ? buyLines.join('\n') : '• *No shops are currently buying this item.*';
+      let buysStr =
+        buyLines.length > 0 ? buyLines.join('\n') : '• *No shops are currently buying this item.*';
       if (buysStr.length > 1000) {
         buysStr = buysStr.substring(0, 950) + `\n... (+ ${buyLines.length - 20} more listings)`;
       }

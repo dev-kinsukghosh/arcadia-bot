@@ -121,9 +121,7 @@ async function downloadItemIcon(itemName) {
     if (contentType.includes('image/png')) {
       const resizedBuffer = await resizeImage(Buffer.from(response.data));
       fs.writeFileSync(outputFilePath, resizedBuffer);
-      logger.success(
-        `Downloaded 3D render for ${pc.bold(pc.green(itemName))} -> src/icons/`
-      );
+      logger.success(`Downloaded 3D render for ${pc.bold(pc.green(itemName))} -> src/icons/`);
       return true;
     }
   } catch (error) {
