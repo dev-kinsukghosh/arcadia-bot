@@ -36,4 +36,6 @@ dashboard/components.d.ts
 dashboard/stats.html
 auto-imports.d.ts
 components.d.ts
+stats.html*
+.eslintrc-auto-import.json
 
