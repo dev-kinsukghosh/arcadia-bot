@@ -346,176 +346,179 @@ onMounted(() => {
     </div>
 
     <!-- Shop Details Modal -->
-    <div
-      v-if="isModalOpen && selectedShop"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm transition-all"
-      @click.self="closeModal"
-    >
+    <Transition name="modal-fade-box">
       <div
-        class="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl transition-all"
+        v-if="isModalOpen && selectedShop"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+        style="perspective: 1000px"
+        @click.self="closeModal"
       >
-        <!-- Header -->
         <div
-          class="flex items-center justify-between border-b border-slate-800 bg-[#11131c] px-6 py-4"
+          class="modal-box-anim w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl"
         >
-          <div class="flex items-center gap-3">
-            <img
-              :src="apiBase + '/heads/' + (selectedShop.ownerName || selectedShop.owner) + '.png'"
-              alt=""
-              class="h-8 w-8 rounded bg-slate-950 border border-slate-800"
-              @error="
-                (e) => {
-                  e.target.src = apiBase + '/heads/steve.png';
-                }
-              "
-            />
-            <div>
-              <h3 class="text-base font-bold text-white leading-tight">
-                🛒 Shop Details: {{ selectedShop.name.replace(/_/g, ' ') }}
-              </h3>
-              <p class="text-[10px] font-medium text-slate-400">
-                Owner:
-                <span class="font-bold text-slate-300">{{
-                  selectedShop.ownerName || 'Shop Owner'
-                }}</span>
-                ·
-                <span class="font-mono text-slate-500"
-                  >UUID: {{ selectedShop.owner || 'Unknown' }}</span
-                >
-              </p>
-            </div>
-          </div>
-          <button
-            @click="closeModal"
-            class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-slate-400 transition-all hover:bg-slate-800 hover:text-white"
+          <!-- Header -->
+          <div
+            class="flex items-center justify-between border-b border-slate-800 bg-[#11131c] px-6 py-4"
           >
-            <font-awesome-icon icon="times" />
-          </button>
-        </div>
-
-        <!-- Scrollable content -->
-        <div class="max-h-[500px] overflow-y-auto p-6 space-y-5 custom-scrollbar">
-          <!-- Metadata and Coordinates -->
-          <div class="grid gap-4 sm:grid-cols-2">
-            <!-- Coords Box -->
-            <div class="rounded-xl border border-slate-800 bg-[#07080c] p-4">
-              <span class="text-[9px] font-bold tracking-wider text-slate-500 uppercase"
-                >Spawn Coordinate</span
-              >
-              <div class="mt-1 flex items-center justify-between">
-                <span class="font-mono text-sm text-slate-200">
-                  X: {{ selectedShop.plotX }} , Z: {{ selectedShop.plotZ }}
-                </span>
-                <button
-                  @click="copyCoordinates(selectedShop.plotX, selectedShop.plotZ)"
-                  class="rounded bg-slate-800 px-2 py-1 text-[10px] font-bold text-blue-400 hover:bg-slate-750"
-                >
-                  {{
-                    copiedText === `${selectedShop.plotX}, ${selectedShop.plotZ}`
-                      ? 'Copied!'
-                      : 'Copy Coords'
-                  }}
-                </button>
-              </div>
-              <p class="mt-1 text-[10px] text-slate-500">
-                World: {{ selectedShop.world || 'currentarc' }}
-              </p>
-            </div>
-
-            <!-- Currency box -->
-            <div class="rounded-xl border border-slate-800 bg-[#07080c] p-4">
-              <span class="text-[9px] font-bold tracking-wider text-slate-500 uppercase"
-                >Primary Currency</span
-              >
-              <p class="mt-1 text-sm font-semibold text-slate-200 uppercase">
-                {{ selectedShop.currency ? selectedShop.currency : 'Not configured' }}
-              </p>
-              <div class="mt-1.5 flex flex-wrap gap-1">
-                <span
-                  v-for="(bal, cur) in selectedShop.balances"
-                  :key="cur"
-                  class="rounded bg-slate-900 px-1.5 py-0.5 text-[9px] font-bold text-slate-400 uppercase"
-                >
-                  {{ cur }}: {{ parseFloat(bal).toFixed(1) }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Listings split view -->
-          <div class="grid gap-6 md:grid-cols-2">
-            <!-- Selling -->
-            <div>
-              <h4
-                class="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800 pb-2"
-              >
-                🛒 Selling Offers ({{ selectedShop.sellListings?.length || 0 }})
-              </h4>
-              <div class="mt-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
-                <div
-                  v-for="(list, idx) in selectedShop.sellListings"
-                  :key="idx"
-                  class="flex items-center justify-between rounded-lg border border-slate-900 bg-slate-950/40 p-2.5 text-xs"
-                >
-                  <div>
-                    <p class="font-semibold text-slate-200">{{ formatItemName(list.item) }}</p>
-                    <p class="text-[10px] text-slate-500">Stock: {{ list.amount }} units</p>
-                  </div>
-                  <div class="font-mono font-bold text-emerald-400">
-                    {{ formatCurrency(list.price, list.currency || selectedShop.currency) }}
-                  </div>
-                </div>
-                <p
-                  v-if="!selectedShop.sellListings || selectedShop.sellListings.length === 0"
-                  class="text-xs italic text-slate-600 py-4"
-                >
-                  No active items on sale.
+            <div class="flex items-center gap-3">
+              <img
+                :src="apiBase + '/heads/' + (selectedShop.ownerName || selectedShop.owner) + '.png'"
+                alt=""
+                class="h-8 w-8 rounded bg-slate-950 border border-slate-800"
+                @error="
+                  (e) => {
+                    e.target.src = apiBase + '/heads/steve.png';
+                  }
+                "
+              />
+              <div>
+                <h3 class="text-base font-bold text-white leading-tight">
+                  🛒 Shop Details: {{ selectedShop.name.replace(/_/g, ' ') }}
+                </h3>
+                <p class="text-[10px] font-medium text-slate-400">
+                  Owner:
+                  <span class="font-bold text-slate-300">{{
+                    selectedShop.ownerName || 'Shop Owner'
+                  }}</span>
+                  ·
+                  <span class="font-mono text-slate-500"
+                    >UUID: {{ selectedShop.owner || 'Unknown' }}</span
+                  >
                 </p>
               </div>
             </div>
+            <button
+              @click="closeModal"
+              class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-slate-400 transition-all hover:bg-slate-800 hover:text-white"
+            >
+              <font-awesome-icon icon="times" />
+            </button>
+          </div>
 
-            <!-- Buying -->
-            <div>
-              <h4
-                class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-2"
-              >
-                📥 Buying Requests ({{ selectedShop.buyListings?.length || 0 }})
-              </h4>
-              <div class="mt-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
-                <div
-                  v-for="(list, idx) in selectedShop.buyListings"
-                  :key="idx"
-                  class="flex items-center justify-between rounded-lg border border-slate-900 bg-slate-950/40 p-2.5 text-xs"
+          <!-- Scrollable content -->
+          <div class="max-h-[500px] overflow-y-auto p-6 space-y-5 custom-scrollbar">
+            <!-- Metadata and Coordinates -->
+            <div class="grid gap-4 sm:grid-cols-2">
+              <!-- Coords Box -->
+              <div class="rounded-xl border border-slate-800 bg-[#07080c] p-4">
+                <span class="text-[9px] font-bold tracking-wider text-slate-500 uppercase"
+                  >Spawn Coordinate</span
                 >
-                  <div>
-                    <p class="font-semibold text-slate-200">{{ formatItemName(list.item) }}</p>
-                    <p class="text-[10px] text-slate-500">Wants: {{ list.amount }} units</p>
-                  </div>
-                  <div class="font-mono font-bold text-blue-400">
-                    {{ formatCurrency(list.price, list.currency || selectedShop.currency) }}
-                  </div>
+                <div class="mt-1 flex items-center justify-between">
+                  <span class="font-mono text-sm text-slate-200">
+                    X: {{ selectedShop.plotX }} , Z: {{ selectedShop.plotZ }}
+                  </span>
+                  <button
+                    @click="copyCoordinates(selectedShop.plotX, selectedShop.plotZ)"
+                    class="rounded bg-slate-800 px-2 py-1 text-[10px] font-bold text-blue-400 hover:bg-slate-750"
+                  >
+                    {{
+                      copiedText === `${selectedShop.plotX}, ${selectedShop.plotZ}`
+                        ? 'Copied!'
+                        : 'Copy Coords'
+                    }}
+                  </button>
                 </div>
-                <p
-                  v-if="!selectedShop.buyListings || selectedShop.buyListings.length === 0"
-                  class="text-xs italic text-slate-600 py-4"
-                >
-                  No active buying requests.
+                <p class="mt-1 text-[10px] text-slate-500">
+                  World: {{ selectedShop.world || 'currentarc' }}
                 </p>
+              </div>
+
+              <!-- Currency box -->
+              <div class="rounded-xl border border-slate-800 bg-[#07080c] p-4">
+                <span class="text-[9px] font-bold tracking-wider text-slate-500 uppercase"
+                  >Primary Currency</span
+                >
+                <p class="mt-1 text-sm font-semibold text-slate-200 uppercase">
+                  {{ selectedShop.currency ? selectedShop.currency : 'Not configured' }}
+                </p>
+                <div class="mt-1.5 flex flex-wrap gap-1">
+                  <span
+                    v-for="(bal, cur) in selectedShop.balances"
+                    :key="cur"
+                    class="rounded bg-slate-900 px-1.5 py-0.5 text-[9px] font-bold text-slate-400 uppercase"
+                  >
+                    {{ cur }}: {{ parseFloat(bal).toFixed(1) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Listings split view -->
+            <div class="grid gap-6 md:grid-cols-2">
+              <!-- Selling -->
+              <div>
+                <h4
+                  class="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800 pb-2"
+                >
+                  🛒 Selling Offers ({{ selectedShop.sellListings?.length || 0 }})
+                </h4>
+                <div class="mt-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                  <div
+                    v-for="(list, idx) in selectedShop.sellListings"
+                    :key="idx"
+                    class="flex items-center justify-between rounded-lg border border-slate-900 bg-slate-950/40 p-2.5 text-xs"
+                  >
+                    <div>
+                      <p class="font-semibold text-slate-200">{{ formatItemName(list.item) }}</p>
+                      <p class="text-[10px] text-slate-500">Stock: {{ list.amount }} units</p>
+                    </div>
+                    <div class="font-mono font-bold text-emerald-400">
+                      {{ formatCurrency(list.price, list.currency || selectedShop.currency) }}
+                    </div>
+                  </div>
+                  <p
+                    v-if="!selectedShop.sellListings || selectedShop.sellListings.length === 0"
+                    class="text-xs italic text-slate-600 py-4"
+                  >
+                    No active items on sale.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Buying -->
+              <div>
+                <h4
+                  class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-2"
+                >
+                  📥 Buying Requests ({{ selectedShop.buyListings?.length || 0 }})
+                </h4>
+                <div class="mt-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                  <div
+                    v-for="(list, idx) in selectedShop.buyListings"
+                    :key="idx"
+                    class="flex items-center justify-between rounded-lg border border-slate-900 bg-slate-950/40 p-2.5 text-xs"
+                  >
+                    <div>
+                      <p class="font-semibold text-slate-200">{{ formatItemName(list.item) }}</p>
+                      <p class="text-[10px] text-slate-500">Wants: {{ list.amount }} units</p>
+                    </div>
+                    <div class="font-mono font-bold text-blue-400">
+                      {{ formatCurrency(list.price, list.currency || selectedShop.currency) }}
+                    </div>
+                  </div>
+                  <p
+                    v-if="!selectedShop.buyListings || selectedShop.buyListings.length === 0"
+                    class="text-xs italic text-slate-600 py-4"
+                  >
+                    No active buying requests.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Footer -->
-        <div class="flex justify-end border-t border-slate-800 bg-[#11131c] px-6 py-3.5">
-          <button
-            @click="closeModal"
-            class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-blue-500"
-          >
-            Close
-          </button>
+          <!-- Footer -->
+          <div class="flex justify-end border-t border-slate-800 bg-[#11131c] px-6 py-3.5">
+            <button
+              @click="closeModal"
+              class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-blue-500"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>

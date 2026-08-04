@@ -26,6 +26,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   └── src/
 │       ├── App.vue
 │       ├── main.js
+│       ├── router.js
 │       ├── style.css
 │       └── components/
 │           ├── ConvoyStock.vue

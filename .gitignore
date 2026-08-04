@@ -31,5 +31,9 @@ dashboard/public/502.html
 dashboard/public/500.html
 dashboard/public/503.html
 dashboard/public/403.html
-
+dashboard/auto-imports.d.ts
+dashboard/components.d.ts
+dashboard/stats.html
+auto-imports.d.ts
+components.d.ts
 

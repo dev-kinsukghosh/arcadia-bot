@@ -671,341 +671,349 @@ function closeModals() {
     </div>
 
     <!-- TOWN DETAILS MODAL OVERLAY -->
-    <div
-      v-if="selectedTown"
-      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      @click.self="closeModals"
-    >
+    <Transition name="modal-fade-box">
       <div
-        class="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl transition-all duration-300"
+        v-if="selectedTown"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+        style="perspective: 1000px"
+        @click.self="closeModals"
       >
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between border-b border-slate-900 px-6 py-4">
-          <div class="flex items-center gap-2">
-            <font-awesome-icon icon="globe" class="text-blue-400" />
-            <h2 class="text-base font-bold text-slate-100">
-              {{ cleanName(selectedTown.name) }} Details
-            </h2>
-          </div>
-          <button
-            @click="closeModals"
-            class="text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <font-awesome-icon icon="times" />
-          </button>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="p-6 space-y-5">
-          <!-- Mayor details & avatar -->
-          <div
-            class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4"
-          >
-            <div
-              :class="getPlayerColor(selectedTown.mayor?.name)"
-              class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
+        <div
+          class="modal-box-anim w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl"
+        >
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between border-b border-slate-900 px-6 py-4">
+            <div class="flex items-center gap-2">
+              <font-awesome-icon icon="globe" class="text-blue-400" />
+              <h2 class="text-base font-bold text-slate-100">
+                {{ cleanName(selectedTown.name) }} Details
+              </h2>
+            </div>
+            <button
+              @click="closeModals"
+              class="text-slate-400 hover:text-slate-200 transition-colors"
             >
-              <span class="z-0 select-none text-[10px]">{{
-                getPlayerInitials(selectedTown.mayor?.name)
-              }}</span>
-              <img
-                v-if="!failedAvatars['modal-town-' + selectedTown.id]"
-                :src="`${props.apiBase}/heads/${(selectedTown.mayor?.name || 'steve').toLowerCase()}.png`"
-                alt="Mayor Skin"
-                class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
-                @load="$event.target.classList.remove('opacity-0')"
-                @error="handleAvatarError('modal-town-' + selectedTown.id)"
-              />
-            </div>
-            <div>
-              <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                Town Mayor
-              </div>
-              <div class="text-sm font-bold text-slate-100">
-                {{ selectedTown.mayor?.name || 'Unknown' }}
-              </div>
-              <div class="font-mono text-[9px] text-slate-600 truncate max-w-[280px]">
-                {{ selectedTown.mayor?.uuid }}
-              </div>
-            </div>
+              <font-awesome-icon icon="times" />
+            </button>
           </div>
 
-          <!-- Claims, residents, coordinates -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                Resident Telemetry
-              </h4>
-              <div class="mt-2 font-mono text-sm text-slate-300">
-                • Total: <strong class="text-slate-100">{{ selectedTown.residents }}</strong
-                ><br />
-                • Online:
-                <strong class="text-emerald-400">{{ selectedTown.onlineResidents }}</strong>
-              </div>
-            </div>
-
-            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                Land & Claims
-              </h4>
-              <div class="mt-2 font-mono text-xs text-slate-300 space-y-0.5">
-                <div>
-                  • Claimed Chunks:
-                  <strong class="text-slate-100">{{ selectedTown.claims?.claimedChunks }}</strong>
-                </div>
-                <div>
-                  • Bonus Chunks:
-                  <strong class="text-slate-100">{{ selectedTown.claims?.bonusChunks }}</strong>
-                </div>
-                <div>
-                  • Outposts:
-                  <strong class="text-slate-100">{{ selectedTown.claims?.outpostChunks }}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                Spawn Coordinates
-              </h4>
-              <div class="mt-2 font-mono text-[11px] text-slate-300 space-y-0.5">
-                <div>
-                  • World: <strong class="text-slate-100">{{ selectedTown.spawn?.world }}</strong>
-                </div>
-                <div>
-                  • X:
-                  <strong class="text-slate-100">{{ selectedTown.spawn?.x?.toFixed(1) }}</strong>
-                </div>
-                <div>
-                  • Y:
-                  <strong class="text-slate-100">{{ selectedTown.spawn?.y?.toFixed(1) }}</strong>
-                </div>
-                <div>
-                  • Z:
-                  <strong class="text-slate-100">{{ selectedTown.spawn?.z?.toFixed(1) }}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                Homeblock Chunk
-              </h4>
-              <div class="mt-2 font-mono text-xs text-slate-300">
-                • World: <strong class="text-slate-100">{{ selectedTown.homeblock?.world }}</strong
-                ><br />
-                • Block X: <strong class="text-slate-100">{{ selectedTown.homeblock?.x }}</strong
-                ><br />
-                • Block Z: <strong class="text-slate-100">{{ selectedTown.homeblock?.z }}</strong>
-              </div>
-            </div>
-          </div>
-
-          <!-- Flags -->
-          <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-            <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">
-              Town Configuration Flags
-            </h4>
-            <div class="grid grid-cols-3 gap-2">
+          <!-- Modal Body -->
+          <div class="p-6 space-y-5">
+            <!-- Mayor details & avatar -->
+            <div
+              class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4"
+            >
               <div
-                v-for="(val, flag) in selectedTown.flags"
-                :key="flag"
-                :class="
-                  val
-                    ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
-                    : 'border-slate-800 bg-slate-900/10 text-slate-400'
-                "
-                class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
+                :class="getPlayerColor(selectedTown.mayor?.name)"
+                class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
               >
-                <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
-                <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{
-                  val ? 'ON' : 'OFF'
+                <span class="z-0 select-none text-[10px]">{{
+                  getPlayerInitials(selectedTown.mayor?.name)
                 }}</span>
+                <img
+                  v-if="!failedAvatars['modal-town-' + selectedTown.id]"
+                  :src="`${props.apiBase}/heads/${(selectedTown.mayor?.name || 'steve').toLowerCase()}.png`"
+                  alt="Mayor Skin"
+                  class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                  @load="$event.target.classList.remove('opacity-0')"
+                  @error="handleAvatarError('modal-town-' + selectedTown.id)"
+                />
+              </div>
+              <div>
+                <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  Town Mayor
+                </div>
+                <div class="text-sm font-bold text-slate-100">
+                  {{ selectedTown.mayor?.name || 'Unknown' }}
+                </div>
+                <div class="font-mono text-[9px] text-slate-600 truncate max-w-[280px]">
+                  {{ selectedTown.mayor?.uuid }}
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Age telemetry -->
-          <div
-            class="flex items-center justify-between border-t border-slate-900 pt-4 font-mono text-[10px] text-slate-500"
-          >
-            <div>Established: {{ formatDate(selectedTown.createdAt) }}</div>
-            <div>Active: {{ formatDate(selectedTown.lastOnlineAt) }}</div>
+            <!-- Claims, residents, coordinates -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
+                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  Resident Telemetry
+                </h4>
+                <div class="mt-2 font-mono text-sm text-slate-300">
+                  • Total: <strong class="text-slate-100">{{ selectedTown.residents }}</strong
+                  ><br />
+                  • Online:
+                  <strong class="text-emerald-400">{{ selectedTown.onlineResidents }}</strong>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
+                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  Land & Claims
+                </h4>
+                <div class="mt-2 font-mono text-xs text-slate-300 space-y-0.5">
+                  <div>
+                    • Claimed Chunks:
+                    <strong class="text-slate-100">{{ selectedTown.claims?.claimedChunks }}</strong>
+                  </div>
+                  <div>
+                    • Bonus Chunks:
+                    <strong class="text-slate-100">{{ selectedTown.claims?.bonusChunks }}</strong>
+                  </div>
+                  <div>
+                    • Outposts:
+                    <strong class="text-slate-100">{{ selectedTown.claims?.outpostChunks }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
+                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  Spawn Coordinates
+                </h4>
+                <div class="mt-2 font-mono text-[11px] text-slate-300 space-y-0.5">
+                  <div>
+                    • World: <strong class="text-slate-100">{{ selectedTown.spawn?.world }}</strong>
+                  </div>
+                  <div>
+                    • X:
+                    <strong class="text-slate-100">{{ selectedTown.spawn?.x?.toFixed(1) }}</strong>
+                  </div>
+                  <div>
+                    • Y:
+                    <strong class="text-slate-100">{{ selectedTown.spawn?.y?.toFixed(1) }}</strong>
+                  </div>
+                  <div>
+                    • Z:
+                    <strong class="text-slate-100">{{ selectedTown.spawn?.z?.toFixed(1) }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
+                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  Homeblock Chunk
+                </h4>
+                <div class="mt-2 font-mono text-xs text-slate-300">
+                  • World:
+                  <strong class="text-slate-100">{{ selectedTown.homeblock?.world }}</strong
+                  ><br />
+                  • Block X: <strong class="text-slate-100">{{ selectedTown.homeblock?.x }}</strong
+                  ><br />
+                  • Block Z: <strong class="text-slate-100">{{ selectedTown.homeblock?.z }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Flags -->
+            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
+              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">
+                Town Configuration Flags
+              </h4>
+              <div class="grid grid-cols-3 gap-2">
+                <div
+                  v-for="(val, flag) in selectedTown.flags"
+                  :key="flag"
+                  :class="
+                    val
+                      ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
+                      : 'border-slate-800 bg-slate-900/10 text-slate-400'
+                  "
+                  class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
+                >
+                  <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
+                  <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{
+                    val ? 'ON' : 'OFF'
+                  }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Age telemetry -->
+            <div
+              class="flex items-center justify-between border-t border-slate-900 pt-4 font-mono text-[10px] text-slate-500"
+            >
+              <div>Established: {{ formatDate(selectedTown.createdAt) }}</div>
+              <div>Active: {{ formatDate(selectedTown.lastOnlineAt) }}</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Transition>
 
     <!-- NATION DETAILS MODAL OVERLAY -->
-    <div
-      v-if="selectedNation"
-      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      @click.self="closeModals"
-    >
+    <Transition name="modal-fade-box">
       <div
-        class="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl transition-all duration-300"
+        v-if="selectedNation"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+        style="perspective: 1000px"
+        @click.self="closeModals"
       >
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between border-b border-slate-900 px-6 py-4">
-          <div class="flex items-center gap-2">
-            <font-awesome-icon icon="flag" class="text-indigo-400" />
-            <h2 class="text-base font-bold text-slate-100">
-              {{ cleanName(selectedNation.name) }} Details
-            </h2>
-          </div>
-          <button
-            @click="closeModals"
-            class="text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <font-awesome-icon icon="times" />
-          </button>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="p-6 space-y-5">
-          <!-- King details & avatar -->
-          <div
-            class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4"
-          >
-            <div
-              :class="getPlayerColor(selectedNation.king?.name)"
-              class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
+        <div
+          class="modal-box-anim w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl"
+        >
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between border-b border-slate-900 px-6 py-4">
+            <div class="flex items-center gap-2">
+              <font-awesome-icon icon="flag" class="text-indigo-400" />
+              <h2 class="text-base font-bold text-slate-100">
+                {{ cleanName(selectedNation.name) }} Details
+              </h2>
+            </div>
+            <button
+              @click="closeModals"
+              class="text-slate-400 hover:text-slate-200 transition-colors"
             >
-              <span class="z-0 select-none text-[10px]">{{
-                getPlayerInitials(selectedNation.king?.name)
-              }}</span>
-              <img
-                v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
-                :src="`${props.apiBase}/heads/${(selectedNation.king?.name || 'steve').toLowerCase()}.png`"
-                alt="King Skin"
-                class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
-                @load="$event.target.classList.remove('opacity-0')"
-                @error="handleAvatarError('modal-nation-' + selectedNation.id)"
-              />
-            </div>
-            <div>
-              <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                Nation King
-              </div>
-              <div class="text-sm font-bold text-slate-100">
-                {{ selectedNation.king?.name || 'Unknown' }}
-              </div>
-              <div class="font-mono text-[9px] text-slate-600 truncate max-w-[280px]">
-                {{ selectedNation.king?.uuid }}
-              </div>
-            </div>
+              <font-awesome-icon icon="times" />
+            </button>
           </div>
 
-          <!-- Basic details -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                Nation Capital
-              </h4>
-              <div class="mt-2 font-mono text-sm text-slate-300">
-                • Capital:
-                <strong class="text-indigo-400">{{
-                  cleanName(selectedNation.capital?.name)
-                }}</strong>
-              </div>
-            </div>
-
-            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                Federation Counts
-              </h4>
-              <div class="mt-2 font-mono text-xs text-slate-300 space-y-0.5">
-                <div>
-                  • Towns Count: <strong class="text-slate-100">{{ selectedNation.towns }}</strong>
-                </div>
-                <div>
-                  • Total Residents:
-                  <strong class="text-slate-100">{{ selectedNation.residents }}</strong>
-                </div>
-                <div>
-                  • Online Residents:
-                  <strong class="text-emerald-400">{{ selectedNation.onlineResidents }}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Diplomacy (Allies / Enemies) -->
-          <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4 space-y-3">
-            <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-              Diplomatic Relations
-            </h4>
-
-            <!-- Allies -->
-            <div>
-              <div class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mb-1.5">
-                Allies ({{ selectedNation.diplomacy?.allies?.length || 0 }})
-              </div>
+          <!-- Modal Body -->
+          <div class="p-6 space-y-5">
+            <!-- King details & avatar -->
+            <div
+              class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4"
+            >
               <div
-                v-if="!selectedNation.diplomacy?.allies?.length"
-                class="text-xs text-slate-500 italic"
+                :class="getPlayerColor(selectedNation.king?.name)"
+                class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
               >
-                No allies recorded.
-              </div>
-              <div v-else class="flex flex-wrap gap-1.5">
-                <span
-                  v-for="ally in selectedNation.diplomacy.allies"
-                  :key="ally.id"
-                  class="rounded bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[10px] text-indigo-300 font-medium"
-                >
-                  {{ cleanName(ally.name) }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Enemies -->
-            <div class="pt-2 border-t border-slate-900/60">
-              <div class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mb-1.5">
-                Enemies ({{ selectedNation.diplomacy?.enemies?.length || 0 }})
-              </div>
-              <div
-                v-if="!selectedNation.diplomacy?.enemies?.length"
-                class="text-xs text-slate-500 italic"
-              >
-                No active enemies.
-              </div>
-              <div v-else class="flex flex-wrap gap-1.5">
-                <span
-                  v-for="enemy in selectedNation.diplomacy.enemies"
-                  :key="enemy.id"
-                  class="rounded bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 text-[10px] text-rose-300 font-medium"
-                >
-                  {{ cleanName(enemy.name) }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Configuration Flags -->
-          <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-            <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">
-              Nation Flags
-            </h4>
-            <div class="grid grid-cols-3 gap-2">
-              <div
-                v-for="(val, flag) in selectedNation.flags"
-                :key="flag"
-                :class="
-                  val
-                    ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
-                    : 'border-slate-800 bg-slate-900/10 text-slate-400'
-                "
-                class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
-              >
-                <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
-                <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{
-                  val ? 'ON' : 'OFF'
+                <span class="z-0 select-none text-[10px]">{{
+                  getPlayerInitials(selectedNation.king?.name)
                 }}</span>
+                <img
+                  v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
+                  :src="`${props.apiBase}/heads/${(selectedNation.king?.name || 'steve').toLowerCase()}.png`"
+                  alt="King Skin"
+                  class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                  @load="$event.target.classList.remove('opacity-0')"
+                  @error="handleAvatarError('modal-nation-' + selectedNation.id)"
+                />
+              </div>
+              <div>
+                <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  Nation King
+                </div>
+                <div class="text-sm font-bold text-slate-100">
+                  {{ selectedNation.king?.name || 'Unknown' }}
+                </div>
+                <div class="font-mono text-[9px] text-slate-600 truncate max-w-[280px]">
+                  {{ selectedNation.king?.uuid }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Basic details -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
+                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  Nation Capital
+                </h4>
+                <div class="mt-2 font-mono text-sm text-slate-300">
+                  • Capital:
+                  <strong class="text-indigo-400">{{
+                    cleanName(selectedNation.capital?.name)
+                  }}</strong>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
+                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  Federation Counts
+                </h4>
+                <div class="mt-2 font-mono text-xs text-slate-300 space-y-0.5">
+                  <div>
+                    • Towns Count:
+                    <strong class="text-slate-100">{{ selectedNation.towns }}</strong>
+                  </div>
+                  <div>
+                    • Total Residents:
+                    <strong class="text-slate-100">{{ selectedNation.residents }}</strong>
+                  </div>
+                  <div>
+                    • Online Residents:
+                    <strong class="text-emerald-400">{{ selectedNation.onlineResidents }}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Diplomacy (Allies / Enemies) -->
+            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4 space-y-3">
+              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Diplomatic Relations
+              </h4>
+
+              <!-- Allies -->
+              <div>
+                <div class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mb-1.5">
+                  Allies ({{ selectedNation.diplomacy?.allies?.length || 0 }})
+                </div>
+                <div
+                  v-if="!selectedNation.diplomacy?.allies?.length"
+                  class="text-xs text-slate-500 italic"
+                >
+                  No allies recorded.
+                </div>
+                <div v-else class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="ally in selectedNation.diplomacy.allies"
+                    :key="ally.id"
+                    class="rounded bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[10px] text-indigo-300 font-medium"
+                  >
+                    {{ cleanName(ally.name) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Enemies -->
+              <div class="pt-2 border-t border-slate-900/60">
+                <div class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mb-1.5">
+                  Enemies ({{ selectedNation.diplomacy?.enemies?.length || 0 }})
+                </div>
+                <div
+                  v-if="!selectedNation.diplomacy?.enemies?.length"
+                  class="text-xs text-slate-500 italic"
+                >
+                  No active enemies.
+                </div>
+                <div v-else class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="enemy in selectedNation.diplomacy.enemies"
+                    :key="enemy.id"
+                    class="rounded bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 text-[10px] text-rose-300 font-medium"
+                  >
+                    {{ cleanName(enemy.name) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Configuration Flags -->
+            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
+              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">
+                Nation Flags
+              </h4>
+              <div class="grid grid-cols-3 gap-2">
+                <div
+                  v-for="(val, flag) in selectedNation.flags"
+                  :key="flag"
+                  :class="
+                    val
+                      ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
+                      : 'border-slate-800 bg-slate-900/10 text-slate-400'
+                  "
+                  class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
+                >
+                  <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
+                  <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{
+                    val ? 'ON' : 'OFF'
+                  }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>

@@ -1,12 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
-import MarketMonitor from './components/MarketMonitor.vue';
-import HistoryChart from './components/HistoryChart.vue';
-import ExchangeCalculator from './components/ExchangeCalculator.vue';
-import ConvoyStock from './components/ConvoyStock.vue';
-import TownyMonitor from './components/TownyMonitor.vue';
-import ShopsMonitor from './components/ShopsMonitor.vue';
 
 // Retrieve API URL from Vite environment variables (falls back to relative path '')
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -23,12 +18,8 @@ function initDeviceFingerprint() {
 }
 
 // --- STATE MANAGEMENT ---
-const currentRoute = ref(window.location.pathname);
-
-if (currentRoute.value === '/' || currentRoute.value === '' || currentRoute.value === '/monitor') {
-  window.history.replaceState({}, '', '/live-market');
-  currentRoute.value = '/live-market';
-}
+const router = useRouter();
+const route = useRoute();
 
 function smoothScrollToTop(duration = 600) {
   const start = window.scrollY || window.pageYOffset;
@@ -51,9 +42,7 @@ function smoothScrollToTop(duration = 600) {
 }
 
 function navigate(path) {
-  const targetPath = path === '/' || path === '' ? '/live-market' : path;
-  window.history.pushState({}, '', targetPath);
-  currentRoute.value = targetPath;
+  router.push(path);
   smoothScrollToTop(600);
 }
 const currenciesStats = ref([]);
@@ -144,15 +133,6 @@ onMounted(() => {
   initDeviceFingerprint();
   fetchLatestStats();
   initWebSocket();
-  window.addEventListener('popstate', () => {
-    let path = window.location.pathname;
-    if (path === '/' || path === '' || path === '/monitor') {
-      window.history.replaceState({}, '', '/live-market');
-      path = '/live-market';
-    }
-    currentRoute.value = path;
-    smoothScrollToTop(600);
-  });
 });
 </script>
 
@@ -186,7 +166,7 @@ onMounted(() => {
         <button
           @click.prevent="navigate('/live-market')"
           :class="
-            currentRoute === '/live-market' || currentRoute === '/monitor'
+            route.path === '/live-market' || route.path === '/monitor' || route.path === '/'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
@@ -198,7 +178,7 @@ onMounted(() => {
         <button
           @click.prevent="navigate('/currency-history')"
           :class="
-            currentRoute === '/currency-history'
+            route.path === '/currency-history'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
@@ -210,7 +190,7 @@ onMounted(() => {
         <button
           @click.prevent="navigate('/exchange')"
           :class="
-            currentRoute === '/exchange'
+            route.path === '/exchange'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
@@ -222,7 +202,7 @@ onMounted(() => {
         <button
           @click.prevent="navigate('/convoy')"
           :class="
-            currentRoute === '/convoy'
+            route.path === '/convoy'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
@@ -234,7 +214,7 @@ onMounted(() => {
         <button
           @click.prevent="navigate('/towny')"
           :class="
-            currentRoute === '/towny'
+            route.path === '/towny'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
@@ -246,7 +226,7 @@ onMounted(() => {
         <button
           @click.prevent="navigate('/shops')"
           :class="
-            currentRoute === '/shops'
+            route.path === '/shops'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
@@ -292,39 +272,15 @@ onMounted(() => {
         </div>
 
         <!-- Loaded Content -->
-        <div v-else :key="currentRoute" class="space-y-6">
-          <div v-if="currentRoute === '/live-market' || currentRoute === '/monitor'">
-            <MarketMonitor
+        <div v-else :key="route.path" class="space-y-6">
+          <router-view v-slot="{ Component }">
+            <component
+              :is="Component"
               :currencies="currenciesStats"
               :api-base="API_BASE"
               @refresh-stats="fetchLatestStats"
             />
-          </div>
-
-          <!-- ================= CURRENCY HISTORY TAB ================= -->
-          <div v-if="currentRoute === '/currency-history'">
-            <HistoryChart :currencies="currenciesStats" :api-base="API_BASE" />
-          </div>
-
-          <!-- ================= EXCHANGE TAB ================= -->
-          <div v-if="currentRoute === '/exchange'">
-            <ExchangeCalculator :currencies="currenciesStats" />
-          </div>
-
-          <!-- ================= CONVOY TAB ================= -->
-          <div v-if="currentRoute === '/convoy'">
-            <ConvoyStock :api-base="API_BASE" />
-          </div>
-
-          <!-- ================= TOWNY TAB ================= -->
-          <div v-if="currentRoute === '/towny'">
-            <TownyMonitor :api-base="API_BASE" />
-          </div>
-
-          <!-- ================= SHOPS TAB ================= -->
-          <div v-if="currentRoute === '/shops'">
-            <ShopsMonitor :api-base="API_BASE" />
-          </div>
+          </router-view>
         </div>
       </Transition>
     </main>
@@ -357,7 +313,7 @@ onMounted(() => {
               viewBox="0 0 127.14 96.36"
             >
               <path
-                d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.4-5c.87-.64,1.71-1.32,2.51-2a75.46,75.46,0,0,0,72.6,0c.8,0.7,1.64,1.38,2.51,2a68.18,68.18,0,0,1-10.4,5,77.63,77.63,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.24,49.25,123,26.47,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"
+                d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.4-5c.87-.64,1.71-1.32,2.51-2a75.46,75.46,0,0,0,72.6,0c.8,0.7,1.64,1.38,2.51,2a68.18,68.18,0,0,1-10.4,5,77.63,77.63,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.24,49.25,123,26.47,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69ZM42.24,65.69C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"
               />
             </svg>
             <span>Add Bot</span>
@@ -435,6 +391,55 @@ body::-webkit-scrollbar,
 }
 .card-pop-move {
   transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+/* 3D Box Opening Up Modal Transition (Backdrop + Box) */
+.modal-fade-box-enter-active {
+  transition: opacity 0.5s ease;
+}
+.modal-fade-box-leave-active {
+  transition: opacity 0.3s ease;
+}
+.modal-fade-box-enter-from,
+.modal-fade-box-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-box-enter-active .modal-box-anim {
+  animation: box-opening 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.modal-fade-box-leave-active .modal-box-anim {
+  animation: box-closing 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes box-opening {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotateX(-20deg) translateY(50px);
+    transform-origin: bottom center;
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.03) rotateX(3deg) translateY(-3px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateX(0deg) translateY(0);
+    transform-origin: bottom center;
+  }
+}
+
+@keyframes box-closing {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotateX(0deg) translateY(0);
+    transform-origin: bottom center;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.85) rotateX(10deg) translateY(-20px);
+    transform-origin: bottom center;
+  }
 }
 
 /* Premium custom keyframe animations */

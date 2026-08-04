@@ -555,3 +555,24 @@ The following rules MUST be followed at all times:
   - Removed all button navigation elements from the error cards to keep layouts clean and focused strictly on the visual alert states.
   - Added these error HTML pages to the project's root `.gitignore` file to ensure they are ignored from version control.
   - Updated the repository directory mapping inside `fs.md` to include these files.
+
+### 04-08-2026
+
+- **Vue Router Integration**:
+  - Replaced manual path/state-based routing inside `dashboard/src/App.vue` with standard Vue Router (`vue-router`).
+  - Created a central route configuration file at `dashboard/src/router.js` mapping all paths (`/live-market`, `/currency-history`, `/exchange`, `/convoy`, `/towny`, `/shops`) to their corresponding components with redirects for `/` and `/monitor`.
+  - Configured router setup in `dashboard/src/main.js` via `app.use(router)`.
+  - Replaced local routing logic inside the navigation navbar in `App.vue` with `useRoute`/`useRouter` hooks and `router-view` to pass down telemetry props (`currenciesStats`, `API_BASE`, and `@refresh-stats`).
+  - Updated ESLint configuration in `eslint.config.js` to parse all dashboard Javascript files (`dashboard/src/**/*.js`) as ES Modules to support import/export statements in `router.js`.
+  - Documented `dashboard/src/router.js` inside `fs.md`.
+- **3D Box-Opening Modal Animations**:
+  - Added a premium 3D "box-opening" chest-style modal transition (`modal-fade-box`) in `dashboard/src/App.vue` using keyframe animations on scale, rotation (`rotateX`), and translateY offsets.
+  - Set up a coordinated transition where the backdrop fades in while the inner modal container (`.modal-box-anim`) performs the elastic 3D box expansion from the bottom center.
+  - Wrapped Town and Nation details modals inside `TownyMonitor.vue`, as well as player shop details modal inside `ShopsMonitor.vue`, in the `<Transition name="modal-fade-box">` wrapper and set `style="perspective: 1000px;"` on their backdrops to create realistic 3D depth.
+  - Validated dashboard correctness via a successful production build compilation check (`npm run dashboard:build`).
+- **Developer Experience & Production Performance Optimizations**:
+  - Configured custom rollup chunk partitioning (`manualChunks`) in `dashboard/vite.config.mjs` to split massive dependencies (e.g. `chart.js` and FontAwesome icon families) into dedicated vendor bundles. This eliminates bundle size warnings, speeds up production load times, and improves client browser caching.
+  - Enabled client file warmup in the dev server config inside `vite.config.mjs` to pre-compile crucial core components (`main.js`, `App.vue`, `router.js`), resulting in instant initial dev page loading and faster HMR.
+  - Added a concurrent development script `"dev:all": "run-p dev dashboard:dev"` inside `package.json` utilizing the project's existing `npm-run-all` dependency to run the backend and frontend servers in parallel from a single terminal.
+  - Added a `nodemonConfig` block to `package.json` to ignore modifications under `dashboard/`, `logs/`, `src/icons/` and `src/heads/`, completely preventing hot-reload backend restarts when editing frontend files or caching download assets.
+  - Updated custom developer guidelines inside `.agents/AGENTS.md` to document hot-reloading exclusions, code-splitting rules, concurrent scripts, and linter modules setup, helping future AI agent turns build optimized features cleanly and efficiently.

@@ -1,6 +1,7 @@
-import { createApp } from 'vue';
+import { createSSRApp } from 'vue';
 import './style.css';
 import App from './App.vue';
+import { createRouterInstance } from './router';
 
 // Import FontAwesome
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -64,6 +65,10 @@ library.add(
   faShop
 );
 
-const app = createApp(App);
-app.component('font-awesome-icon', FontAwesomeIcon);
-app.mount('#app');
+export function createSSRApplication() {
+  const app = createSSRApp(App);
+  const router = createRouterInstance();
+  app.use(router);
+  app.component('font-awesome-icon', FontAwesomeIcon);
+  return { app, router };
+}

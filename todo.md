@@ -1,6 +1,5 @@
 # todo 3
 
-auto Remove old
-ghcr.io/dev-kinsukghosh/arcadia-bot:<none> when new cointainer gets deployed
+Load towns in Datbase and update values from main server api every 30min same for Shops
 
 # todo 4

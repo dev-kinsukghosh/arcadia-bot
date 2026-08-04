@@ -20,7 +20,7 @@ module.exports = [
     },
   },
   {
-    files: ['dashboard/src/main.js', 'dashboard/vite.config.mjs'],
+    files: ['dashboard/**/*.js', 'dashboard/vite.config.mjs'],
     languageOptions: {
       sourceType: 'module',
       globals: {

@@ -1,10 +1,14 @@
 <IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteBase /
+  RewriteEngine On
+  RewriteBase /
 
-RewriteRule ^index\.html$ - [L]
+  # Serve prerendered HTML files if they exist (SSR)
+  # E.g., /towny -> /towny.html
+  RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_URI}.html -f
+  RewriteRule ^(.*)$ /$1.html [L]
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.html [L]
+  # Fallback to main index.html for CSR
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
 </IfModule>
