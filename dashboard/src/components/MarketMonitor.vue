@@ -730,7 +730,7 @@ onMounted(() => {
         <!-- Price Swing Alert -->
         <div>
           <label
-            class="mb-2 block flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-400 uppercase"
+            class="mb-2 block  items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-400 uppercase"
           >
             <font-awesome-icon icon="triangle-exclamation" class="text-red-400" />
             Price Swing Alert

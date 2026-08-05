@@ -166,8 +166,9 @@ const chartDatasets = computed(() => {
     }
 
     // Align values with chartLabels, default to 0 if not present
+    const curr = props.currencies.find(c => c.id === data.currencyId);
     const rates = chartLabels.value.map((dateLabel) => {
-      return recordsMap[dateLabel] !== undefined ? recordsMap[dateLabel] : 0;
+      return recordsMap[dateLabel] ?? curr?.baseRate ?? 0;
     });
 
     return {
