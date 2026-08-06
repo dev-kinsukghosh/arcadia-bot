@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
+
 import { useRouter, useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import axios from 'axios';
@@ -22,6 +23,9 @@ function initDeviceFingerprint() {
 // --- STATE MANAGEMENT ---
 const router = useRouter();
 const route = useRoute();
+
+// Mobile nav toggle
+const mobileNavOpen = ref(false);
 
 function smoothScrollToTop(duration = 600) {
   const start = window.scrollY || window.pageYOffset;
@@ -46,6 +50,7 @@ function smoothScrollToTop(duration = 600) {
 function navigate(path) {
   router.push(path);
   smoothScrollToTop(600);
+  mobileNavOpen.value = false;
 }
 const marketStore = useMarketStore();
 const { currenciesStats, isLoading, fetchError } = storeToRefs(marketStore);
@@ -128,105 +133,213 @@ onMounted(() => {
     class="flex min-h-screen flex-col bg-[#07080c] font-sans text-slate-100 selection:bg-blue-600 selection:text-white"
   >
     <!-- Navbar Header -->
-    <header
-      class="sticky top-0 z-50 flex flex-col items-center justify-between gap-4 border-b border-slate-900 bg-[#090b11] px-6 py-4 shadow-md sm:flex-row md:px-12"
-    >
-      <div class="flex items-center gap-3">
-        <img
-          src="/logo.png"
-          alt="ArcadiaMC Logo"
-          class="size-12 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.25)]"
-        />
-        <div>
-          <h1
-            class="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-lg font-bold tracking-tight text-transparent"
-          >
-            ArcadiaMC Stats Panel
-          </h1>
-          <span class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase"
-            >Community Stats Dashboard</span
-          >
+    <header class="sticky top-0 z-50 border-b border-slate-900 bg-[#090b11] shadow-md">
+      <!-- Top row: logo + hamburger (mobile) / logo + nav (md+) -->
+      <div class="flex items-center justify-between px-4 py-3 sm:px-6 md:px-10">
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+          <img
+            src="/logo.png"
+            alt="ArcadiaMC Logo"
+            class="size-10 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.25)] sm:size-12"
+          />
+          <div>
+            <h1
+              class="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-sm font-bold tracking-tight text-transparent sm:text-lg"
+            >
+              ArcadiaMC Stats Panel
+            </h1>
+            <span
+              class="text-[9px] font-semibold tracking-widest text-slate-500 uppercase sm:text-[10px]"
+              >Community Stats Dashboard</span
+            >
+          </div>
         </div>
+
+        <!-- Desktop Nav (md+) -->
+        <nav
+          class="hidden items-center gap-1 rounded-xl border border-slate-900 bg-slate-950/80 p-1 md:flex"
+        >
+          <button
+            :class="
+              route.path === '/live-market' || route.path === '/monitor' || route.path === '/'
+                ? 'bg-slate-900 text-white shadow-md'
+                : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+            "
+            class="hover:scale-1.03 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-95 lg:gap-2 lg:px-3 lg:text-xs"
+            @click.prevent="navigate('/live-market')"
+          >
+            <font-awesome-icon icon="coins" />
+            <span class="hidden lg:inline">Live Currency Market</span>
+            <span class="lg:hidden">Market</span>
+          </button>
+          <button
+            :class="
+              route.path === '/currency-history'
+                ? 'bg-slate-900 text-white shadow-md'
+                : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+            "
+            class="hover:scale-1.03 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-95 lg:gap-2 lg:px-3 lg:text-xs"
+            @click.prevent="navigate('/currency-history')"
+          >
+            <font-awesome-icon icon="chart-line" />
+            <span class="hidden lg:inline">Currency History</span>
+            <span class="lg:hidden">History</span>
+          </button>
+          <button
+            :class="
+              route.path === '/exchange'
+                ? 'bg-slate-900 text-white shadow-md'
+                : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+            "
+            class="hover:scale-1.03 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-95 lg:gap-2 lg:px-3 lg:text-xs"
+            @click.prevent="navigate('/exchange')"
+          >
+            <font-awesome-icon icon="calculator" />
+            Exchange
+          </button>
+          <button
+            :class="
+              route.path === '/convoy'
+                ? 'bg-slate-900 text-white shadow-md'
+                : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+            "
+            class="hover:scale-1.03 flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-95 lg:gap-2 lg:px-3 lg:text-xs"
+            @click.prevent="navigate('/convoy')"
+          >
+            <font-awesome-icon icon="cube" />
+            Convoy
+          </button>
+          <button
+            :class="
+              route.path === '/towny'
+                ? 'bg-slate-900 text-white shadow-md'
+                : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+            "
+            class="hover:scale-1.03 flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-95 lg:gap-2 lg:px-3 lg:text-xs"
+            @click.prevent="navigate('/towny')"
+          >
+            <font-awesome-icon icon="globe" />
+            Towny
+          </button>
+          <button
+            :class="
+              route.path === '/shops'
+                ? 'bg-slate-900 text-white shadow-md'
+                : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+            "
+            class="hover:scale-1.03 flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-95 lg:gap-2 lg:px-3 lg:text-xs"
+            @click.prevent="navigate('/shops')"
+          >
+            <font-awesome-icon icon="shop" />
+            Shops
+          </button>
+        </nav>
+
+        <!-- Hamburger button (mobile/sm only) -->
+        <button
+          class="flex size-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-300 transition-colors duration-200 hover:border-slate-700 hover:bg-slate-800 md:hidden"
+          :aria-expanded="mobileNavOpen"
+          aria-label="Toggle navigation"
+          @click="mobileNavOpen = !mobileNavOpen"
+        >
+          <font-awesome-icon :icon="mobileNavOpen ? 'times' : 'bars'" />
+        </button>
       </div>
 
-      <nav class="flex items-center gap-1 rounded-xl border border-slate-900 bg-slate-950/80 p-1">
-        <button
-          :class="
-            route.path === '/live-market' || route.path === '/monitor' || route.path === '/'
-              ? 'bg-slate-900 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-          "
-          class="hover:scale-1.03 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
-          @click.prevent="navigate('/live-market')"
+      <!-- Mobile dropdown nav -->
+      <Transition
+        enter-from-class="opacity-0 -translate-y-2"
+        enter-active-class="transition-all duration-200 ease-out"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-active-class="transition-all duration-150 ease-in"
+        leave-to-class="opacity-0 -translate-y-2"
+      >
+        <nav
+          v-if="mobileNavOpen"
+          class="border-t border-slate-900 bg-[#090b11] px-4 py-3 md:hidden"
         >
-          <font-awesome-icon icon="coins" />
-          Live Currency Market
-        </button>
-        <button
-          :class="
-            route.path === '/currency-history'
-              ? 'bg-slate-900 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-          "
-          class="hover:scale-1.03 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
-          @click.prevent="navigate('/currency-history')"
-        >
-          <font-awesome-icon icon="chart-line" />
-          Currency History
-        </button>
-        <button
-          :class="
-            route.path === '/exchange'
-              ? 'bg-slate-900 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-          "
-          class="hover:scale-1.03 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
-          @click.prevent="navigate('/exchange')"
-        >
-          <font-awesome-icon icon="calculator" />
-          Exchange
-        </button>
-        <button
-          :class="
-            route.path === '/convoy'
-              ? 'bg-slate-900 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-          "
-          class="hover:scale-1.03 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
-          @click.prevent="navigate('/convoy')"
-        >
-          <font-awesome-icon icon="cube" />
-          Convoy Shop
-        </button>
-        <button
-          :class="
-            route.path === '/towny'
-              ? 'bg-slate-900 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-          "
-          class="hover:scale-1.03 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
-          @click.prevent="navigate('/towny')"
-        >
-          <font-awesome-icon icon="globe" />
-          Towny
-        </button>
-        <button
-          :class="
-            route.path === '/shops'
-              ? 'bg-slate-900 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-          "
-          class="hover:scale-1.03 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
-          @click.prevent="navigate('/shops')"
-        >
-          <font-awesome-icon icon="shop" />
-          Player Shops
-        </button>
-      </nav>
+          <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            <button
+              :class="
+                route.path === '/live-market' || route.path === '/monitor' || route.path === '/'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95"
+              @click.prevent="navigate('/live-market')"
+            >
+              <font-awesome-icon icon="coins" />
+              Market
+            </button>
+            <button
+              :class="
+                route.path === '/currency-history'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95"
+              @click.prevent="navigate('/currency-history')"
+            >
+              <font-awesome-icon icon="chart-line" />
+              History
+            </button>
+            <button
+              :class="
+                route.path === '/exchange'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95"
+              @click.prevent="navigate('/exchange')"
+            >
+              <font-awesome-icon icon="calculator" />
+              Exchange
+            </button>
+            <button
+              :class="
+                route.path === '/convoy'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95"
+              @click.prevent="navigate('/convoy')"
+            >
+              <font-awesome-icon icon="cube" />
+              Convoy
+            </button>
+            <button
+              :class="
+                route.path === '/towny'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95"
+              @click.prevent="navigate('/towny')"
+            >
+              <font-awesome-icon icon="globe" />
+              Towny
+            </button>
+            <button
+              :class="
+                route.path === '/shops'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95"
+              @click.prevent="navigate('/shops')"
+            >
+              <font-awesome-icon icon="shop" />
+              Shops
+            </button>
+          </div>
+        </nav>
+      </Transition>
     </header>
 
     <!-- Main Workspace -->
-    <main class="mx-auto w-full max-w-7xl flex-1 px-6 py-8 md:px-10">
+    <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 md:px-10 md:py-8">
       <!-- Error Alert -->
       <div
         v-if="fetchError"

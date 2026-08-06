@@ -132,7 +132,7 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
         </div>
       </div>
 
-      <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-9">
+      <div class="grid grid-cols-1 items-center gap-3 sm:grid-cols-9">
         <div class="md:col-span-4">
           <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
             >From</label
@@ -186,16 +186,20 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
       </div>
 
       <div
-        class="mt-4 flex flex-col items-center justify-between gap-4 rounded-xl border border-slate-900/60 bg-slate-950 p-5 md:flex-row"
+        class="mt-4 flex flex-col items-stretch justify-between gap-4 rounded-xl border border-slate-900/60 bg-slate-950 p-4 sm:flex-row sm:items-center sm:p-5"
       >
-        <div>
+        <div class="min-w-0 flex-1">
           <div class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
             Converted Value
           </div>
-          <div class="mt-1 font-mono text-xl font-bold text-emerald-400 md:text-2xl">
+          <div
+            class="mt-1 truncate font-mono text-lg font-bold text-emerald-400 sm:text-xl md:text-2xl"
+          >
             {{ formattedInputAmount }} {{ fromCurrency ? fromCurrency.name.split(' (')[0] : '' }}
           </div>
-          <div class="mt-1 font-mono text-2xl font-extrabold text-slate-100 md:text-3xl">
+          <div
+            class="mt-1 truncate font-mono text-xl font-extrabold text-slate-100 sm:text-2xl md:text-3xl"
+          >
             ≈ {{ formattedConvertedAmount }}
             {{ toCurrency ? toCurrency.name.split(' (')[0] : '' }}
           </div>
@@ -205,7 +209,7 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
         </div>
 
         <div
-          class="flex-shrink-0 border-t border-slate-800/80 pt-3 text-right md:border-t-0 md:border-l md:pt-0 md:pl-6"
+          class="flex-shrink-0 border-t border-slate-800/80 pt-3 text-left sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6 sm:text-right"
         >
           <div class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
             Exchange Rate

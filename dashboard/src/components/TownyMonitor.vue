@@ -755,8 +755,8 @@ function closeModals() {
                     <span
                       :class="
                         town.flags?.pvp
-                          ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                          : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          ? 'border border-rose-500/20 bg-rose-500/10 text-rose-400'
+                          : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
                       "
                       class="inline-block rounded px-1.5 py-0.5 text-[9px] font-bold"
                     >

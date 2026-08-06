@@ -342,10 +342,10 @@ const chartOptions = computed(() => ({
     class="relative overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c] p-6 shadow-xl backdrop-blur-md"
   >
     <div
-      class="mb-6 flex flex-col justify-between gap-4 border-b border-slate-800/50 pb-4 md:flex-row md:items-center"
+      class="mb-6 flex flex-col justify-between gap-4 border-b border-slate-800/50 pb-4 sm:flex-row sm:items-start md:flex-row md:items-center"
     >
       <div>
-        <h2 class="flex items-center gap-2 text-xl font-semibold text-slate-100">
+        <h2 class="flex items-center gap-2 text-lg font-semibold text-slate-100 sm:text-xl">
           <font-awesome-icon icon="chart-line" class="text-blue-500" />
           Currencies History Data Graph
         </h2>
@@ -354,7 +354,7 @@ const chartOptions = computed(() => ({
         </p>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
         <!-- Chart Mode Toggle Buttons (Side-by-side Segmented Control) -->
         <div class="flex gap-0.5 rounded-lg border border-slate-900 bg-slate-950 p-0.5">
           <button
@@ -363,10 +363,10 @@ const chartOptions = computed(() => ({
                 ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
                 : 'text-slate-400 hover:text-slate-200'
             "
-            class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 select-none"
+            class="cursor-pointer rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-200 select-none sm:px-3 sm:text-xs"
             @click="chartMode = 'raw'"
           >
-            Raw Rate (₳)
+            Raw (₳)
           </button>
           <button
             :class="
@@ -374,17 +374,17 @@ const chartOptions = computed(() => ({
                 ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
                 : 'text-slate-400 hover:text-slate-200'
             "
-            class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 select-none"
+            class="cursor-pointer rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-200 select-none sm:px-3 sm:text-xs"
             @click="chartMode = 'percentage'"
           >
-            Compare to Base (%)
+            Base (%)
           </button>
         </div>
 
         <!-- Time Range Selector -->
         <select
           v-model="daysLimit"
-          class="rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+          class="rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs font-medium text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none sm:px-3"
         >
           <option :value="7" class="bg-slate-950 text-slate-200">Last 7 Days</option>
           <option :value="15" class="bg-slate-950 text-slate-200">Last 15 Days</option>
@@ -397,7 +397,8 @@ const chartOptions = computed(() => ({
     </div>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
-      <div class="flex h-[350px] flex-col border-r border-slate-800/50 pr-3 lg:col-span-1">
+      <!-- Currency selector list: horizontal scrollable pill list on mobile, sidebar on lg+ -->
+      <div class="flex flex-col border-slate-800/50 lg:col-span-1 lg:h-[350px] lg:border-r lg:pr-3">
         <span class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
           >Compare Currencies</span
         >
@@ -432,13 +433,13 @@ const chartOptions = computed(() => ({
         <TransitionGroup
           tag="div"
           name="list-fade"
-          class="custom-scrollbar flex-1 space-y-2 overflow-y-auto pr-1"
+          class="custom-scrollbar max-h-40 flex-1 space-y-1 overflow-y-auto pr-1 lg:max-h-none lg:space-y-2"
         >
           <div
             v-for="curr in filteredCurrencies"
             :id="'item-' + curr.id"
             :key="curr.id"
-            class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors duration-150 hover:bg-slate-950"
+            class="flex cursor-pointer items-center gap-2 rounded-lg p-1.5 transition-colors duration-150 hover:bg-slate-950 lg:gap-3 lg:p-2"
             @click="toggleSelection(curr.id)"
           >
             <input
@@ -446,17 +447,17 @@ const chartOptions = computed(() => ({
               type="checkbox"
               :value="curr.id"
               :checked="selectedCurrencies.includes(curr.id)"
-              class="size-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900"
+              class="size-3.5 shrink-0 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900 lg:size-4"
               @change.stop
             />
-            <span class="truncate text-sm font-medium text-slate-300 select-none">
+            <span class="truncate text-xs font-medium text-slate-300 select-none lg:text-sm">
               {{ curr.name }}
             </span>
           </div>
         </TransitionGroup>
       </div>
 
-      <div class="relative h-80 lg:col-span-3">
+      <div class="relative h-64 sm:h-80 lg:col-span-3 lg:h-[350px]">
         <div
           v-if="isLoading"
           class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-[#11131c]/60 backdrop-blur-xs"

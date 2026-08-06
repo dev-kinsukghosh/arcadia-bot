@@ -414,7 +414,7 @@ function formatCurrency(val, currency = 'ARC') {
                     X: {{ selectedShop.plotX }} , Z: {{ selectedShop.plotZ }}
                   </span>
                   <button
-                    class="hover:bg-slate-700 rounded bg-slate-800 px-2 py-1 text-[10px] font-bold text-blue-400"
+                    class="rounded bg-slate-800 px-2 py-1 text-[10px] font-bold text-blue-400 hover:bg-slate-700"
                     @click="copyCoordinates(selectedShop.plotX, selectedShop.plotZ)"
                   >
                     {{

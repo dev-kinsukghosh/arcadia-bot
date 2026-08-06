@@ -582,10 +582,10 @@ onMounted(() => {
       </div>
     </div>
     <!-- Main Analytics Workspace -->
-    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-4">
-      <!-- Filters Sidebar -->
+    <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-4">
+      <!-- Filters Sidebar: full-width on mobile/tablet, sidebar on xl+ -->
       <div
-        class="space-y-4 rounded-2xl border border-slate-800/80 bg-[#11131c] p-4 shadow-xl backdrop-blur-md lg:col-span-1"
+        class="space-y-4 rounded-2xl border border-slate-800/80 bg-[#11131c] p-4 shadow-xl backdrop-blur-md xl:col-span-1"
       >
         <div class="flex items-center justify-between border-b border-slate-800/50 pb-3">
           <h3 class="flex items-center gap-2 text-sm font-bold text-slate-200">
@@ -600,377 +600,382 @@ onMounted(() => {
           </button>
         </div>
 
-        <!-- Search -->
-        <div>
-          <label
-            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
-            >Search</label
-          >
-          <div class="relative">
-            <span
-              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-[10px] text-slate-500"
+        <!-- Filter fields: 2-column grid on tablet, single column on xl sidebar -->
+        <div class="grid grid-cols-2 gap-4 xl:grid-cols-1">
+          <!-- Search -->
+          <div class="col-span-2 sm:col-span-1 xl:col-span-1">
+            <label
+              class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
+              >Search</label
             >
-              <font-awesome-icon icon="search" />
-            </span>
-            <input
-              v-model="searchSearch"
-              type="text"
-              placeholder="Search..."
-              class="placeholder-slate-600 block w-full rounded-lg border border-slate-800 bg-slate-950 py-1 pr-2.5 pl-7 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <!-- Display Limit -->
-        <div>
-          <label
-            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
-            >Display Limit</label
-          >
-          <select
-            v-model="limitType"
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-          >
-            <option value="all">Show All</option>
-            <option value="5">Top 5</option>
-            <option value="10">Top 10</option>
-            <option value="20">Top 20</option>
-            <option value="custom">Custom Count...</option>
-          </select>
-
-          <div v-if="limitType === 'custom'" class="mt-1.5 flex items-center gap-1.5">
-            <span class="text-[9px] font-semibold text-slate-500 uppercase">Count:</span>
-            <input
-              v-model="customLimit"
-              type="number"
-              min="1"
-              class="block w-full rounded border border-slate-800 bg-slate-950 px-2 py-0.5 font-mono text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <!-- Sorting Criteria -->
-        <div>
-          <label
-            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
-            >Sorting Mode</label
-          >
-          <select
-            v-model="filterCriteria"
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-          >
-            <option value="all">Alphabetical (Name)</option>
-            <option value="best_perform">Biggest Gainers</option>
-            <option value="worst_perform">Biggest Losers</option>
-            <option value="stable">Most Steady</option>
-            <option value="volatile">Most Volatile</option>
-            <option value="stable_high_val">Steady + High Val</option>
-          </select>
-        </div>
-
-        <!-- Price Trend -->
-        <div>
-          <label
-            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
-            >Price Trend</label
-          >
-          <select
-            v-model="filterPriceDir"
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-          >
-            <option value="all">All Trends</option>
-            <option value="gainers">Only Upwards</option>
-            <option value="losers">Only Downwards</option>
-            <option value="flat">Only Unchanged</option>
-          </select>
-        </div>
-
-        <!-- Price Bracket -->
-        <div>
-          <label
-            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
-            >Price Bracket</label
-          >
-          <select
-            v-model="filterPriceTier"
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-          >
-            <option value="all">All Prices</option>
-            <option value="high">High Value (≥ ₳20)</option>
-            <option value="medium">Medium Value (₳5-₳20)</option>
-            <option value="low">Low Value (&lt; ₳5)</option>
-          </select>
-        </div>
-
-        <!-- Stability Tier -->
-        <div>
-          <label
-            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
-            >Steady Tier</label
-          >
-          <select
-            v-model="filterStabilityTier"
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-          >
-            <option value="all">All Tiers</option>
-            <option value="steady">Steady (≥ 85%)</option>
-            <option value="mixed">Mixed (65%-84%)</option>
-            <option value="risky">Risky (&lt; 65%)</option>
-          </select>
-        </div>
-
-        <!-- Price Swing Alert -->
-        <div>
-          <div class="mb-1.5 flex items-center justify-between">
-            <label class="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
-              <font-awesome-icon icon="triangle-exclamation" class="mr-1 text-red-400" />
-              Swing Alert
-            </label>
-            <span
-              class="rounded bg-red-500/10 px-1.5 py-0.5 font-mono text-[9px] font-bold text-red-400"
-            >
-              ≥ {{ volatilityAlertThreshold }}%
-            </span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-mono text-[9px] text-slate-600">5%</span>
-            <input
-              v-model="volatilityAlertThreshold"
-              type="range"
-              min="5"
-              max="50"
-              step="5"
-              class="h-1 flex-1 cursor-pointer appearance-none rounded bg-slate-800 accent-red-500"
-            />
-            <span class="font-mono text-[9px] text-slate-600">50%</span>
-          </div>
-        </div>
-
-        <!-- Nations Filter -->
-        <div>
-          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
-            >Nations</label
-          >
-          <div class="relative">
-            <button
-              class="flex w-full items-center justify-between rounded-lg border bg-slate-950 px-3 py-2 text-xs transition-colors duration-150"
-              :class="
-                nationsDropdownOpen
-                  ? 'border-blue-500/50 text-slate-200'
-                  : 'border-slate-800 text-slate-400 hover:border-slate-700'
-              "
-              @click.stop="
-                nationsDropdownOpen = !nationsDropdownOpen;
-                itemsDropdownOpen = false;
-                nationsSearch = '';
-              "
-            >
-              <span class="flex items-center gap-2">
-                <font-awesome-icon icon="flag" class="text-[10px] text-slate-500" />
-                <span v-if="selectedNations.length === 0" class="text-slate-500">All Nations</span>
-                <span v-else class="text-slate-200">{{ selectedNations.length }} selected</span>
+            <div class="relative">
+              <span
+                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-[10px] text-slate-500"
+              >
+                <font-awesome-icon icon="search" />
               </span>
-              <font-awesome-icon
-                :icon="nationsDropdownOpen ? 'chevron-up' : 'chevron-down'"
-                class="text-[9px] text-slate-500"
+              <input
+                v-model="searchSearch"
+                type="text"
+                placeholder="Search..."
+                class="block w-full rounded-lg border border-slate-800 bg-slate-950 py-1 pr-2.5 pl-7 text-[11px] text-slate-200 placeholder-slate-600 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
-            </button>
+            </div>
+          </div>
 
-            <div
-              v-if="nationsDropdownOpen"
-              class="fixed inset-0 z-10"
-              @click="nationsDropdownOpen = false"
-            />
-
-            <Transition
-              enter-from-class="opacity-0 -translate-y-1"
-              enter-active-class="transition-all duration-200 ease-out"
-              enter-to-class="opacity-100 translate-y-0"
-              leave-from-class="opacity-100 translate-y-0"
-              leave-active-class="transition-all duration-150 ease-in"
-              leave-to-class="opacity-0 -translate-y-1"
+          <!-- Display Limit -->
+          <div>
+            <label
+              class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
+              >Display Limit</label
             >
+            <select
+              v-model="limitType"
+              class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="all">Show All</option>
+              <option value="5">Top 5</option>
+              <option value="10">Top 10</option>
+              <option value="20">Top 20</option>
+              <option value="custom">Custom Count...</option>
+            </select>
+
+            <div v-if="limitType === 'custom'" class="mt-1.5 flex items-center gap-1.5">
+              <span class="text-[9px] font-semibold text-slate-500 uppercase">Count:</span>
+              <input
+                v-model="customLimit"
+                type="number"
+                min="1"
+                class="block w-full rounded border border-slate-800 bg-slate-950 px-2 py-0.5 font-mono text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Sorting Criteria -->
+          <div>
+            <label
+              class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
+              >Sorting Mode</label
+            >
+            <select
+              v-model="filterCriteria"
+              class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="all">Alphabetical (Name)</option>
+              <option value="best_perform">Biggest Gainers</option>
+              <option value="worst_perform">Biggest Losers</option>
+              <option value="stable">Most Steady</option>
+              <option value="volatile">Most Volatile</option>
+              <option value="stable_high_val">Steady + High Val</option>
+            </select>
+          </div>
+
+          <!-- Price Trend -->
+          <div>
+            <label
+              class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
+              >Price Trend</label
+            >
+            <select
+              v-model="filterPriceDir"
+              class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="all">All Trends</option>
+              <option value="gainers">Only Upwards</option>
+              <option value="losers">Only Downwards</option>
+              <option value="flat">Only Unchanged</option>
+            </select>
+          </div>
+
+          <!-- Price Bracket -->
+          <div>
+            <label
+              class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
+              >Price Bracket</label
+            >
+            <select
+              v-model="filterPriceTier"
+              class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="all">All Prices</option>
+              <option value="high">High Value (≥ ₳20)</option>
+              <option value="medium">Medium Value (₳5-₳20)</option>
+              <option value="low">Low Value (&lt; ₳5)</option>
+            </select>
+          </div>
+
+          <!-- Stability Tier -->
+          <div>
+            <label
+              class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
+              >Steady Tier</label
+            >
+            <select
+              v-model="filterStabilityTier"
+              class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="all">All Tiers</option>
+              <option value="steady">Steady (≥ 85%)</option>
+              <option value="mixed">Mixed (65%-84%)</option>
+              <option value="risky">Risky (&lt; 65%)</option>
+            </select>
+          </div>
+
+          <!-- Price Swing Alert -->
+          <div class="col-span-2 xl:col-span-1">
+            <div class="mb-1.5 flex items-center justify-between">
+              <label class="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                <font-awesome-icon icon="triangle-exclamation" class="mr-1 text-red-400" />
+                Swing Alert
+              </label>
+              <span
+                class="rounded bg-red-500/10 px-1.5 py-0.5 font-mono text-[9px] font-bold text-red-400"
+              >
+                ≥ {{ volatilityAlertThreshold }}%
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-[9px] text-slate-600">5%</span>
+              <input
+                v-model="volatilityAlertThreshold"
+                type="range"
+                min="5"
+                max="50"
+                step="5"
+                class="h-1 flex-1 cursor-pointer appearance-none rounded bg-slate-800 accent-red-500"
+              />
+              <span class="font-mono text-[9px] text-slate-600">50%</span>
+            </div>
+          </div>
+
+          <!-- Nations Filter -->
+          <div class="col-span-2 sm:col-span-1 xl:col-span-1">
+            <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+              >Nations</label
+            >
+            <div class="relative">
+              <button
+                class="flex w-full items-center justify-between rounded-lg border bg-slate-950 px-3 py-2 text-xs transition-colors duration-150"
+                :class="
+                  nationsDropdownOpen
+                    ? 'border-blue-500/50 text-slate-200'
+                    : 'border-slate-800 text-slate-400 hover:border-slate-700'
+                "
+                @click.stop="
+                  nationsDropdownOpen = !nationsDropdownOpen;
+                  itemsDropdownOpen = false;
+                  nationsSearch = '';
+                "
+              >
+                <span class="flex items-center gap-2">
+                  <font-awesome-icon icon="flag" class="text-[10px] text-slate-500" />
+                  <span v-if="selectedNations.length === 0" class="text-slate-500"
+                    >All Nations</span
+                  >
+                  <span v-else class="text-slate-200">{{ selectedNations.length }} selected</span>
+                </span>
+                <font-awesome-icon
+                  :icon="nationsDropdownOpen ? 'chevron-up' : 'chevron-down'"
+                  class="text-[9px] text-slate-500"
+                />
+              </button>
+
               <div
                 v-if="nationsDropdownOpen"
-                class="absolute inset-x-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
+                class="fixed inset-0 z-10"
+                @click="nationsDropdownOpen = false"
+              />
+
+              <Transition
+                enter-from-class="opacity-0 -translate-y-1"
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-to-class="opacity-0 -translate-y-1"
               >
                 <div
-                  class="flex items-center justify-between border-b border-slate-800/50 px-3 py-2"
+                  v-if="nationsDropdownOpen"
+                  class="absolute inset-x-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
                 >
-                  <span class="text-[9px] font-bold tracking-widest text-slate-500 uppercase"
-                    >Select Nations</span
+                  <div
+                    class="flex items-center justify-between border-b border-slate-800/50 px-3 py-2"
                   >
-                  <button
-                    v-if="selectedNations.length > 0"
-                    class="text-[9px] font-semibold text-red-400/70 transition-colors hover:text-red-400"
-                    @click="selectedNations = []"
-                  >
-                    Clear
-                  </button>
-                </div>
-                <div class="border-b border-slate-800/30 px-2.5 pt-1.5 pb-1">
-                  <div class="relative">
-                    <span
-                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-600"
+                    <span class="text-[9px] font-bold tracking-widest text-slate-500 uppercase"
+                      >Select Nations</span
                     >
-                      <font-awesome-icon icon="search" class="text-[9px]" />
-                    </span>
-                    <input
-                      v-model="nationsSearch"
-                      type="text"
-                      placeholder="Search nations..."
-                      class="block w-full rounded-lg border border-slate-800/50 bg-slate-950/50 py-1.5 pr-2.5 pl-7 text-[10px] text-slate-300 placeholder-slate-600 focus:border-blue-500/40 focus:outline-none"
-                    />
+                    <button
+                      v-if="selectedNations.length > 0"
+                      class="text-[9px] font-semibold text-red-400/70 transition-colors hover:text-red-400"
+                      @click="selectedNations = []"
+                    >
+                      Clear
+                    </button>
                   </div>
-                </div>
-                <div class="custom-scrollbar max-h-45 space-y-0.5 overflow-y-auto p-1.5">
-                  <button
-                    v-for="nation in filteredNationsList"
-                    :key="'dd-nation-' + nation"
-                    class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150"
-                    :class="
-                      selectedNations.includes(nation)
-                        ? 'bg-blue-500/10 text-blue-300'
-                        : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
-                    "
-                    @click="toggleNationFilter(nation)"
-                  >
-                    <span
-                      class="flex size-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
+                  <div class="border-b border-slate-800/30 px-2.5 pt-1.5 pb-1">
+                    <div class="relative">
+                      <span
+                        class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-600"
+                      >
+                        <font-awesome-icon icon="search" class="text-[9px]" />
+                      </span>
+                      <input
+                        v-model="nationsSearch"
+                        type="text"
+                        placeholder="Search nations..."
+                        class="block w-full rounded-lg border border-slate-800/50 bg-slate-950/50 py-1.5 pr-2.5 pl-7 text-[10px] text-slate-300 placeholder-slate-600 focus:border-blue-500/40 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div class="custom-scrollbar max-h-45 space-y-0.5 overflow-y-auto p-1.5">
+                    <button
+                      v-for="nation in filteredNationsList"
+                      :key="'dd-nation-' + nation"
+                      class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150"
                       :class="
                         selectedNations.includes(nation)
-                          ? 'border-blue-500 bg-blue-500'
-                          : 'border-slate-600'
+                          ? 'bg-blue-500/10 text-blue-300'
+                          : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
                       "
+                      @click="toggleNationFilter(nation)"
                     >
-                      <font-awesome-icon
-                        v-if="selectedNations.includes(nation)"
-                        icon="check"
-                        class="text-[7px] text-white"
-                      />
-                    </span>
-                    {{ nation.replace(/_/g, ' ') }}
-                  </button>
-                </div>
-              </div>
-            </Transition>
-          </div>
-        </div>
-
-        <!-- Backing Items Filter -->
-        <div>
-          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
-            >Backing Items</label
-          >
-          <div class="relative">
-            <button
-              class="flex w-full items-center justify-between rounded-lg border bg-slate-950 px-3 py-2 text-xs transition-colors duration-150"
-              :class="
-                itemsDropdownOpen
-                  ? 'border-emerald-500/50 text-slate-200'
-                  : 'border-slate-800 text-slate-400 hover:border-slate-700'
-              "
-              @click.stop="
-                itemsDropdownOpen = !itemsDropdownOpen;
-                nationsDropdownOpen = false;
-                itemsSearch = '';
-              "
-            >
-              <span class="flex items-center gap-2">
-                <font-awesome-icon icon="cube" class="text-[10px] text-slate-500" />
-                <span v-if="selectedItems.length === 0" class="text-slate-500">All Items</span>
-                <span v-else class="text-slate-200">{{ selectedItems.length }} selected</span>
-              </span>
-              <font-awesome-icon
-                :icon="itemsDropdownOpen ? 'chevron-up' : 'chevron-down'"
-                class="text-[9px] text-slate-500"
-              />
-            </button>
-
-            <div
-              v-if="itemsDropdownOpen"
-              class="fixed inset-0 z-10"
-              @click="itemsDropdownOpen = false"
-            />
-
-            <Transition
-              enter-from-class="opacity-0 -translate-y-1"
-              enter-active-class="transition-all duration-200 ease-out"
-              enter-to-class="opacity-100 translate-y-0"
-              leave-from-class="opacity-100 translate-y-0"
-              leave-active-class="transition-all duration-150 ease-in"
-              leave-to-class="opacity-0 -translate-y-1"
-            >
-              <div
-                v-if="itemsDropdownOpen"
-                class="absolute inset-x-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
-              >
-                <div
-                  class="flex items-center justify-between border-b border-slate-800/50 px-3 py-2"
-                >
-                  <span class="text-[9px] font-bold tracking-widest text-slate-500 uppercase"
-                    >Select Items</span
-                  >
-                  <button
-                    v-if="selectedItems.length > 0"
-                    class="text-[9px] font-semibold text-red-400/70 transition-colors hover:text-red-400"
-                    @click="selectedItems = []"
-                  >
-                    Clear
-                  </button>
-                </div>
-                <div class="border-b border-slate-800/30 px-2.5 pt-1.5 pb-1">
-                  <div class="relative">
-                    <span
-                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-600"
-                    >
-                      <font-awesome-icon icon="search" class="text-[9px]" />
-                    </span>
-                    <input
-                      v-model="itemsSearch"
-                      type="text"
-                      placeholder="Search items..."
-                      class="block w-full rounded-lg border border-slate-800/50 bg-slate-950/50 py-1.5 pr-2.5 pl-7 text-[10px] text-slate-300 placeholder-slate-600 focus:border-emerald-500/40 focus:outline-none"
-                    />
+                      <span
+                        class="flex size-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
+                        :class="
+                          selectedNations.includes(nation)
+                            ? 'border-blue-500 bg-blue-500'
+                            : 'border-slate-600'
+                        "
+                      >
+                        <font-awesome-icon
+                          v-if="selectedNations.includes(nation)"
+                          icon="check"
+                          class="text-[7px] text-white"
+                        />
+                      </span>
+                      {{ nation.replace(/_/g, ' ') }}
+                    </button>
                   </div>
                 </div>
-                <div class="custom-scrollbar max-h-45 space-y-0.5 overflow-y-auto p-1.5">
-                  <button
-                    v-for="item in filteredItemsList"
-                    :key="'dd-item-' + item"
-                    class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150"
-                    :class="
-                      selectedItems.includes(item)
-                        ? 'bg-emerald-500/10 text-emerald-300'
-                        : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
-                    "
-                    @click="toggleItemFilter(item)"
+              </Transition>
+            </div>
+          </div>
+
+          <!-- Backing Items Filter -->
+          <div class="col-span-2 sm:col-span-1 xl:col-span-1">
+            <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+              >Backing Items</label
+            >
+            <div class="relative">
+              <button
+                class="flex w-full items-center justify-between rounded-lg border bg-slate-950 px-3 py-2 text-xs transition-colors duration-150"
+                :class="
+                  itemsDropdownOpen
+                    ? 'border-emerald-500/50 text-slate-200'
+                    : 'border-slate-800 text-slate-400 hover:border-slate-700'
+                "
+                @click.stop="
+                  itemsDropdownOpen = !itemsDropdownOpen;
+                  nationsDropdownOpen = false;
+                  itemsSearch = '';
+                "
+              >
+                <span class="flex items-center gap-2">
+                  <font-awesome-icon icon="cube" class="text-[10px] text-slate-500" />
+                  <span v-if="selectedItems.length === 0" class="text-slate-500">All Items</span>
+                  <span v-else class="text-slate-200">{{ selectedItems.length }} selected</span>
+                </span>
+                <font-awesome-icon
+                  :icon="itemsDropdownOpen ? 'chevron-up' : 'chevron-down'"
+                  class="text-[9px] text-slate-500"
+                />
+              </button>
+
+              <div
+                v-if="itemsDropdownOpen"
+                class="fixed inset-0 z-10"
+                @click="itemsDropdownOpen = false"
+              />
+
+              <Transition
+                enter-from-class="opacity-0 -translate-y-1"
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-to-class="opacity-0 -translate-y-1"
+              >
+                <div
+                  v-if="itemsDropdownOpen"
+                  class="absolute inset-x-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
+                >
+                  <div
+                    class="flex items-center justify-between border-b border-slate-800/50 px-3 py-2"
                   >
-                    <span
-                      class="flex size-3.5 shrink-0 items-center justify-center rounded border transition-all duration-150"
+                    <span class="text-[9px] font-bold tracking-widest text-slate-500 uppercase"
+                      >Select Items</span
+                    >
+                    <button
+                      v-if="selectedItems.length > 0"
+                      class="text-[9px] font-semibold text-red-400/70 transition-colors hover:text-red-400"
+                      @click="selectedItems = []"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div class="border-b border-slate-800/30 px-2.5 pt-1.5 pb-1">
+                    <div class="relative">
+                      <span
+                        class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-600"
+                      >
+                        <font-awesome-icon icon="search" class="text-[9px]" />
+                      </span>
+                      <input
+                        v-model="itemsSearch"
+                        type="text"
+                        placeholder="Search items..."
+                        class="block w-full rounded-lg border border-slate-800/50 bg-slate-950/50 py-1.5 pr-2.5 pl-7 text-[10px] text-slate-300 placeholder-slate-600 focus:border-emerald-500/40 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div class="custom-scrollbar max-h-45 space-y-0.5 overflow-y-auto p-1.5">
+                    <button
+                      v-for="item in filteredItemsList"
+                      :key="'dd-item-' + item"
+                      class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150"
                       :class="
                         selectedItems.includes(item)
-                          ? 'border-emerald-500 bg-emerald-500'
-                          : 'border-slate-600'
+                          ? 'bg-emerald-500/10 text-emerald-300'
+                          : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
                       "
+                      @click="toggleItemFilter(item)"
                     >
-                      <font-awesome-icon
-                        v-if="selectedItems.includes(item)"
-                        icon="check"
-                        class="text-[7px] text-white"
-                      />
-                    </span>
-                    {{ item.replace(/_/g, ' ') }}
-                  </button>
+                      <span
+                        class="flex size-3.5 shrink-0 items-center justify-center rounded border transition-all duration-150"
+                        :class="
+                          selectedItems.includes(item)
+                            ? 'border-emerald-500 bg-emerald-500'
+                            : 'border-slate-600'
+                        "
+                      >
+                        <font-awesome-icon
+                          v-if="selectedItems.includes(item)"
+                          icon="check"
+                          class="text-[7px] text-white"
+                        />
+                      </span>
+                      {{ item.replace(/_/g, ' ') }}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </Transition>
+              </Transition>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Monitor Grid View -->
-      <div class="space-y-4 lg:col-span-3">
+      <div class="space-y-4 xl:col-span-3">
         <div
           class="flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-800/80 bg-[#11131c] px-4 py-2.5 shadow-lg backdrop-blur-md sm:flex-row"
         >
@@ -984,20 +989,20 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <button
-              class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800"
+              class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800"
               @click="downloadCSV"
             >
               <font-awesome-icon icon="download" />
-              Export CSV
+              CSV
             </button>
             <button
-              class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800"
+              class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800"
               @click="downloadJSON"
             >
               <font-awesome-icon icon="download" />
-              Export JSON
+              JSON
             </button>
           </div>
         </div>
