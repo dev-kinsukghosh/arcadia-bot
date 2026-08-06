@@ -135,7 +135,7 @@ onMounted(() => {
         <img
           src="/logo.png"
           alt="ArcadiaMC Logo"
-          class="h-12 w-12 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.25)]"
+          class="size-12 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.25)]"
         />
         <div>
           <h1
@@ -156,7 +156,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
-          class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          class="hover:scale-1.03 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
           @click.prevent="navigate('/live-market')"
         >
           <font-awesome-icon icon="coins" />
@@ -168,7 +168,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
-          class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          class="hover:scale-1.03 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
           @click.prevent="navigate('/currency-history')"
         >
           <font-awesome-icon icon="chart-line" />
@@ -180,7 +180,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
-          class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          class="hover:scale-1.03 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
           @click.prevent="navigate('/exchange')"
         >
           <font-awesome-icon icon="calculator" />
@@ -192,7 +192,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
-          class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          class="hover:scale-1.03 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
           @click.prevent="navigate('/convoy')"
         >
           <font-awesome-icon icon="cube" />
@@ -204,7 +204,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
-          class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          class="hover:scale-1.03 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
           @click.prevent="navigate('/towny')"
         >
           <font-awesome-icon icon="globe" />
@@ -216,7 +216,7 @@ onMounted(() => {
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
-          class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          class="hover:scale-1.03 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 active:scale-95"
           @click.prevent="navigate('/shops')"
         >
           <font-awesome-icon icon="shop" />
@@ -226,7 +226,7 @@ onMounted(() => {
     </header>
 
     <!-- Main Workspace -->
-    <main class="mx-auto w-full max-w-7xl flex-1 px-6 py-8 md:px-12">
+    <main class="mx-auto w-full max-w-7xl flex-1 px-6 py-8 md:px-10">
       <!-- Error Alert -->
       <div
         v-if="fetchError"
@@ -250,7 +250,7 @@ onMounted(() => {
           class="flex flex-col items-center justify-center space-y-4 py-24"
         >
           <div
-            class="h-10 w-10 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500"
+            class="size-10 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500"
           />
           <div class="text-center">
             <h4 class="text-sm font-semibold text-slate-300">Synchronizing Telemetry Nodes</h4>
@@ -275,30 +275,28 @@ onMounted(() => {
     </main>
 
     <!-- Footer -->
-    <footer
-      class="border-t border-slate-900 bg-[#090b11] px-6 py-6 text-center text-xs text-slate-500"
-    >
-      <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
+    <footer class="border-t border-slate-900 bg-[#090b11] p-6 text-center text-xs text-slate-500">
+      <div class="mx-auto flex max-w-360 flex-col items-center justify-between gap-4 sm:flex-row">
         <div>ArcadiaMC Community Bot. Built by webdevkin</div>
         <div class="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
           <span class="flex items-center gap-1">
-            <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" />
+            <span class="size-2.5 animate-pulse rounded-full bg-emerald-500" />
             System Online
           </span>
           <span class="font-mono text-[10px]">v1.1.5</span>
           <button
-            class="relative flex items-center gap-2 rounded-lg border border-indigo-500/30 bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_0_10px_rgba(99,102,241,0.3)] transition-all duration-300 hover:scale-105 hover:border-indigo-400 active:scale-95 group overflow-hidden animate-pulse-glow"
+            class="group animate-pulse-glow relative flex items-center gap-2 overflow-hidden rounded-lg border border-indigo-500/30 bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_0_10px_rgba(99,102,241,0.3)] transition-all duration-300 hover:scale-105 hover:border-indigo-400 active:scale-95"
             title="Add Discord Bot to your Guild"
             @click="openBotInvite"
           >
             <!-- Shine transition overlay -->
             <span
-              class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shine"
+              class="group-hover:animate-shine absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent"
             />
 
             <!-- Discord SVG Icon -->
             <svg
-              class="h-3.5 w-3.5 fill-current transition-transform duration-500 group-hover:rotate-[360deg]"
+              class="size-3.5 fill-current transition-transform duration-500 group-hover:rotate-[360deg]"
               viewBox="0 0 127.14 96.36"
             >
               <path

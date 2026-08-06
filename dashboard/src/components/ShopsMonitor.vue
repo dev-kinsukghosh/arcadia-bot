@@ -165,7 +165,7 @@ function formatCurrency(val, currency = 'ARC') {
           v-model="searchQuery"
           type="text"
           placeholder="Search shop or owner name..."
-          class="w-full rounded-xl border border-slate-800 bg-[#07080c] py-2.5 pr-4 pl-9 text-xs text-slate-200 placeholder-slate-500 outline-none transition-all focus:border-blue-500/50"
+          class="w-full rounded-xl border border-slate-800 bg-[#07080c] py-2.5 pr-4 pl-9 text-xs text-slate-200 placeholder-slate-500 transition-all outline-none focus:border-blue-500/50"
         />
       </div>
 
@@ -178,7 +178,7 @@ function formatCurrency(val, currency = 'ARC') {
           v-model="itemSearchQuery"
           type="text"
           placeholder="Search items (e.g. wheat, saddle)..."
-          class="w-full rounded-xl border border-slate-800 bg-[#07080c] py-2.5 pr-4 pl-9 text-xs text-slate-200 placeholder-slate-500 outline-none transition-all focus:border-blue-500/50"
+          class="w-full rounded-xl border border-slate-800 bg-[#07080c] py-2.5 pr-4 pl-9 text-xs text-slate-200 placeholder-slate-500 transition-all outline-none focus:border-blue-500/50"
         />
       </div>
 
@@ -246,13 +246,13 @@ function formatCurrency(val, currency = 'ARC') {
         v-for="(shop, idx) in filteredShops"
         :key="shop.name"
         :style="{ '--card-idx': idx }"
-        class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c]/40 p-4 shadow-xl backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-700/80 hover:bg-[#11131c]/60 cursor-pointer"
+        class="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c]/40 p-4 shadow-xl backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-700/80 hover:bg-[#11131c]/60"
         @click="openShopDetails(shop)"
       >
         <div>
           <!-- Header -->
           <div class="flex items-start justify-between">
-            <h3 class="font-semibold text-slate-200 group-hover:text-blue-400 transition-colors">
+            <h3 class="font-semibold text-slate-200 transition-colors group-hover:text-blue-400">
               {{ shop.name.replace(/_/g, ' ') }}
             </h3>
             <span
@@ -265,16 +265,16 @@ function formatCurrency(val, currency = 'ARC') {
           <!-- Owner Head & Username -->
           <div class="mt-2.5 flex items-center gap-2">
             <div
-              class="h-5 w-5 rounded bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden relative"
+              class="relative flex size-5 items-center justify-center overflow-hidden rounded border border-slate-800 bg-slate-950"
             >
-              <span class="text-[8px] font-bold text-slate-500 select-none z-0">{{
+              <span class="z-0 text-[8px] font-bold text-slate-500 select-none">{{
                 getOwnerInitial(shop)
               }}</span>
               <img
                 v-if="!failedAvatars['card-' + shop.owner]"
                 :src="apiBase + '/heads/' + (shop.ownerName || shop.owner) + '.png'"
                 alt=""
-                class="absolute inset-0 h-full w-full object-cover z-10"
+                class="absolute inset-0 z-10 size-full object-cover"
                 @error="handleAvatarError('card-' + shop.owner)"
               />
             </div>
@@ -323,7 +323,7 @@ function formatCurrency(val, currency = 'ARC') {
 
         <!-- View Button indicator -->
         <div
-          class="mt-4 flex items-center justify-end text-xs font-bold text-blue-500 group-hover:translate-x-0.5 transition-all"
+          class="mt-4 flex items-center justify-end text-xs font-bold text-blue-500 transition-all group-hover:translate-x-0.5"
         >
           Inspect listings &rarr;
         </div>
@@ -361,9 +361,9 @@ function formatCurrency(val, currency = 'ARC') {
           >
             <div class="flex items-center gap-3">
               <div
-                class="h-8 w-8 rounded bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden relative"
+                class="relative flex size-8 items-center justify-center overflow-hidden rounded border border-slate-800 bg-slate-950"
               >
-                <span class="text-xs font-bold text-slate-500 select-none z-0">{{
+                <span class="z-0 text-xs font-bold text-slate-500 select-none">{{
                   getOwnerInitial(selectedShop)
                 }}</span>
                 <img
@@ -372,12 +372,12 @@ function formatCurrency(val, currency = 'ARC') {
                     apiBase + '/heads/' + (selectedShop.ownerName || selectedShop.owner) + '.png'
                   "
                   alt=""
-                  class="absolute inset-0 h-full w-full object-cover z-10"
+                  class="absolute inset-0 z-10 size-full object-cover"
                   @error="handleAvatarError('modal-' + selectedShop.owner)"
                 />
               </div>
               <div>
-                <h3 class="text-base font-bold text-white leading-tight">
+                <h3 class="text-base leading-tight font-bold text-white">
                   🛒 Shop Details: {{ selectedShop.name.replace(/_/g, ' ') }}
                 </h3>
                 <p class="text-[10px] font-medium text-slate-400">
@@ -393,7 +393,7 @@ function formatCurrency(val, currency = 'ARC') {
               </div>
             </div>
             <button
-              class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-slate-400 transition-all hover:bg-slate-800 hover:text-white"
+              class="flex size-7 items-center justify-center rounded-lg bg-slate-900 text-slate-400 transition-all hover:bg-slate-800 hover:text-white"
               @click="closeModal"
             >
               <font-awesome-icon icon="times" />
@@ -401,7 +401,7 @@ function formatCurrency(val, currency = 'ARC') {
           </div>
 
           <!-- Scrollable content -->
-          <div class="max-h-[500px] overflow-y-auto p-6 space-y-5 custom-scrollbar">
+          <div class="custom-scrollbar max-h-125 space-y-5 overflow-y-auto p-6">
             <!-- Metadata and Coordinates -->
             <div class="grid gap-4 sm:grid-cols-2">
               <!-- Coords Box -->
@@ -414,7 +414,7 @@ function formatCurrency(val, currency = 'ARC') {
                     X: {{ selectedShop.plotX }} , Z: {{ selectedShop.plotZ }}
                   </span>
                   <button
-                    class="rounded bg-slate-800 px-2 py-1 text-[10px] font-bold text-blue-400 hover:bg-slate-750"
+                    class="hover:bg-slate-700 rounded bg-slate-800 px-2 py-1 text-[10px] font-bold text-blue-400"
                     @click="copyCoordinates(selectedShop.plotX, selectedShop.plotZ)"
                   >
                     {{
@@ -454,11 +454,11 @@ function formatCurrency(val, currency = 'ARC') {
               <!-- Selling -->
               <div>
                 <h4
-                  class="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800 pb-2"
+                  class="border-b border-slate-800 pb-2 text-xs font-bold tracking-wider text-emerald-400 uppercase"
                 >
                   🛒 Selling Offers ({{ selectedShop.sellListings?.length || 0 }})
                 </h4>
-                <div class="mt-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                <div class="custom-scrollbar mt-3 max-h-[250px] space-y-2 overflow-y-auto pr-1">
                   <div
                     v-for="(list, idx) in selectedShop.sellListings"
                     :key="idx"
@@ -476,7 +476,7 @@ function formatCurrency(val, currency = 'ARC') {
                   </div>
                   <p
                     v-if="!selectedShop.sellListings || selectedShop.sellListings.length === 0"
-                    class="text-xs italic text-slate-600 py-4"
+                    class="py-4 text-xs text-slate-600 italic"
                   >
                     No active items on sale.
                   </p>
@@ -486,11 +486,11 @@ function formatCurrency(val, currency = 'ARC') {
               <!-- Buying -->
               <div>
                 <h4
-                  class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-2"
+                  class="border-b border-slate-800 pb-2 text-xs font-bold tracking-wider text-blue-400 uppercase"
                 >
                   📥 Buying Requests ({{ selectedShop.buyListings?.length || 0 }})
                 </h4>
-                <div class="mt-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                <div class="custom-scrollbar mt-3 max-h-[250px] space-y-2 overflow-y-auto pr-1">
                   <div
                     v-for="(list, idx) in selectedShop.buyListings"
                     :key="idx"
@@ -508,7 +508,7 @@ function formatCurrency(val, currency = 'ARC') {
                   </div>
                   <p
                     v-if="!selectedShop.buyListings || selectedShop.buyListings.length === 0"
-                    class="text-xs italic text-slate-600 py-4"
+                    class="py-4 text-xs text-slate-600 italic"
                   >
                     No active buying requests.
                   </p>

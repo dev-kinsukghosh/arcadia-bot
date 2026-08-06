@@ -7,7 +7,7 @@ const { slowDown } = require('express-slow-down');
 const { config } = require('./config.js');
 const logger = require('./utils/logger.js');
 const { db } = require('./utils/db.js');
-const { currencies, currencyHistory, convoyItems } = require('./db/schema.js');
+const { currencies, currencyHistory, convoyItems, townyHistory } = require('./db/schema.js');
 const { and, eq, gte, asc } = require('drizzle-orm');
 const pc = require('picocolors');
 const { WebSocketServer } = require('ws');
@@ -24,9 +24,14 @@ app.use(
 );
 
 // 2. CORS configuration (allowing X-Device-Fingerprint header)
+const isDev = process.env.NODE_ENV !== 'production';
 app.use(
   cors({
-    origin: '*',
+    origin: isDev
+      ? true
+      : process.env.ALLOWED_ORIGINS
+        ? process.env.ALLOWED_ORIGINS.split(',')
+        : '*',
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Fingerprint'],
     credentials: true,
@@ -228,7 +233,7 @@ apiRouter.get('/currencies/stats', async (req, res) => {
   try {
     const { days } = req.query;
     const limitDays = parseInt(days || '30', 10);
-    const retentionDays = Math.min(Math.max(limitDays, 1), 120);
+    const retentionDays = Math.min(Math.max(limitDays, 7), 120);
 
     const cutoffDate = new Date();
     cutoffDate.setUTCDate(cutoffDate.getUTCDate() - retentionDays);
@@ -262,12 +267,16 @@ apiRouter.get('/currencies/stats', async (req, res) => {
       if (!historyMap[row.currencyId]) {
         historyMap[row.currencyId] = [];
       }
-      historyMap[row.currencyId].push(parseFloat(row.arcPerUnitLive) || 0);
+      historyMap[row.currencyId].push({
+        date: row.date,
+        liveRate: parseFloat(row.arcPerUnitLive) || 0,
+      });
     });
 
     // Calculate metrics for each currency
     const statsList = latestCurrencies.map((curr) => {
-      const rates = historyMap[curr.id] || [];
+      const historyRows = historyMap[curr.id] || [];
+      const rates = historyRows.map((r) => r.liveRate);
       const currentLive = parseFloat(curr.arcPerUnitLive) || 0;
       const base = parseFloat(curr.arcPerUnitBase) || 0;
       const previousRate =
@@ -289,6 +298,9 @@ apiRouter.get('/currencies/stats', async (req, res) => {
           stdDev: 0,
           stabilityScore: 100, // Default stable if no history
           percentageChange: 0,
+          change24h: 0,
+          change7d: 0,
+          sparkline: [currentLive, currentLive],
         };
       }
 
@@ -311,6 +323,42 @@ apiRouter.get('/currencies/stats', async (req, res) => {
       // Percentage deviation from base
       const percentageChange = base > 0 ? ((currentLive - base) / base) * 100 : 0;
 
+      // Helper function to find the rate closest to N days ago
+      const getRateNDaysAgo = (n) => {
+        if (historyRows.length === 0) return currentLive;
+
+        // Target date relative to current UTC date
+        const targetDate = new Date();
+        targetDate.setUTCDate(targetDate.getUTCDate() - n);
+        const targetStr = targetDate.toISOString().split('T')[0];
+
+        // Try to find exact match
+        const exact = historyRows.find((r) => r.date === targetStr);
+        if (exact) return exact.liveRate;
+
+        // Find closest date before or equal to targetStr
+        let closest = null;
+        for (const r of historyRows) {
+          if (r.date <= targetStr) {
+            if (!closest || r.date > closest.date) {
+              closest = r;
+            }
+          }
+        }
+        if (closest) return closest.liveRate;
+
+        // Fallback to oldest available record
+        return historyRows[0].liveRate;
+      };
+
+      const rate24h = getRateNDaysAgo(1);
+      const rate7d = getRateNDaysAgo(7);
+
+      const change24h = rate24h > 0 ? ((currentLive - rate24h) / rate24h) * 100 : 0;
+      const change7d = rate7d > 0 ? ((currentLive - rate7d) / rate7d) * 100 : 0;
+
+      const sparklineData = rates.length > 0 ? rates : [currentLive, currentLive];
+
       return {
         id: curr.id,
         name: curr.name,
@@ -326,6 +374,9 @@ apiRouter.get('/currencies/stats', async (req, res) => {
         stdDev: stdDev,
         stabilityScore: stabilityScore,
         percentageChange: percentageChange,
+        change24h: change24h,
+        change7d: change7d,
+        sparkline: sparklineData,
       };
     });
 
@@ -394,6 +445,39 @@ const handleTownyRequest = async (req, res) => {
 apiRouter.get('/towny', handleTownyRequest);
 apiRouter.get('/api/towny', handleTownyRequest);
 
+apiRouter.get('/towny/history', async (req, res) => {
+  const name = req.query.name?.trim().toLowerCase();
+  const type = req.query.type || 'town'; // 'town' or 'nation'
+  const days = parseInt(req.query.days) || 30;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Missing name parameter' });
+  }
+
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setUTCDate(cutoffDate.getUTCDate() - days);
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+    const historyData = await db
+      .select()
+      .from(townyHistory)
+      .where(
+        and(
+          eq(townyHistory.name, name),
+          eq(townyHistory.type, type),
+          gte(townyHistory.date, cutoffStr)
+        )
+      )
+      .orderBy(asc(townyHistory.date));
+
+    res.json(historyData);
+  } catch (err) {
+    logger.error(`API Error fetching Towny history: ${err.message}`);
+    res.status(500).json({ error: 'Database error fetching Towny history' });
+  }
+});
+
 // Local cache for Mojang username resolutions to minimize external API hits
 const resolvedUsernames = new Map();
 
@@ -414,7 +498,7 @@ async function resolveUuidToUsername(uuid) {
         resolvedUsernames.set(cleanUuid, cachedName);
         return cachedName;
       }
-    } catch (err) {
+    } catch {
       // ignore
     }
   }
@@ -586,7 +670,7 @@ apiRouter.get('/heads/:username.png', async (req, res) => {
 apiRouter.use('/icons', express.static(path.join(process.cwd(), 'src', 'icons')));
 
 // Conditional host routing middleware
-app.use((req, res, next) => {
+app.use((req, res, _next) => {
   const hostname = req.hostname;
 
   if (hostname === 'arcc.webdevkin.com') {

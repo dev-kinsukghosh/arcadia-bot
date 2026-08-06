@@ -418,7 +418,7 @@ const chartOptions = computed(() => ({
             v-model="searchQuery"
             type="text"
             placeholder="Search currencies..."
-            class="w-full rounded-lg border border-slate-800 bg-slate-950 py-1.5 pr-8 pl-8 text-xs text-slate-200 placeholder-slate-600 transition-all duration-300 focus:border-blue-500/50 focus:shadow-[0_0_10px_rgba(59,130,246,0.15)] focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            class="w-full rounded-lg border border-slate-800 bg-slate-950 px-8 py-1.5 text-xs text-slate-200 placeholder-slate-600 transition-all duration-300 focus:border-blue-500/50 focus:shadow-[0_0_10px_rgba(59,130,246,0.15)] focus:ring-1 focus:ring-blue-500 focus:outline-none"
           />
           <button
             v-if="searchQuery"
@@ -446,7 +446,7 @@ const chartOptions = computed(() => ({
               type="checkbox"
               :value="curr.id"
               :checked="selectedCurrencies.includes(curr.id)"
-              class="h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900"
+              class="size-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900"
               @change.stop
             />
             <span class="truncate text-sm font-medium text-slate-300 select-none">
@@ -456,7 +456,7 @@ const chartOptions = computed(() => ({
         </TransitionGroup>
       </div>
 
-      <div class="relative h-[320px] lg:col-span-3">
+      <div class="relative h-80 lg:col-span-3">
         <div
           v-if="isLoading"
           class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-[#11131c]/60 backdrop-blur-xs"
@@ -473,12 +473,12 @@ const chartOptions = computed(() => ({
         >
           <font-awesome-icon icon="sliders" class="mb-3 text-4xl text-slate-600" />
           <h4 class="text-sm font-semibold text-slate-300">No Currencies Selected</h4>
-          <p class="mt-1 max-w-[280px] text-xs text-slate-500">
+          <p class="mt-1 max-w-70 text-xs text-slate-500">
             Select one or more currencies on the left to display historical charts.
           </p>
         </div>
 
-        <div v-else class="h-full w-full">
+        <div v-else class="size-full">
           <Line :data="chartData" :options="chartOptions" />
         </div>
       </div>

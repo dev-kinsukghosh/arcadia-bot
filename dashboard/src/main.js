@@ -34,6 +34,7 @@ import {
   faFlag,
   faCube,
   faShop,
+  faMinus,
 } from '@fortawesome/free-solid-svg-icons';
 
 // Add icons to library
@@ -63,7 +64,8 @@ library.add(
   faChevronUp,
   faFlag,
   faCube,
-  faShop
+  faShop,
+  faMinus
 );
 
 export function createSSRApplication() {

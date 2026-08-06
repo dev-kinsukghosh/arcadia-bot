@@ -370,6 +370,48 @@ function downloadJSON() {
   document.body.removeChild(link);
 }
 
+function getSparklinePath(data) {
+  if (!data || data.length < 2) return '';
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min === 0 ? 0 : max - min;
+
+  const width = 100;
+  const height = 26;
+  const padding = 2;
+
+  return data
+    .map((val, index) => {
+      const x = (index / (data.length - 1)) * width;
+      const y =
+        range === 0
+          ? height / 2
+          : height - ((val - min) / range) * (height - 2 * padding) + padding;
+      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    })
+    .join(' ');
+}
+
+function getSparklineAreaPath(data) {
+  if (!data || data.length < 2) return '';
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min === 0 ? 0 : max - min;
+
+  const width = 100;
+  const height = 26;
+  const padding = 2;
+
+  const points = data.map((val, index) => {
+    const x = (index / (data.length - 1)) * width;
+    const y =
+      range === 0 ? height / 2 : height - ((val - min) / range) * (height - 2 * padding) + padding;
+    return `${x.toFixed(1)} ${y.toFixed(1)}`;
+  });
+
+  return `M 0,${height} L ${points.map((p, i) => `${i === 0 ? '' : 'L '}${p}`).join(' ')} L ${width},${height} Z`;
+}
+
 onMounted(() => {
   loadPinnedFavorites();
 });
@@ -481,11 +523,11 @@ onMounted(() => {
       <h3 class="mb-3 text-xs font-bold tracking-widest text-slate-500 uppercase">
         Pinned Watchlist
       </h3>
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5 lg:grid-cols-5">
         <div
           v-for="curr in pinnedCurrencies"
           :key="'pinned-' + curr.id"
-          class="group relative overflow-hidden rounded-xl border border-blue-500/30 bg-[#11131c] p-4 shadow-md shadow-blue-500/5 transition-all duration-300 hover:-translate-y-0.5"
+          class="group relative overflow-hidden rounded-xl border border-blue-500/30 bg-[#11131c] p-3 shadow-md shadow-blue-500/5 transition-all duration-300 hover:-translate-y-0.5"
         >
           <div
             class="absolute -right-6 -bottom-6 h-20 w-20 rounded-full bg-blue-600/10 blur-xl transition-all duration-300 group-hover:bg-blue-600/15"
@@ -539,12 +581,11 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
     <!-- Main Analytics Workspace -->
     <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-4">
       <!-- Filters Sidebar -->
       <div
-        class="space-y-5 rounded-2xl border border-slate-800/80 bg-[#11131c] p-5 shadow-xl backdrop-blur-md lg:col-span-1"
+        class="space-y-4 rounded-2xl border border-slate-800/80 bg-[#11131c] p-4 shadow-xl backdrop-blur-md lg:col-span-1"
       >
         <div class="flex items-center justify-between border-b border-slate-800/50 pb-3">
           <h3 class="flex items-center gap-2 text-sm font-bold text-slate-200">
@@ -552,7 +593,7 @@ onMounted(() => {
             Filters & Limits
           </h3>
           <button
-            class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase transition-colors duration-150 hover:text-slate-300"
+            class="text-[9px] font-semibold tracking-wider text-slate-500 uppercase transition-colors duration-150 hover:text-slate-300"
             @click="clearFilters"
           >
             Reset
@@ -561,204 +602,147 @@ onMounted(() => {
 
         <!-- Search -->
         <div>
-          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+          <label
+            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
             >Search</label
           >
           <div class="relative">
             <span
-              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500"
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-[10px] text-slate-500"
             >
               <font-awesome-icon icon="search" />
             </span>
             <input
               v-model="searchSearch"
               type="text"
-              placeholder="Search name, id, nation..."
-              class="block w-full rounded-lg border border-slate-800 bg-slate-950 py-1.5 pr-3 pl-9 text-xs text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              placeholder="Search..."
+              class="placeholder-slate-600 block w-full rounded-lg border border-slate-800 bg-slate-950 py-1 pr-2.5 pl-7 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
         </div>
 
-        <!-- Limits Filter -->
+        <!-- Display Limit -->
         <div>
-          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+          <label
+            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
             >Display Limit</label
           >
-          <div
-            class="grid grid-cols-5 gap-0.5 rounded-lg border border-slate-800 bg-slate-950 p-0.5 text-center"
+          <select
+            v-model="limitType"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
-            <button
-              :class="
-                limitType === '5' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
-              "
-              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
-              @click="limitType = '5'"
-            >
-              Top 5
-            </button>
-            <button
-              :class="
-                limitType === '10'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              "
-              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
-              @click="limitType = '10'"
-            >
-              Top 10
-            </button>
-            <button
-              :class="
-                limitType === '20'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              "
-              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
-              @click="limitType = '20'"
-            >
-              Top 20
-            </button>
-            <button
-              :class="
-                limitType === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              "
-              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
-              @click="limitType = 'all'"
-            >
-              All
-            </button>
-            <button
-              :class="
-                limitType === 'custom'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              "
-              class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
-              @click="limitType = 'custom'"
-            >
-              Custom
-            </button>
-          </div>
+            <option value="all">Show All</option>
+            <option value="5">Top 5</option>
+            <option value="10">Top 10</option>
+            <option value="20">Top 20</option>
+            <option value="custom">Custom Count...</option>
+          </select>
 
-          <div v-if="limitType === 'custom'" class="mt-2 flex items-center gap-2">
-            <span class="text-[10px] font-semibold text-slate-500 uppercase">Count:</span>
+          <div v-if="limitType === 'custom'" class="mt-1.5 flex items-center gap-1.5">
+            <span class="text-[9px] font-semibold text-slate-500 uppercase">Count:</span>
             <input
               v-model="customLimit"
               type="number"
               min="1"
-              class="block w-20 rounded border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              class="block w-full rounded border border-slate-800 bg-slate-950 px-2 py-0.5 font-mono text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
         </div>
 
         <!-- Sorting Criteria -->
         <div>
-          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+          <label
+            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
             >Sorting Mode</label
           >
           <select
             v-model="filterCriteria"
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
-            <option value="all" class="bg-slate-950 text-slate-200">Alphabetical (Name)</option>
-            <option value="best_perform" class="bg-slate-950 text-slate-200">
-              Biggest Gainers
-            </option>
-            <option value="worst_perform" class="bg-slate-950 text-slate-200">
-              Biggest Losers
-            </option>
-            <option value="stable" class="bg-slate-950 text-slate-200">
-              Most Steady (Fewest Swings)
-            </option>
-            <option value="volatile" class="bg-slate-950 text-slate-200">Most Unpredictable</option>
-            <option value="stable_high_val" class="bg-slate-950 text-slate-200">
-              Most Steady + High Value
-            </option>
+            <option value="all">Alphabetical (Name)</option>
+            <option value="best_perform">Biggest Gainers</option>
+            <option value="worst_perform">Biggest Losers</option>
+            <option value="stable">Most Steady</option>
+            <option value="volatile">Most Volatile</option>
+            <option value="stable_high_val">Steady + High Val</option>
           </select>
         </div>
 
-        <!-- Additional Filters -->
+        <!-- Price Trend -->
         <div>
-          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+          <label
+            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
             >Price Trend</label
           >
           <select
             v-model="filterPriceDir"
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
-            <option value="all" class="bg-slate-950 text-slate-200">All Trends</option>
-            <option value="gainers" class="bg-slate-950 text-slate-200">Only Upwards</option>
-            <option value="losers" class="bg-slate-950 text-slate-200">Only Downwards</option>
-            <option value="flat" class="bg-slate-950 text-slate-200">Only Unchanged</option>
+            <option value="all">All Trends</option>
+            <option value="gainers">Only Upwards</option>
+            <option value="losers">Only Downwards</option>
+            <option value="flat">Only Unchanged</option>
           </select>
         </div>
 
+        <!-- Price Bracket -->
         <div>
-          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+          <label
+            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
             >Price Bracket</label
           >
           <select
             v-model="filterPriceTier"
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
-            <option value="all" class="bg-slate-950 text-slate-200">All Prices</option>
-            <option value="high" class="bg-slate-950 text-slate-200">High Value (≥ ₳20)</option>
-            <option value="medium" class="bg-slate-950 text-slate-200">
-              Medium Value (₳5 - ₳20)
-            </option>
-            <option value="low" class="bg-slate-950 text-slate-200">Low Value (&lt; ₳5)</option>
+            <option value="all">All Prices</option>
+            <option value="high">High Value (≥ ₳20)</option>
+            <option value="medium">Medium Value (₳5-₳20)</option>
+            <option value="low">Low Value (&lt; ₳5)</option>
           </select>
         </div>
 
+        <!-- Stability Tier -->
         <div>
-          <label class="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase"
+          <label
+            class="mb-1.5 block text-[10px] font-semibold tracking-wider text-slate-400 uppercase"
             >Steady Tier</label
           >
           <select
             v-model="filterStabilityTier"
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[11px] text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
-            <option value="all" class="bg-slate-950 text-slate-200">All Tiers</option>
-            <option value="steady" class="bg-slate-950 text-slate-200">Steady (≥ 85%)</option>
-            <option value="mixed" class="bg-slate-950 text-slate-200">Mixed (65% - 84%)</option>
-            <option value="risky" class="bg-slate-950 text-slate-200">Risky (&lt; 65%)</option>
+            <option value="all">All Tiers</option>
+            <option value="steady">Steady (≥ 85%)</option>
+            <option value="mixed">Mixed (65%-84%)</option>
+            <option value="risky">Risky (&lt; 65%)</option>
           </select>
         </div>
 
         <!-- Price Swing Alert -->
         <div>
-          <label
-            class="mb-2 block items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-400 uppercase"
-          >
-            <font-awesome-icon icon="triangle-exclamation" class="text-red-400" />
-            Price Swing Alert
-          </label>
-          <p class="mb-3 text-[10px] leading-relaxed text-slate-500">
-            Rows where the <span class="font-semibold text-slate-300">Price Change</span> column
-            exceeds your threshold will be
-            <span class="font-semibold text-red-400">highlighted in red</span>.
-          </p>
-          <div class="flex items-center gap-2.5">
-            <span class="w-6 text-right font-mono text-[9px] font-bold text-slate-600">5%</span>
+          <div class="mb-1.5 flex items-center justify-between">
+            <label class="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+              <font-awesome-icon icon="triangle-exclamation" class="mr-1 text-red-400" />
+              Swing Alert
+            </label>
+            <span
+              class="rounded bg-red-500/10 px-1.5 py-0.5 font-mono text-[9px] font-bold text-red-400"
+            >
+              ≥ {{ volatilityAlertThreshold }}%
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-[9px] text-slate-600">5%</span>
             <input
               v-model="volatilityAlertThreshold"
               type="range"
               min="5"
               max="50"
               step="5"
-              class="h-1.5 flex-1 cursor-pointer appearance-none rounded-lg bg-slate-800 accent-red-500"
+              class="h-1 flex-1 cursor-pointer appearance-none rounded bg-slate-800 accent-red-500"
             />
-            <span class="w-7 font-mono text-[9px] font-bold text-slate-600">50%</span>
-          </div>
-          <div class="mt-2.5 flex items-center justify-center">
-            <span
-              class="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1 font-mono text-[10px] font-bold text-red-400"
-            >
-              <font-awesome-icon icon="bell" class="text-[8px]" />
-              ≥ {{ volatilityAlertThreshold }}% triggers alert
-            </span>
+            <span class="font-mono text-[9px] text-slate-600">50%</span>
           </div>
         </div>
 
@@ -808,7 +792,7 @@ onMounted(() => {
             >
               <div
                 v-if="nationsDropdownOpen"
-                class="absolute right-0 left-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
+                class="absolute inset-x-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
               >
                 <div
                   class="flex items-center justify-between border-b border-slate-800/50 px-3 py-2"
@@ -839,7 +823,7 @@ onMounted(() => {
                     />
                   </div>
                 </div>
-                <div class="custom-scrollbar max-h-[180px] space-y-0.5 overflow-y-auto p-1.5">
+                <div class="custom-scrollbar max-h-45 space-y-0.5 overflow-y-auto p-1.5">
                   <button
                     v-for="nation in filteredNationsList"
                     :key="'dd-nation-' + nation"
@@ -852,7 +836,7 @@ onMounted(() => {
                     @click="toggleNationFilter(nation)"
                   >
                     <span
-                      class="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
+                      class="flex size-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
                       :class="
                         selectedNations.includes(nation)
                           ? 'border-blue-500 bg-blue-500'
@@ -919,7 +903,7 @@ onMounted(() => {
             >
               <div
                 v-if="itemsDropdownOpen"
-                class="absolute right-0 left-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
+                class="absolute inset-x-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-800 bg-[#0d0f17] shadow-2xl shadow-black/50"
               >
                 <div
                   class="flex items-center justify-between border-b border-slate-800/50 px-3 py-2"
@@ -950,7 +934,7 @@ onMounted(() => {
                     />
                   </div>
                 </div>
-                <div class="custom-scrollbar max-h-[180px] space-y-0.5 overflow-y-auto p-1.5">
+                <div class="custom-scrollbar max-h-45 space-y-0.5 overflow-y-auto p-1.5">
                   <button
                     v-for="item in filteredItemsList"
                     :key="'dd-item-' + item"
@@ -963,7 +947,7 @@ onMounted(() => {
                     @click="toggleItemFilter(item)"
                   >
                     <span
-                      class="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-all duration-150"
+                      class="flex size-3.5 shrink-0 items-center justify-center rounded border transition-all duration-150"
                       :class="
                         selectedItems.includes(item)
                           ? 'border-emerald-500 bg-emerald-500'
@@ -988,15 +972,15 @@ onMounted(() => {
       <!-- Monitor Grid View -->
       <div class="space-y-4 lg:col-span-3">
         <div
-          class="flex flex-col items-center justify-between gap-4 rounded-2xl border border-slate-800/80 bg-[#11131c] p-4 shadow-lg backdrop-blur-md sm:flex-row"
+          class="flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-800/80 bg-[#11131c] px-4 py-2.5 shadow-lg backdrop-blur-md sm:flex-row"
         >
-          <div class="text-center sm:text-left">
-            <div class="text-xs font-semibold text-slate-400">Active Market Coverage</div>
-            <div class="mt-0.5 text-lg font-bold text-slate-200">
-              Viewing
-              <span class="font-mono text-blue-500">{{ filteredCurrencies.length }}</span> of
+          <div class="flex items-center gap-3 text-center sm:text-left">
+            <div class="text-[11px] font-semibold text-slate-400">Active Market Coverage</div>
+            <div class="flex items-center gap-1.5 text-sm font-bold text-slate-200">
+              <span class="font-mono text-blue-500">{{ filteredCurrencies.length }}</span>
+              <span class="text-slate-500">/</span>
               <span class="font-mono text-slate-400">{{ currencies.length }}</span>
-              nation currencies
+              <span class="text-xs font-medium text-slate-500">currencies</span>
             </div>
           </div>
 
@@ -1022,19 +1006,21 @@ onMounted(() => {
         <div
           class="overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c] shadow-2xl backdrop-blur-md"
         >
-          <div class="overflow-x-auto no-scrollbar">
+          <div class="no-scrollbar overflow-x-auto">
             <table class="w-full border-collapse text-left">
               <thead>
                 <tr
                   class="border-b border-slate-900 bg-slate-950 text-[10px] font-bold tracking-wider text-slate-400 uppercase"
                 >
-                  <th class="w-12 px-4 py-3.5 text-center">Watch</th>
-                  <th class="px-4 py-3.5">Currency</th>
-                  <th class="px-4 py-3.5">Creator / Nation</th>
-                  <th class="px-4 py-3.5">Base Rate</th>
-                  <th class="px-4 py-3.5">Live Rate</th>
-                  <th class="px-4 py-3.5">How Steady</th>
-                  <th class="px-4 py-3.5 text-right">Price Change</th>
+                  <th class="w-12 px-3 py-2.5 text-center">Watch</th>
+                  <th class="px-3 py-2.5">Currency</th>
+                  <th class="px-3 py-2.5">Creator / Nation</th>
+                  <th class="px-3 py-2.5">Base Rate</th>
+                  <th class="px-3 py-2.5">Live Rate</th>
+                  <th class="px-3 py-2.5">Price Change</th>
+                  <th class="px-3 py-2.5">24h Trend</th>
+                  <th class="px-3 py-2.5">7d Trend</th>
+                  <th class="px-3 py-2.5">How Steady</th>
                 </tr>
               </thead>
               <TransitionGroup name="row-list" tag="tbody" class="divide-y divide-slate-900/50">
@@ -1048,7 +1034,7 @@ onMounted(() => {
                     'group transition-all duration-150',
                   ]"
                 >
-                  <td class="px-4 py-3.5 text-center">
+                  <td class="px-3 py-2.5 text-center">
                     <button
                       class="text-xs transition-colors duration-150"
                       :class="
@@ -1060,7 +1046,7 @@ onMounted(() => {
                     </button>
                   </td>
 
-                  <td class="px-4 py-3.5">
+                  <td class="px-3 py-2.5">
                     <div
                       class="font-bold text-slate-200 transition-colors duration-150 group-hover:text-blue-400"
                     >
@@ -1073,7 +1059,7 @@ onMounted(() => {
                     </div>
                   </td>
 
-                  <td class="px-4 py-3.5">
+                  <td class="px-3 py-2.5">
                     <div class="text-xs font-semibold text-slate-300">
                       {{ (curr.nation || '').replace(/_/g, ' ') }}
                     </div>
@@ -1082,15 +1068,113 @@ onMounted(() => {
                     </div>
                   </td>
 
-                  <td class="px-4 py-3.5 font-mono text-xs text-slate-400">
+                  <td class="px-3 py-2.5 font-mono text-xs text-slate-400">
                     ₳{{ (curr.baseRate || 0).toFixed(4) }}
                   </td>
 
-                  <td class="px-4 py-3.5 font-mono text-xs font-bold text-slate-200">
+                  <td class="px-3 py-2.5 font-mono text-xs font-bold text-slate-200">
                     ₳{{ (curr.liveRate || 0).toFixed(4) }}
                   </td>
 
-                  <td class="px-4 py-3.5">
+                  <td class="px-3 py-2.5">
+                    <div
+                      :class="
+                        (curr.percentageChange || 0) > 0
+                          ? 'text-emerald-400'
+                          : (curr.percentageChange || 0) < 0
+                            ? 'text-red-400'
+                            : 'text-slate-400'
+                      "
+                      class="font-mono text-xs font-bold"
+                    >
+                      <font-awesome-icon
+                        :icon="
+                          (curr.percentageChange || 0) >= 0 ? 'arrow-trend-up' : 'arrow-trend-down'
+                        "
+                        class="mr-1 text-[10px]"
+                      />
+                      {{ (curr.percentageChange || 0) >= 0 ? '+' : ''
+                      }}{{ (curr.percentageChange || 0).toFixed(2) }}%
+                    </div>
+                    <div
+                      v-if="Math.abs(curr.percentageChange || 0) >= volatilityAlertThreshold"
+                      class="mt-0.5 text-[8px] font-bold tracking-widest text-red-400 uppercase"
+                    >
+                      <font-awesome-icon icon="triangle-exclamation" class="mr-0.5" /> Big Change
+                    </div>
+                  </td>
+
+                  <td class="px-3 py-2.5">
+                    <div
+                      :class="
+                        (curr.change24h || 0) > 0
+                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                          : (curr.change24h || 0) < 0
+                            ? 'border-red-500/20 bg-red-500/10 text-red-400'
+                            : 'border-slate-500/20 bg-slate-500/10 text-slate-400'
+                      "
+                      class="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-bold"
+                    >
+                      <font-awesome-icon
+                        :icon="
+                          (curr.change24h || 0) > 0
+                            ? 'arrow-trend-up'
+                            : (curr.change24h || 0) < 0
+                              ? 'arrow-trend-down'
+                              : 'minus'
+                        "
+                      />
+                      {{ (curr.change24h || 0) >= 0 ? '+' : ''
+                      }}{{ (curr.change24h || 0).toFixed(2) }}%
+                    </div>
+                  </td>
+
+                  <td class="px-3 py-2.5">
+                    <div class="flex items-center gap-2">
+                      <svg class="h-6 w-20 overflow-visible" viewBox="0 0 100 30" fill="none">
+                        <defs>
+                          <linearGradient :id="'gradient-' + curr.id" x1="0" y1="0" x2="0" y2="1">
+                            <stop
+                              offset="0%"
+                              :stop-color="(curr.change7d || 0) >= 0 ? '#10b981' : '#ef4444'"
+                              stop-opacity="0.2"
+                            />
+                            <stop
+                              offset="100%"
+                              :stop-color="(curr.change7d || 0) >= 0 ? '#10b981' : '#ef4444'"
+                              stop-opacity="0"
+                            />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          :d="getSparklineAreaPath(curr.sparkline)"
+                          :fill="'url(#gradient-' + curr.id + ')'"
+                        />
+                        <path
+                          :d="getSparklinePath(curr.sparkline)"
+                          :stroke="(curr.change7d || 0) >= 0 ? '#10b981' : '#ef4444'"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span
+                        :class="
+                          (curr.change7d || 0) > 0
+                            ? 'text-emerald-400'
+                            : (curr.change7d || 0) < 0
+                              ? 'text-red-400'
+                              : 'text-slate-500'
+                        "
+                        class="font-mono text-[9px] font-bold"
+                      >
+                        {{ (curr.change7d || 0) >= 0 ? '▲' : '▼' }}
+                        {{ Math.abs(curr.change7d || 0).toFixed(1) }}%
+                      </span>
+                    </div>
+                  </td>
+
+                  <td class="px-3 py-2.5">
                     <div class="flex items-center gap-2">
                       <span
                         :class="
@@ -1127,38 +1211,10 @@ onMounted(() => {
                       Price Spread: {{ (curr.stdDev || 0).toFixed(4) }}
                     </div>
                   </td>
-
-                  <td class="px-4 py-3.5 text-right">
-                    <div
-                      :class="
-                        (curr.percentageChange || 0) > 0
-                          ? 'text-emerald-400'
-                          : (curr.percentageChange || 0) < 0
-                            ? 'text-red-400'
-                            : 'text-slate-400'
-                      "
-                      class="font-mono text-xs font-bold"
-                    >
-                      <font-awesome-icon
-                        :icon="
-                          (curr.percentageChange || 0) >= 0 ? 'arrow-trend-up' : 'arrow-trend-down'
-                        "
-                        class="mr-1 text-[10px]"
-                      />
-                      {{ (curr.percentageChange || 0) >= 0 ? '+' : ''
-                      }}{{ (curr.percentageChange || 0).toFixed(2) }}%
-                    </div>
-                    <div
-                      v-if="Math.abs(curr.percentageChange || 0) >= volatilityAlertThreshold"
-                      class="mt-0.5 text-[8px] font-bold tracking-widest text-red-400 uppercase"
-                    >
-                      <font-awesome-icon icon="triangle-exclamation" class="mr-0.5" /> Big Change
-                    </div>
-                  </td>
                 </tr>
 
                 <tr v-if="filteredCurrencies.length === 0" key="empty-row">
-                  <td colspan="7" class="px-4 py-12 text-center">
+                  <td colspan="9" class="px-4 py-12 text-center">
                     <font-awesome-icon icon="circle-info" class="mb-2 text-3xl text-slate-600" />
                     <h4 class="text-sm font-semibold text-slate-300">No Matching Currencies</h4>
                     <p class="mt-1 text-xs text-slate-500">

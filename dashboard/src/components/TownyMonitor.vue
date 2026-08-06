@@ -1,7 +1,31 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { storeToRefs } from 'pinia';
+import axios from 'axios';
+import { Line } from 'vue-chartjs';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
 import { useTownyStore } from '../stores/townyStore.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const props = defineProps({
   apiBase: {
@@ -170,6 +194,170 @@ function getPlayerInitials(name) {
   return name.substring(0, 2).toUpperCase();
 }
 
+const townHistory = ref([]);
+const nationHistory = ref([]);
+const isChartLoading = ref(false);
+
+const formatLabelDate = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length >= 3) {
+    return `${parts[1]}/${parts[2]}`; // MM/DD
+  }
+  return dateStr;
+};
+
+const townChartData = computed(() => {
+  if (!townHistory.value || townHistory.value.length === 0) return null;
+  return {
+    labels: townHistory.value.map((row) => formatLabelDate(row.date)),
+    datasets: [
+      {
+        label: 'Residents',
+        data: townHistory.value.map((row) => row.residents || 0),
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.05)',
+        tension: 0.35,
+        fill: true,
+        borderWidth: 2,
+        pointRadius: 2,
+      },
+    ],
+  };
+});
+
+const nationChartData = computed(() => {
+  if (!nationHistory.value || nationHistory.value.length === 0) return null;
+  return {
+    labels: nationHistory.value.map((row) => formatLabelDate(row.date)),
+    datasets: [
+      {
+        label: 'Residents',
+        data: nationHistory.value.map((row) => row.residents || 0),
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.05)',
+        tension: 0.35,
+        fill: true,
+        borderWidth: 2,
+        pointRadius: 2,
+      },
+      {
+        label: 'Towns',
+        data: nationHistory.value.map((row) => row.townsCount || 0),
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.05)',
+        tension: 0.35,
+        fill: true,
+        borderWidth: 2,
+        pointRadius: 2,
+      },
+    ],
+  };
+});
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: {
+        color: '#94a3b8',
+        font: {
+          family: 'Outfit',
+          size: 11,
+        },
+      },
+    },
+    tooltip: {
+      backgroundColor: '#1e293b',
+      titleColor: '#f8fafc',
+      bodyColor: '#e2e8f0',
+      borderColor: '#334155',
+      borderWidth: 1,
+      padding: 8,
+      font: {
+        family: 'Inter',
+      },
+    },
+  },
+  scales: {
+    x: {
+      grid: {
+        color: '#1e293b',
+        drawBorder: false,
+      },
+      ticks: {
+        color: '#64748b',
+        font: {
+          family: 'Fira Code',
+          size: 9,
+        },
+        maxTicksLimit: 7,
+      },
+    },
+    y: {
+      grid: {
+        color: '#1e293b',
+        drawBorder: false,
+      },
+      ticks: {
+        color: '#64748b',
+        font: {
+          family: 'Fira Code',
+          size: 9,
+        },
+      },
+    },
+  },
+};
+
+watch(selectedTown, async (newTown) => {
+  if (newTown) {
+    isChartLoading.value = true;
+    townHistory.value = [];
+    try {
+      const res = await axios.get(`${props.apiBase}/towny/history`, {
+        params: {
+          name: newTown.name.toLowerCase(),
+          type: 'town',
+          days: 30,
+        },
+      });
+      townHistory.value = res.data || [];
+    } catch (err) {
+      console.error('Failed to fetch town history:', err);
+    } finally {
+      isChartLoading.value = false;
+    }
+  } else {
+    townHistory.value = [];
+  }
+});
+
+watch(selectedNation, async (newNation) => {
+  if (newNation) {
+    isChartLoading.value = true;
+    nationHistory.value = [];
+    try {
+      const res = await axios.get(`${props.apiBase}/towny/history`, {
+        params: {
+          name: newNation.name.toLowerCase(),
+          type: 'nation',
+          days: 30,
+        },
+      });
+      nationHistory.value = res.data || [];
+    } catch (err) {
+      console.error('Failed to fetch nation history:', err);
+    } finally {
+      isChartLoading.value = false;
+    }
+  } else {
+    nationHistory.value = [];
+  }
+});
+
 function openTownDetails(town) {
   selectedTown.value = town;
 }
@@ -242,7 +430,7 @@ function closeModals() {
       </div>
 
       <div
-        class="col-span-2 relative overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm md:col-span-1"
+        class="relative col-span-2 overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 shadow-sm md:col-span-1"
       >
         <div class="flex items-center gap-2 text-slate-500">
           <font-awesome-icon icon="sliders" class="text-rose-500" />
@@ -264,7 +452,7 @@ function closeModals() {
       <Transition name="card-switch" mode="out-in" appear>
         <div v-if="activeTab === 'towns'" key="towns">
           <h3
-            class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2"
+            class="mb-3 flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase"
           >
             <font-awesome-icon icon="globe" class="text-blue-500" />
             Top 4 Towns by Population
@@ -279,12 +467,12 @@ function closeModals() {
               v-for="(town, idx) in topTowns"
               :key="'top-town-' + town.id"
               :style="{ '--card-idx': idx }"
-              class="group cursor-pointer relative overflow-hidden rounded-xl border border-blue-500/10 bg-[#0c0d15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/30 hover:bg-[#11131f]/70 shadow-sm"
+              class="group hover:scale-1.02 relative cursor-pointer overflow-hidden rounded-xl border border-blue-500/10 bg-[#0c0d15]/50 p-4 shadow-sm transition-all duration-200 hover:border-blue-500/30 hover:bg-[#11131f]/70"
               @click="openTownDetails(town)"
             >
               <!-- Badge indicators for rank -->
               <div
-                class="absolute right-3 top-3 text-[10px] font-extrabold text-blue-500 bg-blue-500/10 border border-blue-500/25 rounded-md px-1.5 py-0.5"
+                class="absolute top-3 right-3 rounded-md border border-blue-500/25 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-extrabold text-blue-500"
               >
                 Rank #{{ idx + 1 }}
               </div>
@@ -292,34 +480,34 @@ function closeModals() {
               <div class="flex items-center gap-3">
                 <div
                   :class="getPlayerColor(town.mayor?.name)"
-                  class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
+                  class="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-800 bg-gradient-to-br text-[10px] font-bold shadow-sm"
                 >
-                  <span class="z-0 select-none text-[8px]">{{
+                  <span class="z-0 text-[8px] select-none">{{
                     getPlayerInitials(town.mayor?.name)
                   }}</span>
                   <img
                     v-if="!failedAvatars['top-town-' + town.id]"
                     :src="`${props.apiBase}/heads/${(town.mayor?.name || 'steve').toLowerCase()}.png`"
                     alt="Mayor Avatar"
-                    class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                    class="absolute inset-0 z-10 size-full object-cover opacity-0 transition-opacity duration-300"
                     @load="$event.target.classList.remove('opacity-0')"
                     @error="handleAvatarError('top-town-' + town.id)"
                   />
                 </div>
                 <div class="min-w-0 flex-1 pr-12">
                   <h4
-                    class="text-xs font-bold text-slate-100 truncate group-hover:text-blue-400 transition-colors"
+                    class="truncate text-xs font-bold text-slate-100 transition-colors group-hover:text-blue-400"
                   >
                     {{ cleanName(town.name) }}
                   </h4>
-                  <p class="text-[9px] text-slate-500 truncate mt-0.5">
+                  <p class="mt-0.5 truncate text-[9px] text-slate-500">
                     Mayor: {{ town.mayor?.name }}
                   </p>
                 </div>
               </div>
 
               <div
-                class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400"
+                class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 font-mono text-[10px] text-slate-400"
               >
                 <span>👥 {{ town.residents || 0 }} residents</span>
                 <span>📦 {{ town.claims?.claimedChunks || 0 }} chunks</span>
@@ -330,7 +518,7 @@ function closeModals() {
 
         <div v-else-if="activeTab === 'nations'" key="nations">
           <h3
-            class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center gap-2"
+            class="mb-3 flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase"
           >
             <font-awesome-icon icon="flag" class="text-indigo-500" />
             Top 4 Nations by Population
@@ -345,12 +533,12 @@ function closeModals() {
               v-for="(nation, idx) in topNations"
               :key="'top-nation-' + nation.id"
               :style="{ '--card-idx': idx }"
-              class="group cursor-pointer relative overflow-hidden rounded-xl border border-indigo-500/10 bg-[#0d0c15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-indigo-500/30 hover:bg-[#121120]/70 shadow-sm"
+              class="group hover:scale-1.02 relative cursor-pointer overflow-hidden rounded-xl border border-indigo-500/10 bg-[#0d0c15]/50 p-4 shadow-sm transition-all duration-200 hover:border-indigo-500/30 hover:bg-[#121120]/70"
               @click="openNationDetails(nation)"
             >
               <!-- Badge indicators for rank -->
               <div
-                class="absolute right-3 top-3 text-[10px] font-extrabold text-indigo-500 bg-indigo-500/10 border border-indigo-500/25 rounded-md px-1.5 py-0.5"
+                class="absolute top-3 right-3 rounded-md border border-indigo-500/25 bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-extrabold text-indigo-500"
               >
                 Rank #{{ idx + 1 }}
               </div>
@@ -358,34 +546,34 @@ function closeModals() {
               <div class="flex items-center gap-3">
                 <div
                   :class="getPlayerColor(nation.king?.name)"
-                  class="relative h-8 w-8 rounded-lg border border-slate-800 flex items-center justify-center font-bold text-[10px] bg-gradient-to-br overflow-hidden shadow-sm shrink-0"
+                  class="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-800 bg-gradient-to-br text-[10px] font-bold shadow-sm"
                 >
-                  <span class="z-0 select-none text-[8px]">{{
+                  <span class="z-0 text-[8px] select-none">{{
                     getPlayerInitials(nation.king?.name)
                   }}</span>
                   <img
                     v-if="!failedAvatars['top-nation-' + nation.id]"
                     :src="`${props.apiBase}/heads/${(nation.king?.name || 'steve').toLowerCase()}.png`"
                     alt="King Avatar"
-                    class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
+                    class="absolute inset-0 z-10 size-full object-cover opacity-0 transition-opacity duration-300"
                     @load="$event.target.classList.remove('opacity-0')"
                     @error="handleAvatarError('top-nation-' + nation.id)"
                   />
                 </div>
                 <div class="min-w-0 flex-1 pr-12">
                   <h4
-                    class="text-xs font-bold text-slate-100 truncate group-hover:text-indigo-400 transition-colors"
+                    class="truncate text-xs font-bold text-slate-100 transition-colors group-hover:text-indigo-400"
                   >
                     {{ cleanName(nation.name) }}
                   </h4>
-                  <p class="text-[9px] text-slate-500 truncate mt-0.5">
+                  <p class="mt-0.5 truncate text-[9px] text-slate-500">
                     King: {{ nation.king?.name }}
                   </p>
                 </div>
               </div>
 
               <div
-                class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 text-[10px] font-mono text-slate-400"
+                class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 font-mono text-[10px] text-slate-400"
               >
                 <span>👥 {{ nation.residents || 0 }} residents</span>
                 <span>🏘️ {{ nation.towns || 0 }} towns</span>
@@ -402,7 +590,7 @@ function closeModals() {
     >
       <!-- Tabs segmented control -->
       <div
-        class="flex items-center gap-1 rounded-xl border border-slate-900 bg-slate-950/80 p-1 self-start"
+        class="flex items-center gap-1 self-start rounded-xl border border-slate-900 bg-slate-950/80 p-1"
       >
         <button
           :class="
@@ -441,13 +629,13 @@ function closeModals() {
         <!-- Search bar -->
         <div class="relative w-full sm:w-64">
           <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <font-awesome-icon icon="search" class="text-slate-500 text-xs" />
+            <font-awesome-icon icon="search" class="text-xs text-slate-500" />
           </div>
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search name, mayor/king..."
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 py-1.5 pl-9 pr-4 text-xs text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 py-1.5 pr-4 pl-9 text-xs text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           />
           <button
             v-if="searchQuery"
@@ -483,9 +671,7 @@ function closeModals() {
 
     <!-- Loading State -->
     <div v-if="isLoading" class="flex flex-col items-center justify-center space-y-4 py-24">
-      <div
-        class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500"
-      />
+      <div class="size-8 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500" />
       <div class="text-center text-xs text-slate-400">Loading Towny Database...</div>
     </div>
 
@@ -515,13 +701,13 @@ function closeModals() {
               v-for="(town, idx) in processedTowns"
               :key="town.id"
               :style="{ '--card-idx': idx }"
-              class="group cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-slate-800 hover:bg-[#111420]/60 hover:shadow-lg"
+              class="group hover:scale-1.02 cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:border-slate-800 hover:bg-[#111420]/60 hover:shadow-lg"
               @click="openTownDetails(town)"
             >
               <div class="flex items-start justify-between">
                 <div>
                   <h3
-                    class="text-sm font-bold text-slate-100 group-hover:text-blue-400 transition-colors"
+                    class="text-sm font-bold text-slate-100 transition-colors group-hover:text-blue-400"
                   >
                     {{ cleanName(town.name) }}
                   </h3>
@@ -531,7 +717,7 @@ function closeModals() {
                 </div>
                 <div
                   v-if="town.nation"
-                  class="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[9px] font-bold text-indigo-400"
+                  class="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[9px] font-bold text-indigo-400"
                 >
                   {{ cleanName(town.nation.name) }}
                 </div>
@@ -552,7 +738,7 @@ function closeModals() {
                     {{ town.residents || 0 }}
                     <span
                       v-if="town.onlineResidents > 0"
-                      class="text-[9px] text-emerald-400 font-normal"
+                      class="text-[9px] font-normal text-emerald-400"
                       >({{ town.onlineResidents }} online)</span
                     >
                   </div>
@@ -601,13 +787,13 @@ function closeModals() {
               v-for="(nation, idx) in processedNations"
               :key="nation.id"
               :style="{ '--card-idx': idx }"
-              class="group cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-slate-800 hover:bg-[#151325]/50 hover:shadow-lg"
+              class="group hover:scale-1.02 cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:border-slate-800 hover:bg-[#151325]/50 hover:shadow-lg"
               @click="openNationDetails(nation)"
             >
               <div class="flex items-start justify-between">
                 <div>
                   <h3
-                    class="text-sm font-bold text-slate-100 group-hover:text-indigo-400 transition-colors"
+                    class="text-sm font-bold text-slate-100 transition-colors group-hover:text-indigo-400"
                   >
                     {{ cleanName(nation.name) }}
                   </h3>
@@ -617,7 +803,7 @@ function closeModals() {
                 </div>
                 <div
                   v-if="nation.flags?.neutral"
-                  class="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-400"
+                  class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-400"
                 >
                   Neutral State
                 </div>
@@ -638,7 +824,7 @@ function closeModals() {
                     {{ nation.residents || 0 }}
                     <span
                       v-if="nation.onlineResidents > 0"
-                      class="text-[9px] text-emerald-400 font-normal"
+                      class="text-[9px] font-normal text-emerald-400"
                       >({{ nation.onlineResidents }} online)</span
                     >
                   </div>
@@ -660,23 +846,23 @@ function closeModals() {
     <Transition name="modal-fade-box">
       <div
         v-if="selectedTown"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+        class="fixed inset-0 z-100 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
         style="perspective: 1000px"
         @click.self="closeModals"
       >
         <div
-          class="modal-box-anim w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl"
+          class="modal-box-anim w-full max-w-4xl rounded-2xl border border-slate-800 bg-[#0d0f17]/90 shadow-2xl backdrop-blur-md"
         >
           <!-- Modal Header -->
-          <div class="flex items-center justify-between border-b border-slate-900 px-6 py-4">
+          <div class="flex items-center justify-between border-b border-slate-900/80 px-5 py-3.5">
             <div class="flex items-center gap-2">
               <font-awesome-icon icon="globe" class="text-blue-400" />
-              <h2 class="text-base font-bold text-slate-100">
+              <h2 class="text-sm font-bold text-slate-100">
                 {{ cleanName(selectedTown.name) }} Details
               </h2>
             </div>
             <button
-              class="text-slate-400 hover:text-slate-200 transition-colors"
+              class="text-slate-400 transition-colors hover:text-slate-200"
               @click="closeModals"
             >
               <font-awesome-icon icon="times" />
@@ -684,139 +870,163 @@ function closeModals() {
           </div>
 
           <!-- Modal Body -->
-          <div class="p-6 space-y-5">
-            <!-- Mayor details & avatar -->
-            <div
-              class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4"
-            >
+          <div
+            class="flex max-h-[85vh] flex-col overflow-y-auto p-5 md:grid md:grid-cols-12 md:gap-4"
+          >
+            <!-- Column 1: Mayor & Telemetry (col-span-4) -->
+            <div class="space-y-3 md:col-span-4">
+              <!-- Mayor details & avatar -->
               <div
-                :class="getPlayerColor(selectedTown.mayor?.name)"
-                class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
+                class="flex items-center gap-3 rounded-xl border border-slate-900 bg-slate-950/60 p-2.5"
               >
-                <span class="z-0 select-none text-[10px]">{{
-                  getPlayerInitials(selectedTown.mayor?.name)
-                }}</span>
-                <img
-                  v-if="!failedAvatars['modal-town-' + selectedTown.id]"
-                  :src="`${props.apiBase}/heads/${(selectedTown.mayor?.name || 'steve').toLowerCase()}.png`"
-                  alt="Mayor Skin"
-                  class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
-                  @load="$event.target.classList.remove('opacity-0')"
-                  @error="handleAvatarError('modal-town-' + selectedTown.id)"
-                />
+                <div
+                  :class="getPlayerColor(selectedTown.mayor?.name)"
+                  class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-800 bg-gradient-to-br text-xs font-extrabold shadow-md"
+                >
+                  <span class="z-0 text-[9px] select-none">{{
+                    getPlayerInitials(selectedTown.mayor?.name)
+                  }}</span>
+                  <img
+                    v-if="!failedAvatars['modal-town-' + selectedTown.id]"
+                    :src="`${props.apiBase}/heads/${(selectedTown.mayor?.name || 'steve').toLowerCase()}.png`"
+                    alt="Mayor Skin"
+                    class="absolute inset-0 z-10 size-full object-cover opacity-0 transition-opacity duration-300"
+                    @load="$event.target.classList.remove('opacity-0')"
+                    @error="handleAvatarError('modal-town-' + selectedTown.id)"
+                  />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-[8px] font-bold tracking-wider text-slate-500 uppercase">
+                    Town Mayor
+                  </div>
+                  <div class="truncate text-xs font-bold text-slate-100">
+                    {{ selectedTown.mayor?.name || 'Unknown' }}
+                  </div>
+                </div>
               </div>
-              <div>
-                <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                  Town Mayor
-                </div>
-                <div class="text-sm font-bold text-slate-100">
-                  {{ selectedTown.mayor?.name || 'Unknown' }}
-                </div>
-                <div class="font-mono text-[9px] text-slate-600 truncate max-w-[280px]">
-                  {{ selectedTown.mayor?.uuid }}
-                </div>
-              </div>
-            </div>
 
-            <!-- Claims, residents, coordinates -->
-            <div class="grid grid-cols-2 gap-4">
-              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+              <!-- Telemetry -->
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
+                <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
                   Resident Telemetry
                 </h4>
-                <div class="mt-2 font-mono text-sm text-slate-300">
+                <div class="mt-1.5 font-mono text-xs text-slate-300">
                   • Total: <strong class="text-slate-100">{{ selectedTown.residents }}</strong
                   ><br />
                   • Online:
                   <strong class="text-emerald-400">{{ selectedTown.onlineResidents }}</strong>
                 </div>
               </div>
+            </div>
 
-              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+            <!-- Column 2: Land & Coordinates (col-span-4) -->
+            <div class="space-y-3 md:col-span-4">
+              <!-- Claims -->
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
+                <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
                   Land & Claims
                 </h4>
-                <div class="mt-2 font-mono text-xs text-slate-300 space-y-0.5">
+                <div class="mt-1 space-y-0.5 font-mono text-xs text-slate-300">
                   <div>
-                    • Claimed Chunks:
+                    • Claimed:
                     <strong class="text-slate-100">{{ selectedTown.claims?.claimedChunks }}</strong>
                   </div>
                   <div>
-                    • Bonus Chunks:
+                    • Bonus:
                     <strong class="text-slate-100">{{ selectedTown.claims?.bonusChunks }}</strong>
                   </div>
                   <div>
                     • Outposts:
-                    <strong class="text-slate-100">{{ selectedTown.claims?.outpostChunks }}</strong>
+                    <strong class="text-slate-100">{{
+                      selectedTown.claims?.outpostChunks || 0
+                    }}</strong>
                   </div>
                 </div>
               </div>
 
-              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                  Spawn Coordinates
+              <!-- Coordinates -->
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
+                <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
+                  Telemetry Positions
                 </h4>
-                <div class="mt-2 font-mono text-[11px] text-slate-300 space-y-0.5">
-                  <div>
-                    • World: <strong class="text-slate-100">{{ selectedTown.spawn?.world }}</strong>
+                <div class="mt-1 space-y-0.5 font-mono text-[10px] text-slate-300">
+                  <div class="truncate">
+                    • Spawn:
+                    <strong class="text-slate-100"
+                      >{{ selectedTown.spawn?.world }} ({{
+                        Math.round(selectedTown.spawn?.x ?? 0)
+                      }}, {{ Math.round(selectedTown.spawn?.z ?? 0) }})</strong
+                    >
                   </div>
-                  <div>
-                    • X:
-                    <strong class="text-slate-100">{{ selectedTown.spawn?.x?.toFixed(1) }}</strong>
+                  <div class="truncate">
+                    • Homeblock:
+                    <strong class="text-slate-100"
+                      >{{ selectedTown.homeblock?.world }} ({{ selectedTown.homeblock?.x }},
+                      {{ selectedTown.homeblock?.z }})</strong
+                    >
                   </div>
-                  <div>
-                    • Y:
-                    <strong class="text-slate-100">{{ selectedTown.spawn?.y?.toFixed(1) }}</strong>
-                  </div>
-                  <div>
-                    • Z:
-                    <strong class="text-slate-100">{{ selectedTown.spawn?.z?.toFixed(1) }}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                  Homeblock Chunk
-                </h4>
-                <div class="mt-2 font-mono text-xs text-slate-300">
-                  • World:
-                  <strong class="text-slate-100">{{ selectedTown.homeblock?.world }}</strong
-                  ><br />
-                  • Block X: <strong class="text-slate-100">{{ selectedTown.homeblock?.x }}</strong
-                  ><br />
-                  • Block Z: <strong class="text-slate-100">{{ selectedTown.homeblock?.z }}</strong>
                 </div>
               </div>
             </div>
 
-            <!-- Flags -->
-            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">
-                Town Configuration Flags
-              </h4>
-              <div class="grid grid-cols-3 gap-2">
-                <div
-                  v-for="(val, flag) in selectedTown.flags"
-                  :key="flag"
-                  :class="
-                    val
-                      ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
-                      : 'border-slate-800 bg-slate-900/10 text-slate-400'
-                  "
-                  class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
-                >
-                  <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
-                  <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{
-                    val ? 'ON' : 'OFF'
-                  }}</span>
+            <!-- Column 3: Flags (col-span-4) -->
+            <div class="md:col-span-4">
+              <!-- Flags -->
+              <div class="h-full rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
+                <h4 class="mb-3 text-[9px] font-bold tracking-wider text-slate-500 uppercase">
+                  Town Flags
+                </h4>
+                <div class="grid grid-cols-3 gap-2">
+                  <div
+                    v-for="(val, flag) in selectedTown.flags"
+                    :key="flag"
+                    :class="
+                      val
+                        ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
+                        : 'border-slate-800 bg-slate-900/10 text-slate-400'
+                    "
+                    class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
+                  >
+                    <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
+                    <span class="mt-1 font-mono text-[9px] font-bold uppercase">{{
+                      val ? 'ON' : 'OFF'
+                    }}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Age telemetry -->
+            <!-- Bottom Side: Graph (col-span-12) -->
+            <div class="mt-2 flex flex-col md:col-span-12">
+              <div class="rounded-xl border border-slate-900 bg-slate-950/20 p-4">
+                <h4 class="mb-3 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  30-Day Population Trend
+                </h4>
+                <div class="relative h-45 w-full">
+                  <div
+                    v-if="isChartLoading"
+                    class="absolute inset-0 flex items-center justify-center"
+                  >
+                    <div
+                      class="size-5 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500"
+                    ></div>
+                  </div>
+                  <div
+                    v-else-if="!townChartData"
+                    class="flex h-full items-center justify-center text-center text-[10px] text-slate-500 italic"
+                  >
+                    No historical telemetry available yet.
+                  </div>
+                  <div v-else class="size-full">
+                    <Line :data="townChartData" :options="chartOptions" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Age telemetry (col-span-12) -->
             <div
-              class="flex items-center justify-between border-t border-slate-900 pt-4 font-mono text-[10px] text-slate-500"
+              class="flex items-center justify-between border-t border-slate-900/60 pt-3 font-mono text-[9px] text-slate-500 md:col-span-12"
             >
               <div>Established: {{ formatDate(selectedTown.createdAt) }}</div>
               <div>Active: {{ formatDate(selectedTown.lastOnlineAt) }}</div>
@@ -830,23 +1040,23 @@ function closeModals() {
     <Transition name="modal-fade-box">
       <div
         v-if="selectedNation"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+        class="fixed inset-0 z-100 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
         style="perspective: 1000px"
         @click.self="closeModals"
       >
         <div
-          class="modal-box-anim w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0d0f17] shadow-2xl"
+          class="modal-box-anim w-full max-w-4xl rounded-2xl border border-slate-800 bg-[#0d0f17]/90 shadow-2xl backdrop-blur-md"
         >
           <!-- Modal Header -->
-          <div class="flex items-center justify-between border-b border-slate-900 px-6 py-4">
+          <div class="flex items-center justify-between border-b border-slate-900/80 px-5 py-3.5">
             <div class="flex items-center gap-2">
               <font-awesome-icon icon="flag" class="text-indigo-400" />
-              <h2 class="text-base font-bold text-slate-100">
+              <h2 class="text-sm font-bold text-slate-100">
                 {{ cleanName(selectedNation.name) }} Details
               </h2>
             </div>
             <button
-              class="text-slate-400 hover:text-slate-200 transition-colors"
+              class="text-slate-400 transition-colors hover:text-slate-200"
               @click="closeModals"
             >
               <font-awesome-icon icon="times" />
@@ -854,146 +1064,179 @@ function closeModals() {
           </div>
 
           <!-- Modal Body -->
-          <div class="p-6 space-y-5">
-            <!-- King details & avatar -->
-            <div
-              class="flex items-center gap-4 rounded-xl border border-slate-900 bg-slate-950/60 p-4"
-            >
+          <div
+            class="flex max-h-[85vh] flex-col overflow-y-auto p-5 md:grid md:grid-cols-12 md:gap-5"
+          >
+            <!-- Column 1: King & Federation (col-span-4) -->
+            <div class="space-y-3 md:col-span-4">
+              <!-- King details & avatar -->
               <div
-                :class="getPlayerColor(selectedNation.king?.name)"
-                class="relative h-12 w-12 rounded-lg border border-slate-800 flex items-center justify-center font-extrabold text-xs bg-gradient-to-br overflow-hidden shadow-md shrink-0"
+                class="flex items-center gap-3 rounded-xl border border-slate-900 bg-slate-950/60 p-2.5"
               >
-                <span class="z-0 select-none text-[10px]">{{
-                  getPlayerInitials(selectedNation.king?.name)
-                }}</span>
-                <img
-                  v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
-                  :src="`${props.apiBase}/heads/${(selectedNation.king?.name || 'steve').toLowerCase()}.png`"
-                  alt="King Skin"
-                  class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 opacity-0 z-10"
-                  @load="$event.target.classList.remove('opacity-0')"
-                  @error="handleAvatarError('modal-nation-' + selectedNation.id)"
-                />
-              </div>
-              <div>
-                <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                  Nation King
+                <div
+                  :class="getPlayerColor(selectedNation.king?.name)"
+                  class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-800 bg-gradient-to-br text-xs font-extrabold shadow-md"
+                >
+                  <span class="z-0 text-[9px] select-none">{{
+                    getPlayerInitials(selectedNation.king?.name)
+                  }}</span>
+                  <img
+                    v-if="!failedAvatars['modal-nation-' + selectedNation.id]"
+                    :src="`${props.apiBase}/heads/${(selectedNation.king?.name || 'steve').toLowerCase()}.png`"
+                    alt="King Skin"
+                    class="absolute inset-0 z-10 size-full object-cover opacity-0 transition-opacity duration-300"
+                    @load="$event.target.classList.remove('opacity-0')"
+                    @error="handleAvatarError('modal-nation-' + selectedNation.id)"
+                  />
                 </div>
-                <div class="text-sm font-bold text-slate-100">
-                  {{ selectedNation.king?.name || 'Unknown' }}
-                </div>
-                <div class="font-mono text-[9px] text-slate-600 truncate max-w-[280px]">
-                  {{ selectedNation.king?.uuid }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Basic details -->
-            <div class="grid grid-cols-2 gap-4">
-              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                  Nation Capital
-                </h4>
-                <div class="mt-2 font-mono text-sm text-slate-300">
-                  • Capital:
-                  <strong class="text-indigo-400">{{
-                    cleanName(selectedNation.capital?.name)
-                  }}</strong>
+                <div class="min-w-0 flex-1">
+                  <div class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
+                    Nation King
+                  </div>
+                  <div class="truncate text-xs font-bold text-slate-100">
+                    {{ selectedNation.king?.name || 'Unknown' }}
+                  </div>
                 </div>
               </div>
 
-              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-                <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+              <!-- Federation Counts -->
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
+                <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
                   Federation Counts
                 </h4>
-                <div class="mt-2 font-mono text-xs text-slate-300 space-y-0.5">
+                <div class="mt-1 space-y-0.5 font-mono text-xs text-slate-300">
                   <div>
-                    • Towns Count:
+                    • Capital:
+                    <strong class="text-indigo-400">{{
+                      cleanName(selectedNation.capital?.name)
+                    }}</strong>
+                  </div>
+                  <div>
+                    • Towns:
                     <strong class="text-slate-100">{{ selectedNation.towns }}</strong>
                   </div>
                   <div>
-                    • Total Residents:
+                    • Residents:
                     <strong class="text-slate-100">{{ selectedNation.residents }}</strong>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Column 2: Diplomacy (col-span-4) -->
+            <div class="md:col-span-4">
+              <!-- Diplomacy (Allies / Enemies) -->
+              <div
+                class="flex h-full flex-col justify-stretch space-y-2.5 rounded-xl border border-slate-900/60 bg-[#0d0f17] p-3"
+              >
+                <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
+                  Diplomatic Relations
+                </h4>
+                <div class="flex-1 space-y-2">
+                  <!-- Allies -->
                   <div>
-                    • Online Residents:
-                    <strong class="text-emerald-400">{{ selectedNation.onlineResidents }}</strong>
+                    <div class="mb-1 text-[8px] font-bold tracking-wider text-slate-400 uppercase">
+                      Allies ({{ selectedNation.diplomacy?.allies?.length || 0 }})
+                    </div>
+                    <div
+                      v-if="!selectedNation.diplomacy?.allies?.length"
+                      class="text-[10px] text-slate-500 italic"
+                    >
+                      No allies recorded.
+                    </div>
+                    <div
+                      v-else
+                      class="custom-scrollbar flex max-h-[50px] flex-wrap gap-1 overflow-y-auto"
+                    >
+                      <span
+                        v-for="ally in selectedNation.diplomacy.allies"
+                        :key="ally.id"
+                        class="rounded border border-indigo-500/20 bg-indigo-500/10 px-1.5 py-0.5 text-[9px] font-medium text-indigo-300"
+                      >
+                        {{ cleanName(ally.name) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Enemies -->
+                  <div class="border-t border-slate-900/60 pt-1.5">
+                    <div class="mb-1 text-[8px] font-bold tracking-wider text-slate-400 uppercase">
+                      Enemies ({{ selectedNation.diplomacy?.enemies?.length || 0 }})
+                    </div>
+                    <div
+                      v-if="!selectedNation.diplomacy?.enemies?.length"
+                      class="text-[10px] text-slate-500 italic"
+                    >
+                      No active enemies.
+                    </div>
+                    <div
+                      v-else
+                      class="custom-scrollbar flex max-h-[50px] flex-wrap gap-1 overflow-y-auto"
+                    >
+                      <span
+                        v-for="enemy in selectedNation.diplomacy.enemies"
+                        :key="enemy.id"
+                        class="rounded border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-medium text-rose-300"
+                      >
+                        {{ cleanName(enemy.name) }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Diplomacy (Allies / Enemies) -->
-            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4 space-y-3">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                Diplomatic Relations
-              </h4>
-
-              <!-- Allies -->
-              <div>
-                <div class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mb-1.5">
-                  Allies ({{ selectedNation.diplomacy?.allies?.length || 0 }})
-                </div>
-                <div
-                  v-if="!selectedNation.diplomacy?.allies?.length"
-                  class="text-xs text-slate-500 italic"
-                >
-                  No allies recorded.
-                </div>
-                <div v-else class="flex flex-wrap gap-1.5">
-                  <span
-                    v-for="ally in selectedNation.diplomacy.allies"
-                    :key="ally.id"
-                    class="rounded bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[10px] text-indigo-300 font-medium"
+            <!-- Column 3: Flags (col-span-4) -->
+            <div class="md:col-span-4">
+              <!-- Flags -->
+              <div class="h-full rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
+                <h4 class="mb-3 text-[9px] font-bold tracking-wider text-slate-500 uppercase">
+                  Nation Flags
+                </h4>
+                <div class="grid grid-cols-3 gap-2">
+                  <div
+                    v-for="(val, flag) in selectedNation.flags"
+                    :key="flag"
+                    :class="
+                      val
+                        ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
+                        : 'border-slate-800 bg-slate-900/10 text-slate-400'
+                    "
+                    class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
                   >
-                    {{ cleanName(ally.name) }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Enemies -->
-              <div class="pt-2 border-t border-slate-900/60">
-                <div class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mb-1.5">
-                  Enemies ({{ selectedNation.diplomacy?.enemies?.length || 0 }})
-                </div>
-                <div
-                  v-if="!selectedNation.diplomacy?.enemies?.length"
-                  class="text-xs text-slate-500 italic"
-                >
-                  No active enemies.
-                </div>
-                <div v-else class="flex flex-wrap gap-1.5">
-                  <span
-                    v-for="enemy in selectedNation.diplomacy.enemies"
-                    :key="enemy.id"
-                    class="rounded bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 text-[10px] text-rose-300 font-medium"
-                  >
-                    {{ cleanName(enemy.name) }}
-                  </span>
+                    <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
+                    <span class="mt-1 font-mono text-[9px] font-bold uppercase">{{
+                      val ? 'ON' : 'OFF'
+                    }}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Configuration Flags -->
-            <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-4">
-              <h4 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">
-                Nation Flags
-              </h4>
-              <div class="grid grid-cols-3 gap-2">
-                <div
-                  v-for="(val, flag) in selectedNation.flags"
-                  :key="flag"
-                  :class="
-                    val
-                      ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
-                      : 'border-slate-800 bg-slate-900/10 text-slate-400'
-                  "
-                  class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
-                >
-                  <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
-                  <span class="mt-1 font-mono text-[9px] uppercase font-bold">{{
-                    val ? 'ON' : 'OFF'
-                  }}</span>
+            <!-- Bottom Side: Graph (col-span-12) -->
+            <div class="mt-2 flex flex-col md:col-span-12">
+              <div class="rounded-xl border border-slate-900 bg-slate-950/20 p-4">
+                <h4 class="mb-3 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  30-Day Growth Trend
+                </h4>
+                <div class="relative h-45 w-full">
+                  <div
+                    v-if="isChartLoading"
+                    class="absolute inset-0 flex items-center justify-center"
+                  >
+                    <div
+                      class="size-5 animate-spin rounded-full border-2 border-blue-500/20 border-t-blue-500"
+                    ></div>
+                  </div>
+                  <div
+                    v-else-if="!nationChartData"
+                    class="flex h-full items-center justify-center text-center text-[10px] text-slate-500 italic"
+                  >
+                    No historical telemetry available yet.
+                  </div>
+                  <div v-else class="size-full">
+                    <Line :data="nationChartData" :options="chartOptions" />
+                  </div>
                 </div>
               </div>
             </div>

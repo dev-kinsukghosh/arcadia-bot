@@ -1,6 +1,7 @@
 const { arcadiaApi } = require('../utils/apiClient.js');
 const logger = require('../utils/logger.js');
 const pc = require('picocolors');
+
 const redis = require('../utils/redis.js');
 const { db } = require('../utils/db.js');
 const { townyHistory } = require('../db/schema.js');
@@ -11,7 +12,6 @@ const HISTORY_RETENTION_DAYS = 120;
 const REDIS_KEY = 'cache:towny';
 
 let syncInterval = null;
-let discordClient = null;
 
 /**
  * Get today's date string in UTC (YYYY-MM-DD)
@@ -30,15 +30,15 @@ function getTodayUTC() {
  */
 async function syncTowny() {
   if (!db) {
-    logger.warn('Database is not active. Skipping Towny sync.');
+    logger.warn(`${pc.yellow('Database is not active.')} Skipping Towny sync.`);
     return;
   }
 
-  logger.info('Starting Towny synchronization and history recording...');
+  logger.info(`Starting ${pc.cyan('Towny')} synchronization and history recording...`);
   try {
     const data = await arcadiaApi.getTowny();
     if (!data) {
-      logger.error('Failed to retrieve Towny data from API.');
+      logger.error(`${pc.red('Failed')} to retrieve Towny data from API.`);
       return;
     }
 
@@ -46,9 +46,9 @@ async function syncTowny() {
     if (redis && redis.status === 'ready') {
       try {
         await redis.setex(REDIS_KEY, 1800, JSON.stringify(data)); // 30 minutes TTL
-        logger.debug('Cached Towny data in Redis.');
+        logger.debug(`Cached Towny data in ${pc.red('Redis')}.`);
       } catch (err) {
-        logger.warn(`Failed to save Towny data to Redis: ${err.message}`);
+        logger.warn(`Failed to save Towny data to ${pc.red('Redis')}: ${pc.yellow(err.message)}`);
       }
     }
 
@@ -57,7 +57,7 @@ async function syncTowny() {
       const { checkScheduleAndRunBatch } = require('./headManager.js');
       checkScheduleAndRunBatch(data);
     } catch (err) {
-      logger.warn(`Failed to trigger headManager seeding: ${err.message}`);
+      logger.warn(`Failed to trigger headManager seeding: ${pc.yellow(err.message)}`);
     }
 
     const today = getTodayUTC();
@@ -90,7 +90,9 @@ async function syncTowny() {
             },
           });
       } catch (err) {
-        logger.error(`Failed to record history for town ${t.name}: ${err.message}`);
+        logger.error(
+          `Failed to record history for town ${pc.bold(t.name)}: ${pc.red(err.message)}`
+        );
       }
     });
 
@@ -124,13 +126,15 @@ async function syncTowny() {
             },
           });
       } catch (err) {
-        logger.error(`Failed to record history for nation ${n.name}: ${err.message}`);
+        logger.error(
+          `Failed to record history for nation ${pc.bold(n.name)}: ${pc.red(err.message)}`
+        );
       }
     });
 
     await Promise.all([...townPromises, ...nationPromises]);
     logger.success(
-      `Successfully updated daily Towny history for ${towns.length} towns and ${nations.length} nations.`
+      `Successfully updated daily Towny history for ${pc.bold(pc.green(towns.length))} towns and ${pc.bold(pc.green(nations.length))} nations.`
     );
 
     // 5. Prune history rows older than 120 days
@@ -181,11 +185,11 @@ async function pruneOldTownyHistory() {
 
     if (totalPruned > 0) {
       logger.info(
-        `Pruned ${totalPruned} expired Towny history records (older than ${HISTORY_RETENTION_DAYS} days).`
+        `Pruned ${pc.bold(pc.cyan(totalPruned))} expired Towny history records (older than ${pc.bold(HISTORY_RETENTION_DAYS)} days).`
       );
     }
   } catch (err) {
-    logger.warn(`Failed to prune old Towny history records: ${err.message}`);
+    logger.warn(`Failed to prune old Towny history records: ${pc.yellow(err.message)}`);
   }
 }
 
@@ -193,9 +197,8 @@ async function pruneOldTownyHistory() {
  * Start the Towny sync scheduler
  * @param {Client} client - The Discord Client instance
  */
-function startTownySync(client) {
-  discordClient = client || null;
-  logger.info('Initializing Towny Sync scheduler (30-minute interval)...');
+function startTownySync(_client) {
+  logger.info(`Initializing Towny Sync scheduler (${pc.cyan('30-minute interval')})...`);
 
   // Run once immediately
   syncTowny();
@@ -203,7 +206,7 @@ function startTownySync(client) {
   // Run every 30 minutes
   if (syncInterval) clearInterval(syncInterval);
   syncInterval = setInterval(async () => {
-    logger.info('Executing scheduled Towny sync...');
+    logger.info(`Executing scheduled ${pc.cyan('Towny')} sync...`);
     await syncTowny();
   }, SYNC_INTERVAL_MS);
 }

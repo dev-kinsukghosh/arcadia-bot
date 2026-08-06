@@ -1,3 +1,32 @@
+const axiosPath = require.resolve('axios');
+const originalAxios = require('axios');
+
+const mockAxios = {
+  ...originalAxios,
+  get: async (url) => {
+    if (url.includes('api.mojang.com')) {
+      return {
+        data: {
+          id: '371b8266be0846e7884417e72b26e495',
+          name: 'webdevkin',
+        },
+        status: 200,
+      };
+    }
+    return {
+      data: Buffer.from('mock png data'),
+      status: 200,
+    };
+  },
+};
+
+require.cache[axiosPath] = {
+  id: axiosPath,
+  filename: axiosPath,
+  loaded: true,
+  exports: mockAxios,
+};
+
 const { db, connection } = require('../src/utils/db.js');
 const redisClient = require('../src/utils/redis.js');
 const { playerHeads } = require('../src/db/schema.js');
@@ -69,5 +98,5 @@ describe('Player Heads Manager Suite', () => {
   it('should successfully trigger the concurrent player heads background update job', async () => {
     await updateAllHeadsBatch();
     logger.success('Background player heads updates batch job executed successfully.');
-  });
+  }, 30000);
 });

@@ -149,7 +149,7 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
 
         <div class="flex justify-center pt-5 md:col-span-1">
           <button
-            class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-300 transition-all duration-200 hover:border-slate-700 hover:bg-slate-800"
+            class="flex size-10 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-300 transition-all duration-200 hover:border-slate-700 hover:bg-slate-800"
             title="Swap source and destination"
             @click="swapCurrencies"
           >
@@ -177,7 +177,7 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
         <label class="relative inline-flex cursor-pointer items-center select-none">
           <input v-model="taxEnabled" type="checkbox" class="peer sr-only" />
           <div
-            class="h-5 w-9 rounded-full border border-slate-700 bg-slate-800 transition-colors duration-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-600 peer-focus:ring-1 peer-focus:ring-emerald-500 after:absolute after:top-[3px] after:left-[3px] after:h-3.5 after:w-3.5 after:rounded-full after:bg-slate-400 after:transition-all after:duration-200 after:content-[''] peer-checked:after:translate-x-4 peer-checked:after:bg-white"
+            class="h-5 w-9 rounded-full border border-slate-700 bg-slate-800 transition-colors duration-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-600 peer-focus:ring-1 peer-focus:ring-emerald-500 after:absolute after:top-[3px] after:left-[3px] after:size-3.5 after:rounded-full after:bg-slate-400 after:transition-all after:duration-200 after:content-[''] peer-checked:after:translate-x-4 peer-checked:after:bg-white"
           />
         </label>
         <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase"

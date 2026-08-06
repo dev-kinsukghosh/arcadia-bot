@@ -446,7 +446,63 @@ module.exports = {
           }
         );
 
-      return interaction.editReply({ embeds: [embed] });
+      // Fetch 30 days history for graph
+      let historyData = [];
+      if (db) {
+        try {
+          const cutoffDate = new Date();
+          cutoffDate.setUTCDate(cutoffDate.getUTCDate() - 30);
+          const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+          historyData = await db
+            .select()
+            .from(townyHistory)
+            .where(
+              and(
+                eq(townyHistory.name, town.name.toLowerCase()),
+                eq(townyHistory.type, 'town'),
+                gte(townyHistory.date, cutoffStr)
+              )
+            )
+            .orderBy(asc(townyHistory.date));
+        } catch {
+          // ignore DB error
+        }
+      }
+
+      let chartFile = null;
+      if (historyData && historyData.length > 0) {
+        try {
+          const dates = historyData.map((row) => {
+            const dateStr =
+              typeof row.date === 'string'
+                ? row.date
+                : new Date(row.date).toISOString().split('T')[0];
+            return dateStr;
+          });
+          const residentsRates = historyData.map((row) => row.residents || 0);
+
+          const chartBuffer = drawHistoryLineChart(
+            dates,
+            [
+              {
+                label: 'Residents',
+                rates: residentsRates,
+              },
+            ],
+            `${formattedName} Residents History (30d)`
+          );
+          chartFile = new AttachmentBuilder(chartBuffer, { name: 'town-history.png' });
+          embed.setImage('attachment://town-history.png');
+        } catch {
+          // ignore graph render error
+        }
+      }
+
+      return interaction.editReply({
+        embeds: [embed],
+        files: chartFile ? [chartFile] : [],
+      });
     }
 
     // ── Subcommand: Nation ────────────────────────────────────────────
@@ -553,7 +609,68 @@ module.exports = {
           }
         );
 
-      return interaction.editReply({ embeds: [embed] });
+      // Fetch 30 days history for graph
+      let historyData = [];
+      if (db) {
+        try {
+          const cutoffDate = new Date();
+          cutoffDate.setUTCDate(cutoffDate.getUTCDate() - 30);
+          const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+          historyData = await db
+            .select()
+            .from(townyHistory)
+            .where(
+              and(
+                eq(townyHistory.name, nation.name.toLowerCase()),
+                eq(townyHistory.type, 'nation'),
+                gte(townyHistory.date, cutoffStr)
+              )
+            )
+            .orderBy(asc(townyHistory.date));
+        } catch {
+          // ignore DB error
+        }
+      }
+
+      let chartFile = null;
+      if (historyData && historyData.length > 0) {
+        try {
+          const dates = historyData.map((row) => {
+            const dateStr =
+              typeof row.date === 'string'
+                ? row.date
+                : new Date(row.date).toISOString().split('T')[0];
+            return dateStr;
+          });
+          const residentsRates = historyData.map((row) => row.residents || 0);
+          const townsRates = historyData.map((row) => row.townsCount || 0);
+
+          const chartBuffer = drawHistoryLineChart(
+            dates,
+            [
+              {
+                label: 'Residents',
+                rates: residentsRates,
+              },
+              {
+                label: 'Towns',
+                rates: townsRates,
+              },
+            ],
+            `${formattedName} History (30d)`
+          );
+          chartFile = new AttachmentBuilder(chartBuffer, { name: 'nation-history.png' });
+          embed.setImage('attachment://nation-history.png');
+        } catch {
+          // ignore graph render error
+        }
+      }
+
+      return interaction.editReply({
+        embeds: [embed],
+        files: chartFile ? [chartFile] : [],
+      });
     }
 
     // ── Subcommand: Top ───────────────────────────────────────────────
@@ -794,18 +911,14 @@ module.exports = {
 
       // 2. Fallback: If no history, check if currently active
       if (!historyData || historyData.length === 0) {
-        let activeObj = null;
-        if (typeInput === 'town') {
-          const towns = Array.isArray(data.towns) ? data.towns : [];
-          activeObj = towns.find(
-            (t) => t?.name?.toLowerCase() === nameInput || t?.slug?.toLowerCase() === nameInput
-          );
-        } else {
-          const nations = Array.isArray(data.nations) ? data.nations : [];
-          activeObj = nations.find(
-            (n) => n?.name?.toLowerCase() === nameInput || n?.slug?.toLowerCase() === nameInput
-          );
-        }
+        const activeObj =
+          typeInput === 'town'
+            ? (Array.isArray(data.towns) ? data.towns : []).find(
+                (t) => t?.name?.toLowerCase() === nameInput || t?.slug?.toLowerCase() === nameInput
+              )
+            : (Array.isArray(data.nations) ? data.nations : []).find(
+                (n) => n?.name?.toLowerCase() === nameInput || n?.slug?.toLowerCase() === nameInput
+              );
 
         if (!activeObj) {
           const capitalizedType = typeInput.charAt(0).toUpperCase() + typeInput.slice(1);
@@ -821,7 +934,6 @@ module.exports = {
         }
 
         const formattedName = activeObj.name ? activeObj.name.replace(/_/g, ' ') : nameInput;
-        const capitalizedType = typeInput.charAt(0).toUpperCase() + typeInput.slice(1);
         return interaction.editReply({
           embeds: [
             createBaseEmbed()

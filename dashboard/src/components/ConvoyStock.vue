@@ -202,7 +202,7 @@ function formatLastSeen(timestamp) {
     </div>
 
     <!-- Segmented Control View Selector -->
-    <div class="flex max-w-[280px] rounded-xl border border-slate-900 bg-slate-950/85 p-1">
+    <div class="flex max-w-70 rounded-xl border border-slate-900 bg-slate-950/85 p-1">
       <button
         :class="
           activeSubView === 'live'
@@ -250,11 +250,11 @@ function formatLastSeen(timestamp) {
         <div v-if="activeSubView === 'live'" key="view-live" class="space-y-6">
           <div class="flex items-center justify-between border-b border-slate-900/60 pb-2">
             <div class="flex items-center gap-2">
-              <span class="relative flex h-2 w-2">
+              <span class="relative flex size-2">
                 <span
-                  class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
+                  class="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75"
                 />
-                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                <span class="relative inline-flex size-2 rounded-full bg-emerald-500" />
               </span>
               <h3 class="text-xs font-bold tracking-wider text-slate-200 uppercase">
                 Live Shop Trades
@@ -285,10 +285,7 @@ function formatLastSeen(timestamp) {
                 class="flex items-center gap-2 text-xs font-bold tracking-wider uppercase"
                 :class="getRarityTextClass(rarity)"
               >
-                <span
-                  class="h-1.5 w-1.5 animate-pulse rounded-full"
-                  :class="getRarityDotBg(rarity)"
-                />
+                <span class="size-1.5 animate-pulse rounded-full" :class="getRarityDotBg(rarity)" />
                 {{ rarity }} Tier
               </h4>
 
@@ -308,7 +305,7 @@ function formatLastSeen(timestamp) {
                   <!-- Card Rarity Badge -->
                   <div class="mb-3.5 flex items-center justify-between">
                     <span
-                      class="rounded border bg-slate-950/60 px-2 py-0.5 text-[9px] font-bold tracking-wider capitalize uppercase"
+                      class="rounded border bg-slate-950/60 px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase"
                       :class="[
                         getRarityTextClass(item.rarity),
                         getRarityClasses(item.rarity).split(' ')[0],
@@ -323,12 +320,12 @@ function formatLastSeen(timestamp) {
 
                   <!-- Item Texture Area -->
                   <div
-                    class="relative mb-4 flex min-h-[96px] items-center justify-center rounded-xl border border-slate-900/30 bg-slate-950/20 py-4"
+                    class="relative mb-4 flex min-h-24 items-center justify-center rounded-xl border border-slate-900/30 bg-slate-950/20 py-4"
                   >
                     <img
                       v-if="!item.imageError"
                       :src="props.apiBase + '/icons/' + item.item + '.png'"
-                      class="image-rendering-pixelated h-14 w-14 object-contain transition-transform duration-300 group-hover:scale-110"
+                      class="image-rendering-pixelated size-14 object-contain transition-transform duration-300 group-hover:scale-110"
                       :alt="item.item"
                       @error="handleImageError(item)"
                     />
@@ -536,7 +533,7 @@ function formatLastSeen(timestamp) {
                     class="flex items-center gap-2 border-b border-slate-900 pb-1 text-xs font-bold tracking-wider uppercase"
                     :class="getRarityTextClass(rarity)"
                   >
-                    <span class="h-1.5 w-1.5 rounded-full" :class="getRarityDotBg(rarity)" />
+                    <span class="size-1.5 rounded-full" :class="getRarityDotBg(rarity)" />
                     {{ rarity }} Items
                     <span class="ml-1 font-mono text-[9px] font-normal text-slate-500"
                       >({{ items.length }})</span
@@ -560,7 +557,7 @@ function formatLastSeen(timestamp) {
                       <div class="mb-3 flex items-center justify-between">
                         <div class="flex items-center gap-1.5">
                           <span
-                            class="rounded border bg-slate-950/60 px-1.5 py-0.5 text-[8px] font-bold tracking-wider capitalize uppercase"
+                            class="rounded border bg-slate-950/60 px-1.5 py-0.5 text-[8px] font-bold tracking-wider uppercase"
                             :class="[
                               getRarityTextClass(item.rarity),
                               getRarityClasses(item.rarity).split(' ')[0],
@@ -586,12 +583,12 @@ function formatLastSeen(timestamp) {
 
                       <!-- Item Texture Area -->
                       <div
-                        class="relative mb-3 flex min-h-[84px] items-center justify-center rounded-xl border border-slate-900/30 bg-slate-950/20 py-3"
+                        class="relative mb-3 flex min-h-21 items-center justify-center rounded-xl border border-slate-900/30 bg-slate-950/20 py-3"
                       >
                         <img
                           v-if="!item.imageError"
                           :src="props.apiBase + '/icons/' + item.item + '.png'"
-                          class="image-rendering-pixelated h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-110"
+                          class="image-rendering-pixelated size-12 object-contain transition-transform duration-300 group-hover:scale-110"
                           :alt="item.item"
                           @error="handleImageError(item)"
                         />

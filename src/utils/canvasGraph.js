@@ -1,4 +1,4 @@
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const { createCanvas } = require('@napi-rs/canvas');
 
 /**
  * Format numbers with commas (e.g., 1000 -> 1,000)

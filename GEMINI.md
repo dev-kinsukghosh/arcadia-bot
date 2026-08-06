@@ -35,6 +35,7 @@ The following rules MUST be followed at all times:
 7. 📂 **Relative Project Links**: Never use absolute Windows paths (e.g., `C:/...` or `file:///C:/...`) or `file:///src` link schemes in chat responses, logs, or documentation. Always refer to files using relative text paths (e.g. `src/commands/general/cis-info.js`) or simple code formatting (e.g. `cis-info.js`). When explaining file changes or structural additions, use a tree-like text structure to outline the directories, followed by a list of files with their descriptions next to them, avoiding any inline link syntax.
 8. ⚠️ **Emoji URL Deprecation**: Never use `Emoji.url` (deprecated in Discord.js v14). Always utilize `Emoji.imageURL()` instead to prevent console deprecation warning logs.
 9. 🧪 **Do Not Auto-Run Integration Tests**: Never run bot integration tests (`npm test` or specific suites) automatically on your own. Only execute tests when the user explicitly instructs you to do so.
+10. 🧩 **ESLint Tailwind Whitelist**: When using custom CSS class names (e.g., `custom-scrollbar`, `animate-pulse-glow`, `hover:scale-1.03`) in dashboard Vue components, always add them to the `whitelist` array inside the `tailwindcss/no-custom-classname` rule in `eslint.config.js`. Include the full modifier-prefixed form (e.g., `hover:scale-1.02`, `group-hover:animate-shine`) to suppress `no-custom-classname` warnings.
 
 ---
 
@@ -649,3 +650,38 @@ The following rules MUST be followed at all times:
   - Added `preloadHeadImages()` function inside `dashboard/src/stores/townyStore.js` that extracts all unique mayor/king usernames from the Towny API response and preloads their head images using `new Image()` objects in the background immediately after data fetch completes.
   - Integrated the preloader call into `fetchTownyData()` so head images are warmed in the browser cache before Vue renders the spotlight cards and modals, eliminating the visible placeholder-to-head swap effect.
   - Added `Cache-Control: public, max-age=3600, stale-while-revalidate=1800` response header to the `/heads/:username.png` API endpoint in `src/server.js`, enabling 1-hour browser disk caching with 30-minute stale-while-revalidate for head images.
+- **Player Heads Test Suite Timeout Resolution**:
+  - Mocked `axios` globally in `tests/heads.test.js` using Node's CommonJS `require.cache` module override. This intercepts all upstream head downloads and profile resolutions, replacing them with fast local mock buffers.
+  - Added a 30-second timeout to the concurrent heads background update job test (`updateAllHeadsBatch`). This accommodates bulk database updates for large test databases and resolves the previous 5-second Vitest timeout failure.
+- **Towny Sync Logging Enhancements & Picocolors Integration**:
+  - Re-imported `picocolors` (`pc`) inside `src/services/townySync.js` and styled all background worker execution and pruning logs to match the bot's standard cyan/green/yellow console logging layout.
+- **Towny Profile History Charts Integration**:
+  - Integrated 30-day historical line charts directly into the `/towny town` and `/towny nation` profile response embeds.
+  - Towns query `townyHistory` to display a single-line resident population trend graph.
+  - Nations query `townyHistory` to display a dual-line graph rendering both resident population and member town count trends over the same time frame.
+  - Handled fallbacks gracefully; if no history data is available in the database, the embeds render cleanly in their default text-only format.
+- **Web Dashboard Towny History Charts**:
+  - Registered `/towny/history` API route inside `src/server.js` querying the `towny_history` database snapshots.
+  - Integrated CategoryScale, LinearScale, PointElement, LineElement, and Line chart components from `chart.js` and `vue-chartjs` inside `dashboard/src/components/TownyMonitor.vue`.
+  - Added reactivity and watch handlers in `TownyMonitor.vue` to fetch the past 30 days of data whenever a details modal is opened.
+  - Plotted a single-line Residents trend graph inside the Town details modal, and a dual-line (Residents + Towns count) trend graph inside the Nation details modal.
+  - Configured custom responsive charts matching the dashboard's design tokens and verified build via `npm run dashboard:build`.
+  - Refactored modal layouts to move Town/Nation Flags to the right column (`md:col-span-5`) and placed the historical graphs at the bottom spanning the full horizontal width (`md:col-span-12`), optimizing graph aspect ratios and preventing vertical distortion.
+
+### 07-08-2026
+
+- **Dashboard Sparklines & Trend Indicators (MarketMonitor.vue & server.js)**:
+  - Modified the Express API server (`src/server.js`)'s `/currencies/stats` endpoint to compute 24-hour and 7-day rate direction (percentage changes) and output sparkline historical data for each currency.
+  - Ensured the statistics endpoint queries at least 7 days of database history by updating the minimum `retentionDays` threshold to 7.
+  - Implemented a robust `getRateNDaysAgo` helper on the backend that handles newly created currencies and data gaps by gracefully falling back to the nearest historical record or the oldest available rate.
+  - Enhanced the Live Currency Market dashboard list (`dashboard/src/components/MarketMonitor.vue`) with two new columns: "24h Trend" and "7d Trend".
+  - "24h Trend" renders a color-coded badge containing the 24-hour percentage change and a direction trend arrow (green up, red down, or gray minus for flat rates).
+  - "7d Trend" renders a premium inline SVG sparkline chart complete with area fade-out linear gradients (green for positive 7d change, red for negative) and an inline 7d percentage direction symbol and badge.
+  - Widened the overall page layout wrapper (`max-w-7xl` to `max-w-[90rem]`) in `dashboard/src/App.vue` to make the workspace wider and prevent vertical/horizontal overflow.
+  - Converted the market monitor workspace grid in `dashboard/src/components/MarketMonitor.vue` to a 12-column layout (`lg:grid-cols-12`) and optimized column spans (sidebar `lg:col-span-3 xl:col-span-2`, table `lg:col-span-9 xl:col-span-10`) to maximize horizontal breathing room for the table.
+  - Imported and added the `faMinus` FontAwesome icon globally inside `dashboard/src/main.js` to represent flat/unchanged rate trends.
+  - Installed and configured the `eslint-plugin-tailwindcss` plugin to enable linting rules for Tailwind CSS classes across all dashboard files in `eslint.config.js`.
+  - Defined the custom `cssConfigPath` setting pointing to `dashboard/src/style.css` in `eslint.config.js` to ensure proper theme and utility resolution for Tailwind CSS v4.
+  - Resolved Tailwind class name conflict errors (removed duplicate `capitalize` overlapping with `uppercase`) on rarity badges inside `dashboard/src/components/ConvoyStock.vue`.
+  - Configured Express server (`src/server.js`) to dynamically disable CORS restrictions in development mode (`process.env.NODE_ENV !== 'production'`) by setting `origin: true` (reflecting any requesting origin to allow standard credentials-based fetch lookups).
+  - Formatted the entire codebase with Prettier (`npm run format`) and verified that the ESLint checks compile successfully with zero errors.

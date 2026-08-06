@@ -3,6 +3,7 @@ const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommen
 const globals = require('globals');
 const pluginVue = require('eslint-plugin-vue');
 const eslintConfigPrettier = require('eslint-config-prettier');
+const tailwind = require('eslint-plugin-tailwindcss');
 
 module.exports = [
   js.configs.recommended,
@@ -30,6 +31,35 @@ module.exports = [
         ...globals.browser,
         ...globals.node,
       },
+    },
+  },
+  {
+    ...tailwind.configs.recommended,
+    files: ['dashboard/**/*.js', 'dashboard/**/*.vue'],
+    settings: {
+      tailwindcss: {
+        cssConfigPath: 'dashboard/src/style.css',
+      },
+    },
+    rules: {
+      'tailwindcss/no-custom-classname': [
+        'warn',
+        {
+          whitelist: [
+            'custom-scrollbar',
+            'no-scrollbar',
+            'modal-box-anim',
+            'animate-pulse-glow',
+            'animate-shine',
+            'group-hover:animate-shine',
+            'image-rendering-pixelated',
+            'scale-1.03',
+            'hover:scale-1.03',
+            'scale-1.02',
+            'hover:scale-1.02',
+          ],
+        },
+      ],
     },
   },
   {

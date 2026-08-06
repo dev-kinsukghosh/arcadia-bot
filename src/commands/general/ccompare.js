@@ -6,7 +6,7 @@ const {
   InteractionContextType,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
-const { currencies: currenciesTable, currencyHistory } = require('../../db/schema.js');
+const { currencyHistory } = require('../../db/schema.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
 const { and, gte, eq, asc } = require('drizzle-orm');
@@ -204,7 +204,7 @@ module.exports = {
             }
           })
         );
-      } catch (err) {
+      } catch {
         // DB error handling
       }
     }
