@@ -425,7 +425,7 @@ onMounted(() => {
         >
           <div
             class="absolute -right-6 -bottom-6 h-20 w-20 rounded-full bg-emerald-500/5 blur-xl transition-all duration-300 group-hover:bg-emerald-500/10"
-          ></div>
+          />
 
           <div class="flex items-start justify-between">
             <div>
@@ -441,9 +441,9 @@ onMounted(() => {
               </span>
             </div>
             <button
-              @click="togglePin(curr.id)"
               class="text-[10px] transition-colors duration-150"
               :class="isPinned(curr.id) ? 'text-blue-500' : 'text-slate-600 hover:text-slate-400'"
+              @click="togglePin(curr.id)"
             >
               <font-awesome-icon icon="star" />
             </button>
@@ -489,7 +489,7 @@ onMounted(() => {
         >
           <div
             class="absolute -right-6 -bottom-6 h-20 w-20 rounded-full bg-blue-600/10 blur-xl transition-all duration-300 group-hover:bg-blue-600/15"
-          ></div>
+          />
 
           <div class="flex items-start justify-between">
             <div>
@@ -503,8 +503,8 @@ onMounted(() => {
               }}</span>
             </div>
             <button
-              @click="togglePin(curr.id)"
               class="text-blue-500 transition-colors duration-150 hover:text-slate-400"
+              @click="togglePin(curr.id)"
             >
               <font-awesome-icon icon="star" />
             </button>
@@ -552,8 +552,8 @@ onMounted(() => {
             Filters & Limits
           </h3>
           <button
-            @click="clearFilters"
             class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase transition-colors duration-150 hover:text-slate-300"
+            @click="clearFilters"
           >
             Reset
           </button>
@@ -571,8 +571,8 @@ onMounted(() => {
               <font-awesome-icon icon="search" />
             </span>
             <input
-              type="text"
               v-model="searchSearch"
+              type="text"
               placeholder="Search name, id, nation..."
               class="block w-full rounded-lg border border-slate-800 bg-slate-950 py-1.5 pr-3 pl-9 text-xs text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
@@ -588,55 +588,55 @@ onMounted(() => {
             class="grid grid-cols-5 gap-0.5 rounded-lg border border-slate-800 bg-slate-950 p-0.5 text-center"
           >
             <button
-              @click="limitType = '5'"
               :class="
                 limitType === '5' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
               "
               class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
+              @click="limitType = '5'"
             >
               Top 5
             </button>
             <button
-              @click="limitType = '10'"
               :class="
                 limitType === '10'
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               "
               class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
+              @click="limitType = '10'"
             >
               Top 10
             </button>
             <button
-              @click="limitType = '20'"
               :class="
                 limitType === '20'
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               "
               class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
+              @click="limitType = '20'"
             >
               Top 20
             </button>
             <button
-              @click="limitType = 'all'"
               :class="
                 limitType === 'all'
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               "
               class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
+              @click="limitType = 'all'"
             >
               All
             </button>
             <button
-              @click="limitType = 'custom'"
               :class="
                 limitType === 'custom'
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               "
               class="rounded py-1 text-[10px] font-semibold transition-all duration-200"
+              @click="limitType = 'custom'"
             >
               Custom
             </button>
@@ -645,8 +645,8 @@ onMounted(() => {
           <div v-if="limitType === 'custom'" class="mt-2 flex items-center gap-2">
             <span class="text-[10px] font-semibold text-slate-500 uppercase">Count:</span>
             <input
-              type="number"
               v-model="customLimit"
+              type="number"
               min="1"
               class="block w-20 rounded border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-xs text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
@@ -730,7 +730,7 @@ onMounted(() => {
         <!-- Price Swing Alert -->
         <div>
           <label
-            class="mb-2 block  items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-400 uppercase"
+            class="mb-2 block items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-400 uppercase"
           >
             <font-awesome-icon icon="triangle-exclamation" class="text-red-400" />
             Price Swing Alert
@@ -743,8 +743,8 @@ onMounted(() => {
           <div class="flex items-center gap-2.5">
             <span class="w-6 text-right font-mono text-[9px] font-bold text-slate-600">5%</span>
             <input
-              type="range"
               v-model="volatilityAlertThreshold"
+              type="range"
               min="5"
               max="50"
               step="5"
@@ -769,16 +769,16 @@ onMounted(() => {
           >
           <div class="relative">
             <button
-              @click.stop="
-                nationsDropdownOpen = !nationsDropdownOpen;
-                itemsDropdownOpen = false;
-                nationsSearch = '';
-              "
               class="flex w-full items-center justify-between rounded-lg border bg-slate-950 px-3 py-2 text-xs transition-colors duration-150"
               :class="
                 nationsDropdownOpen
                   ? 'border-blue-500/50 text-slate-200'
                   : 'border-slate-800 text-slate-400 hover:border-slate-700'
+              "
+              @click.stop="
+                nationsDropdownOpen = !nationsDropdownOpen;
+                itemsDropdownOpen = false;
+                nationsSearch = '';
               "
             >
               <span class="flex items-center gap-2">
@@ -794,9 +794,9 @@ onMounted(() => {
 
             <div
               v-if="nationsDropdownOpen"
-              @click="nationsDropdownOpen = false"
               class="fixed inset-0 z-10"
-            ></div>
+              @click="nationsDropdownOpen = false"
+            />
 
             <Transition
               enter-from-class="opacity-0 -translate-y-1"
@@ -818,8 +818,8 @@ onMounted(() => {
                   >
                   <button
                     v-if="selectedNations.length > 0"
-                    @click="selectedNations = []"
                     class="text-[9px] font-semibold text-red-400/70 transition-colors hover:text-red-400"
+                    @click="selectedNations = []"
                   >
                     Clear
                   </button>
@@ -832,8 +832,8 @@ onMounted(() => {
                       <font-awesome-icon icon="search" class="text-[9px]" />
                     </span>
                     <input
-                      type="text"
                       v-model="nationsSearch"
+                      type="text"
                       placeholder="Search nations..."
                       class="block w-full rounded-lg border border-slate-800/50 bg-slate-950/50 py-1.5 pr-2.5 pl-7 text-[10px] text-slate-300 placeholder-slate-600 focus:border-blue-500/40 focus:outline-none"
                     />
@@ -843,13 +843,13 @@ onMounted(() => {
                   <button
                     v-for="nation in filteredNationsList"
                     :key="'dd-nation-' + nation"
-                    @click="toggleNationFilter(nation)"
                     class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150"
                     :class="
                       selectedNations.includes(nation)
                         ? 'bg-blue-500/10 text-blue-300'
                         : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
                     "
+                    @click="toggleNationFilter(nation)"
                   >
                     <span
                       class="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
@@ -880,16 +880,16 @@ onMounted(() => {
           >
           <div class="relative">
             <button
-              @click.stop="
-                itemsDropdownOpen = !itemsDropdownOpen;
-                nationsDropdownOpen = false;
-                itemsSearch = '';
-              "
               class="flex w-full items-center justify-between rounded-lg border bg-slate-950 px-3 py-2 text-xs transition-colors duration-150"
               :class="
                 itemsDropdownOpen
                   ? 'border-emerald-500/50 text-slate-200'
                   : 'border-slate-800 text-slate-400 hover:border-slate-700'
+              "
+              @click.stop="
+                itemsDropdownOpen = !itemsDropdownOpen;
+                nationsDropdownOpen = false;
+                itemsSearch = '';
               "
             >
               <span class="flex items-center gap-2">
@@ -905,9 +905,9 @@ onMounted(() => {
 
             <div
               v-if="itemsDropdownOpen"
-              @click="itemsDropdownOpen = false"
               class="fixed inset-0 z-10"
-            ></div>
+              @click="itemsDropdownOpen = false"
+            />
 
             <Transition
               enter-from-class="opacity-0 -translate-y-1"
@@ -929,8 +929,8 @@ onMounted(() => {
                   >
                   <button
                     v-if="selectedItems.length > 0"
-                    @click="selectedItems = []"
                     class="text-[9px] font-semibold text-red-400/70 transition-colors hover:text-red-400"
+                    @click="selectedItems = []"
                   >
                     Clear
                   </button>
@@ -943,8 +943,8 @@ onMounted(() => {
                       <font-awesome-icon icon="search" class="text-[9px]" />
                     </span>
                     <input
-                      type="text"
                       v-model="itemsSearch"
+                      type="text"
                       placeholder="Search items..."
                       class="block w-full rounded-lg border border-slate-800/50 bg-slate-950/50 py-1.5 pr-2.5 pl-7 text-[10px] text-slate-300 placeholder-slate-600 focus:border-emerald-500/40 focus:outline-none"
                     />
@@ -954,16 +954,16 @@ onMounted(() => {
                   <button
                     v-for="item in filteredItemsList"
                     :key="'dd-item-' + item"
-                    @click="toggleItemFilter(item)"
                     class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150"
                     :class="
                       selectedItems.includes(item)
                         ? 'bg-emerald-500/10 text-emerald-300'
                         : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
                     "
+                    @click="toggleItemFilter(item)"
                   >
                     <span
-                      class="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
+                      class="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-all duration-150"
                       :class="
                         selectedItems.includes(item)
                           ? 'border-emerald-500 bg-emerald-500'
@@ -1002,15 +1002,15 @@ onMounted(() => {
 
           <div class="flex items-center gap-2">
             <button
-              @click="downloadCSV"
               class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800"
+              @click="downloadCSV"
             >
               <font-awesome-icon icon="download" />
               Export CSV
             </button>
             <button
-              @click="downloadJSON"
               class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800"
+              @click="downloadJSON"
             >
               <font-awesome-icon icon="download" />
               Export JSON
@@ -1050,11 +1050,11 @@ onMounted(() => {
                 >
                   <td class="px-4 py-3.5 text-center">
                     <button
-                      @click="togglePin(curr.id)"
                       class="text-xs transition-colors duration-150"
                       :class="
                         isPinned(curr.id) ? 'text-blue-500' : 'text-slate-600 hover:text-slate-400'
                       "
+                      @click="togglePin(curr.id)"
                     >
                       <font-awesome-icon icon="star" />
                     </button>

@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import { ref, onMounted, computed } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useTownyStore } from '../stores/townyStore.js';
 
 const props = defineProps({
   apiBase: {
@@ -9,37 +10,22 @@ const props = defineProps({
   },
 });
 
-const townyData = ref(null);
-const isLoading = ref(true);
-const fetchError = ref(null);
-
-// Tab selection: 'towns' or 'nations'
-const activeTab = ref('towns');
-
-// Search & Sorting state
-const searchQuery = ref('');
-const sortBy = ref('residents_desc'); // default sort
-
-// Modal state
-const selectedTown = ref(null);
-const selectedNation = ref(null);
-
-async function fetchTownyData() {
-  isLoading.value = true;
-  fetchError.value = null;
-  try {
-    const res = await axios.get(`${props.apiBase}/towny`);
-    townyData.value = res.data;
-  } catch (error) {
-    console.error('Failed to fetch Towny data:', error);
-    fetchError.value = 'Failed to load Towny data. Is the API service online?';
-  } finally {
-    isLoading.value = false;
-  }
-}
+const townyStore = useTownyStore();
+const {
+  townyData,
+  isLoading,
+  fetchError,
+  activeTab,
+  searchQuery,
+  sortBy,
+  selectedTown,
+  selectedNation,
+} = storeToRefs(townyStore);
 
 onMounted(() => {
-  fetchTownyData();
+  if (!townyData.value) {
+    townyStore.fetchTownyData();
+  }
 });
 
 // Format timestamp
@@ -293,8 +279,8 @@ function closeModals() {
               v-for="(town, idx) in topTowns"
               :key="'top-town-' + town.id"
               :style="{ '--card-idx': idx }"
-              @click="openTownDetails(town)"
               class="group cursor-pointer relative overflow-hidden rounded-xl border border-blue-500/10 bg-[#0c0d15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/30 hover:bg-[#11131f]/70 shadow-sm"
+              @click="openTownDetails(town)"
             >
               <!-- Badge indicators for rank -->
               <div
@@ -359,8 +345,8 @@ function closeModals() {
               v-for="(nation, idx) in topNations"
               :key="'top-nation-' + nation.id"
               :style="{ '--card-idx': idx }"
-              @click="openNationDetails(nation)"
               class="group cursor-pointer relative overflow-hidden rounded-xl border border-indigo-500/10 bg-[#0d0c15]/50 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-indigo-500/30 hover:bg-[#121120]/70 shadow-sm"
+              @click="openNationDetails(nation)"
             >
               <!-- Badge indicators for rank -->
               <div
@@ -419,31 +405,31 @@ function closeModals() {
         class="flex items-center gap-1 rounded-xl border border-slate-900 bg-slate-950/80 p-1 self-start"
       >
         <button
-          @click="
-            activeTab = 'towns';
-            sortBy = 'residents_desc';
-          "
           :class="
             activeTab === 'towns'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           "
           class="flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold transition-all duration-200"
+          @click="
+            activeTab = 'towns';
+            sortBy = 'residents_desc';
+          "
         >
           <font-awesome-icon icon="globe" />
           Towns ({{ townyData?.towns?.length || 0 }})
         </button>
         <button
-          @click="
-            activeTab = 'nations';
-            sortBy = 'residents_desc';
-          "
           :class="
             activeTab === 'nations'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           "
           class="flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold transition-all duration-200"
+          @click="
+            activeTab = 'nations';
+            sortBy = 'residents_desc';
+          "
         >
           <font-awesome-icon icon="flag" />
           Nations ({{ townyData?.nations?.length || 0 }})
@@ -465,8 +451,8 @@ function closeModals() {
           />
           <button
             v-if="searchQuery"
-            @click="searchQuery = ''"
             class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-300"
+            @click="searchQuery = ''"
           >
             <font-awesome-icon icon="times" class="text-xs" />
           </button>
@@ -499,7 +485,7 @@ function closeModals() {
     <div v-if="isLoading" class="flex flex-col items-center justify-center space-y-4 py-24">
       <div
         class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500"
-      ></div>
+      />
       <div class="text-center text-xs text-slate-400">Loading Towny Database...</div>
     </div>
 
@@ -529,8 +515,8 @@ function closeModals() {
               v-for="(town, idx) in processedTowns"
               :key="town.id"
               :style="{ '--card-idx': idx }"
-              @click="openTownDetails(town)"
               class="group cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-slate-800 hover:bg-[#111420]/60 hover:shadow-lg"
+              @click="openTownDetails(town)"
             >
               <div class="flex items-start justify-between">
                 <div>
@@ -615,8 +601,8 @@ function closeModals() {
               v-for="(nation, idx) in processedNations"
               :key="nation.id"
               :style="{ '--card-idx': idx }"
-              @click="openNationDetails(nation)"
               class="group cursor-pointer rounded-xl border border-slate-900 bg-slate-950/40 p-4 transition-all duration-200 hover:scale-[1.02] hover:border-slate-800 hover:bg-[#151325]/50 hover:shadow-lg"
+              @click="openNationDetails(nation)"
             >
               <div class="flex items-start justify-between">
                 <div>
@@ -690,8 +676,8 @@ function closeModals() {
               </h2>
             </div>
             <button
-              @click="closeModals"
               class="text-slate-400 hover:text-slate-200 transition-colors"
+              @click="closeModals"
             >
               <font-awesome-icon icon="times" />
             </button>
@@ -860,8 +846,8 @@ function closeModals() {
               </h2>
             </div>
             <button
-              @click="closeModals"
               class="text-slate-400 hover:text-slate-200 transition-colors"
+              @click="closeModals"
             >
               <font-awesome-icon icon="times" />
             </button>

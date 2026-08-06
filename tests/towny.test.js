@@ -1,0 +1,62 @@
+const { db, connection } = require('../src/utils/db.js');
+const { townyHistory } = require('../src/db/schema.js');
+const { eq } = require('drizzle-orm');
+const logger = require('../src/utils/logger.js');
+const pc = require('picocolors');
+
+describe('Towny History Database Query Suite', () => {
+  afterAll(async () => {
+    if (connection) {
+      await connection.end();
+    }
+  });
+
+  it('should successfully execute queries on the towny_history table', async () => {
+    expect(db).toBeDefined();
+    expect(connection).toBeDefined();
+
+    // Query historical records (might be empty initially but must not throw)
+    const records = await db.select().from(townyHistory);
+    expect(records).toBeInstanceOf(Array);
+
+    logger.success(
+      `MySQL Drizzle Query: ${pc.bold(
+        pc.green('OK')
+      )} (Found ${records.length} towny history records in DB)`
+    );
+
+    // Insert dummy record to test insert/delete loop
+    const testName = 'test_town_junit';
+    const testDate = '2026-08-06';
+
+    // Cleanup previous failures if any
+    await db.delete(townyHistory).where(eq(townyHistory.name, testName));
+
+    // Try insert
+    await db.insert(townyHistory).values({
+      name: testName,
+      type: 'town',
+      date: testDate,
+      residents: 15,
+      chunks: 120,
+      townsCount: 0,
+    });
+
+    const result = await db.select().from(townyHistory).where(eq(townyHistory.name, testName));
+
+    expect(result.length).toBe(1);
+    expect(result[0].residents).toBe(15);
+    expect(result[0].chunks).toBe(120);
+
+    // Clean up
+    await db.delete(townyHistory).where(eq(townyHistory.name, testName));
+
+    const verifyCleanup = await db
+      .select()
+      .from(townyHistory)
+      .where(eq(townyHistory.name, testName));
+    expect(verifyCleanup.length).toBe(0);
+
+    logger.success(`Verified CRUD operations on ${pc.bold('towny_history')} table successfully.`);
+  });
+});

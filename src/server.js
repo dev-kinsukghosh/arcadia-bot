@@ -77,10 +77,24 @@ const speedLimiter = slowDown({
   maxDelayMs: 3000, // Cap delay at 3 seconds
 });
 
-// Apply rate limiting & tarpitting globally
-app.use(ipRateLimiter);
-app.use(deviceRateLimiter);
-app.use(speedLimiter);
+// Helper: skip rate limiting for static asset endpoints (heads, icons)
+function isAssetRequest(req) {
+  return req.path.startsWith('/heads/') || req.path.startsWith('/icons/');
+}
+
+// Apply rate limiting & tarpitting globally (skip cached asset endpoints)
+app.use((req, res, next) => {
+  if (isAssetRequest(req)) return next();
+  ipRateLimiter(req, res, next);
+});
+app.use((req, res, next) => {
+  if (isAssetRequest(req)) return next();
+  deviceRateLimiter(req, res, next);
+});
+app.use((req, res, next) => {
+  if (isAssetRequest(req)) return next();
+  speedLimiter(req, res, next);
+});
 
 const apiRouter = express.Router();
 
@@ -431,14 +445,16 @@ async function resolveUuidToUsername(uuid) {
 // Cache variables for shops fallback when Redis is offline
 let localShopsCache = null;
 let localShopsCacheTime = 0;
-const SHOPS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+const SHOPS_CACHE_TTL = 25 * 60 * 1000; // 25 minutes cache
 
 const handleShopsRequest = async (req, res) => {
   const { arcadiaApi } = require('./utils/apiClient.js');
   const redisClient = require('./utils/redis.js');
+  const { db } = require('./utils/db.js');
+  const { playerShops } = require('./db/schema.js');
   const now = Date.now();
 
-  // Try Redis first
+  // Try Redis first (CACHE TTL for shop is 25min Redis)
   if (redisClient && redisClient.status === 'ready') {
     try {
       const cached = await redisClient.get('cache:shops');
@@ -452,6 +468,51 @@ const handleShopsRequest = async (req, res) => {
     return res.json(localShopsCache);
   }
 
+  // If Redis cache misses, query MySQL Database
+  if (db) {
+    try {
+      const dbShops = await db.select().from(playerShops);
+      const shopsList = dbShops.map((shop) => {
+        return {
+          key: shop.key,
+          name: shop.name,
+          owner: shop.owner,
+          ownerName: shop.ownerName || 'Unknown',
+          world: shop.world,
+          plotX: shop.plotX,
+          plotZ: shop.plotZ,
+          currency: shop.currency,
+          balances: shop.balances ? JSON.parse(shop.balances) : {},
+          sellListings: shop.sellListings ? JSON.parse(shop.sellListings) : [],
+          buyListings: shop.buyListings ? JSON.parse(shop.buyListings) : [],
+        };
+      });
+
+      const payload = {
+        updatedAt: now,
+        shops: shopsList,
+      };
+
+      // Save to Redis (CACHE TTL is 25 minutes)
+      if (redisClient && redisClient.status === 'ready') {
+        try {
+          await redisClient.setex('cache:shops', 25 * 60, JSON.stringify(payload));
+        } catch (err) {
+          logger.warn(`Failed to save Shops data to Redis: ${err.message}`);
+        }
+      }
+
+      // Save to local cache
+      localShopsCache = payload;
+      localShopsCacheTime = now;
+
+      return res.json(payload);
+    } catch (err) {
+      logger.error(`Database Error fetching Shops: ${err.message}`);
+    }
+  }
+
+  // Fallback to API if both Redis and MySQL fail/empty
   try {
     const data = await arcadiaApi.getShops();
     const shopsList = Array.isArray(data.shops) ? data.shops : [];
@@ -467,22 +528,26 @@ const handleShopsRequest = async (req, res) => {
       })
     );
 
+    const payload = {
+      updatedAt: data.updatedAt || now,
+      shops: shopsList,
+    };
+
     // Save to Redis
     if (redisClient && redisClient.status === 'ready') {
       try {
-        await redisClient.setex('cache:shops', 300, JSON.stringify(data)); // 5 minutes TTL
+        await redisClient.setex('cache:shops', 25 * 60, JSON.stringify(payload));
       } catch (err) {
         logger.warn(`Failed to save Shops data to Redis: ${err.message}`);
       }
     }
 
-    // Save to local cache
-    localShopsCache = data;
+    localShopsCache = payload;
     localShopsCacheTime = now;
 
-    res.json(data);
+    res.json(payload);
   } catch (err) {
-    logger.error(`API Error fetching Shops: ${err.message}`);
+    logger.error(`API Error fetching Shops fallback: ${err.message}`);
     // If external call fails, serve stale local cache if exists
     if (localShopsCache) {
       return res.json(localShopsCache);
@@ -500,20 +565,18 @@ apiRouter.get('/heads/:username.png', async (req, res) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  const { headsDir, downloadHead } = require('./services/headManager.js');
-  const fs = require('fs');
-  const path = require('path');
-  const username = req.params.username.toLowerCase();
-  const filePath = path.join(headsDir, `${username}.png`);
+  const { getHeadBuffer } = require('./services/headManager.js');
+  const username = req.params.username;
 
-  if (fs.existsSync(filePath)) {
-    return res.sendFile(filePath);
-  }
-
-  // Download skin in-flight
-  const success = await downloadHead(username);
-  if (success && fs.existsSync(filePath)) {
-    return res.sendFile(filePath);
+  try {
+    const buffer = await getHeadBuffer(username);
+    if (buffer) {
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=1800');
+      return res.send(buffer);
+    }
+  } catch (err) {
+    logger.error(`Error serving head for ${username}: ${err.message}`);
   }
 
   res.status(404).send('Not Found');
@@ -617,3 +680,7 @@ module.exports = {
   app,
   startServer,
 };
+
+if (require.main === module) {
+  startServer();
+}

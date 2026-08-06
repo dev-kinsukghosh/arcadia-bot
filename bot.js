@@ -56,10 +56,24 @@ async function main() {
   const { startCurrencySync } = require('./src/services/currencySync.js');
   startCurrencySync(client);
 
+  const { startHeadsSync } = require('./src/services/headManager.js');
+  startHeadsSync(client);
+
+  const { startShopsSync } = require('./src/services/shopsSync.js');
+  startShopsSync(client);
+
+  const { startTownySync } = require('./src/services/townySync.js');
+  startTownySync(client);
+
   // 4. Start Express Webserver for Dashboard API
-  logger.info('Starting dashboard webserver...');
-  const { startServer } = require('./src/server.js');
-  startServer();
+  const isBotOnly = process.argv.includes('--bot-only');
+  if (!isBotOnly) {
+    logger.info('Starting dashboard webserver...');
+    const { startServer } = require('./src/server.js');
+    startServer();
+  } else {
+    logger.info('Dashboard webserver start skipped (bot-only mode).');
+  }
 
   // 5. Login to Discord
   logger.info('Logging in to Discord...');
@@ -67,8 +81,8 @@ async function main() {
     await client.login(config.discord.token);
   } catch (error) {
     logger.error('Failed to log in to Discord API:', error);
+    logger.warn('Please check your DISCORD_BOT_TOKEN in .env and ensure it is valid.');
     process.exit(1);
   }
 }
-
 main();

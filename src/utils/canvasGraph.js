@@ -422,6 +422,9 @@ function drawHistoryLineChart(dates, datasets, title) {
   const minRate = Math.min(...allRates, maxRate) * 0.95; // 5% padding
   const range = maxRate - minRate || 0.0001;
 
+  // Check if all data points are integers to format Y axis nicely
+  const isIntegerChart = allRates.every((val) => Number.isInteger(val));
+
   // Grid lines (horizontal)
   const gridLines = 5;
   ctx.strokeStyle = 'rgba(30, 41, 59, 0.3)';
@@ -441,7 +444,8 @@ function drawHistoryLineChart(dates, datasets, title) {
     ctx.stroke();
 
     // Draw Y labels
-    ctx.fillText(yVal.toFixed(3), startX - 10, y + 4);
+    const labelStr = isIntegerChart ? Math.round(yVal).toLocaleString() : yVal.toFixed(3);
+    ctx.fillText(labelStr, startX - 10, y + 4);
   }
 
   // Draw X axis dates (limit to 6 labels)

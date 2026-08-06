@@ -28,6 +28,10 @@ module.exports = {
           { name: 'Database Query Suite', value: 'db' },
           { name: 'Blacklist Functionality Suite', value: 'blacklist' },
           { name: 'Item Notifications Suite', value: 'notify' },
+          { name: 'Player Heads Manager Suite', value: 'heads' },
+          { name: 'Embed Helper Unit Suite', value: 'embed' },
+          { name: 'Player Shops Sync & Cache Suite', value: 'shops' },
+          { name: 'Towny Sync & History Suite', value: 'towny' },
           { name: 'Trigger Mock Stock Notification', value: 'mock_notify' }
         )
     ),
@@ -211,24 +215,36 @@ module.exports = {
       }
     }
 
-    let cmd = 'node tests/runner.js';
+    let cmd = 'npx vitest run';
     let suiteName = 'All Test Suites';
 
     if (testId === 'env') {
-      cmd = 'node tests/env.test.js';
+      cmd = 'npx vitest run tests/env.test.js';
       suiteName = 'Environment Connection Suite';
     } else if (testId === 'api') {
-      cmd = 'node tests/api.test.js';
+      cmd = 'npx vitest run tests/api.test.js';
       suiteName = 'ArcadiaMC API Connection Suite';
     } else if (testId === 'db') {
-      cmd = 'node tests/database.test.js';
+      cmd = 'npx vitest run tests/database.test.js';
       suiteName = 'Database Query Suite';
     } else if (testId === 'blacklist') {
-      cmd = 'node tests/blacklist.test.js';
+      cmd = 'npx vitest run tests/blacklist.test.js';
       suiteName = 'Blacklist Functionality Suite';
     } else if (testId === 'notify') {
-      cmd = 'node tests/notify.test.js';
+      cmd = 'npx vitest run tests/notify.test.js';
       suiteName = 'Item Notifications Suite';
+    } else if (testId === 'heads') {
+      cmd = 'npx vitest run tests/heads.test.js';
+      suiteName = 'Player Heads Manager Suite';
+    } else if (testId === 'embed') {
+      cmd = 'npx vitest run tests/embedHelper.test.js';
+      suiteName = 'Embed Helper Unit Suite';
+    } else if (testId === 'shops') {
+      cmd = 'npx vitest run tests/shops.test.js';
+      suiteName = 'Player Shops Sync & Cache Suite';
+    } else if (testId === 'towny') {
+      cmd = 'npx vitest run tests/towny.test.js';
+      suiteName = 'Towny Sync & History Suite';
     }
 
     logger.info(`Developer ${interaction.user.tag} triggered execution of suite: ${suiteName}`);

@@ -7,6 +7,8 @@ const {
   boolean,
   primaryKey,
   date,
+  customType,
+  text,
 } = require('drizzle-orm/mysql-core');
 
 const convoyItems = mysqlTable('convoy_items', {
@@ -51,6 +53,7 @@ const currencies = mysqlTable('currencies', {
   standardItem: varchar('standard_item', { length: 100 }).notNull(),
   nation: varchar('nation', { length: 255 }).notNull(),
   creatorUuid: varchar('creator_uuid', { length: 100 }).notNull(),
+  creatorName: varchar('creator_name', { length: 255 }).default('Unknown').notNull(),
   arcPerUnitBase: decimal('arc_per_unit_base', { precision: 12, scale: 4 }).notNull(),
   arcPerUnitLive: decimal('arc_per_unit_live', { precision: 12, scale: 4 }).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
@@ -77,6 +80,48 @@ const internal = mysqlTable('internal', {
   value: varchar('value', { length: 500 }).notNull(),
 });
 
+const mediumBlob = customType({
+  dataType() {
+    return 'mediumblob';
+  },
+});
+
+const playerHeads = mysqlTable('player_heads', {
+  uuid: varchar('uuid', { length: 36 }).primaryKey(),
+  username: varchar('username', { length: 255 }).notNull(),
+  pngData: mediumBlob('png_data').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+const playerShops = mysqlTable('player_shops', {
+  key: varchar('key', { length: 255 }).primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  owner: varchar('owner', { length: 255 }),
+  ownerName: varchar('owner_name', { length: 255 }),
+  world: varchar('world', { length: 255 }),
+  plotX: int('plot_x'),
+  plotZ: int('plot_z'),
+  currency: varchar('currency', { length: 100 }),
+  balances: text('balances'),
+  sellListings: text('sell_listings'),
+  buyListings: text('buy_listings'),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+const townyHistory = mysqlTable(
+  'towny_history',
+  {
+    name: varchar('name', { length: 255 }).notNull(), // town or nation slug/name
+    type: varchar('type', { length: 50 }).notNull(), // 'town' or 'nation'
+    date: date('date').notNull(),
+    residents: int('residents').notNull(),
+    chunks: int('chunks').notNull(), // claimed chunks for towns, total chunks for nations
+    townsCount: int('towns_count').default(0).notNull(), // towns count for nations, 0 for towns
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+  },
+  (table) => [primaryKey({ columns: [table.name, table.type, table.date] })]
+);
+
 module.exports = {
   convoyItems,
   blacklist,
@@ -85,4 +130,7 @@ module.exports = {
   currencies,
   currencyHistory,
   internal,
+  playerHeads,
+  playerShops,
+  townyHistory,
 };

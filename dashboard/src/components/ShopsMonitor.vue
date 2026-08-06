@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import { storeToRefs } from 'pinia';
+import { useShopsStore } from '../stores/shopsStore.js';
 
 const props = defineProps({
   apiBase: {
@@ -9,30 +10,23 @@ const props = defineProps({
   },
 });
 
-const shops = ref([]);
-const isLoading = ref(true);
-const fetchError = ref(null);
-const searchQuery = ref('');
-const itemSearchQuery = ref('');
-const selectedCategory = ref('all'); // 'all', 'selling', 'buying'
+const shopsStore = useShopsStore();
+const {
+  shops,
+  isLoading,
+  fetchError,
+  searchQuery,
+  itemSearchQuery,
+  selectedCategory,
+  selectedShop,
+  isModalOpen,
+} = storeToRefs(shopsStore);
 
-// Selected shop details modal state
-const selectedShop = ref(null);
-const isModalOpen = ref(false);
-
-async function fetchShops() {
-  isLoading.value = true;
-  fetchError.value = null;
-  try {
-    const res = await axios.get(`${props.apiBase}/shops`);
-    shops.value = Array.isArray(res.data.shops) ? res.data.shops : [];
-  } catch (error) {
-    console.error('Failed to fetch shops:', error);
-    fetchError.value = 'Failed to fetch player shops. Is the backend server online?';
-  } finally {
-    isLoading.value = false;
+onMounted(() => {
+  if (shops.value.length === 0) {
+    shopsStore.fetchShops(props.apiBase);
   }
-}
+});
 
 function openShopDetails(shop) {
   selectedShop.value = shop;
@@ -86,6 +80,16 @@ function fallbackCopyText(text) {
   document.body.removeChild(textArea);
 }
 
+// Track failed head image loads to prevent infinite retry loops
+const failedAvatars = ref({});
+function handleAvatarError(key) {
+  failedAvatars.value[key] = true;
+}
+function getOwnerInitial(shop) {
+  const name = shop.ownerName || shop.owner || '?';
+  return name.charAt(0).toUpperCase();
+}
+
 // Filter and search logic
 const filteredShops = computed(() => {
   let result = [...shops.value];
@@ -134,10 +138,6 @@ function formatCurrency(val, currency = 'ARC') {
   if (isNaN(num)) return '0';
   return `${num.toLocaleString('en-US', { maximumFractionDigits: 3 })} ${currency.toUpperCase()}`;
 }
-
-onMounted(() => {
-  fetchShops();
-});
 </script>
 
 <template>
@@ -150,13 +150,6 @@ onMounted(() => {
           Search player shops, look up listings, and find town coords to trade in-game.
         </p>
       </div>
-      <button
-        @click="fetchShops"
-        class="flex items-center gap-2 rounded-lg border border-slate-800 bg-[#0d0f17] px-3.5 py-2 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-900"
-      >
-        <font-awesome-icon icon="rotate" :class="{ 'animate-spin': isLoading }" />
-        Refresh Database
-      </button>
     </div>
 
     <!-- Filters & Search Controls -->
@@ -192,35 +185,35 @@ onMounted(() => {
       <!-- Category Selector -->
       <div class="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-[#07080c] p-1">
         <button
-          @click="selectedCategory = 'all'"
           :class="
             selectedCategory === 'all'
               ? 'bg-slate-800 text-white'
               : 'text-slate-400 hover:text-slate-200'
           "
           class="flex-1 rounded-lg py-1.5 text-[10px] font-bold uppercase transition-all duration-150"
+          @click="selectedCategory = 'all'"
         >
           All
         </button>
         <button
-          @click="selectedCategory = 'selling'"
           :class="
             selectedCategory === 'selling'
               ? 'bg-slate-800 text-white'
               : 'text-slate-400 hover:text-slate-200'
           "
           class="flex-1 rounded-lg py-1.5 text-[10px] font-bold uppercase transition-all duration-150"
+          @click="selectedCategory = 'selling'"
         >
           Selling
         </button>
         <button
-          @click="selectedCategory = 'buying'"
           :class="
             selectedCategory === 'buying'
               ? 'bg-slate-800 text-white'
               : 'text-slate-400 hover:text-slate-200'
           "
           class="flex-1 rounded-lg py-1.5 text-[10px] font-bold uppercase transition-all duration-150"
+          @click="selectedCategory = 'buying'"
         >
           Buying
         </button>
@@ -235,7 +228,9 @@ onMounted(() => {
       <font-awesome-icon icon="circle-exclamation" class="mt-0.5 text-red-400" />
       <div>
         <h4 class="text-sm font-bold">API Fetch Failed</h4>
-        <p class="mt-0.5 text-xs leading-relaxed text-red-400/90">{{ fetchError }}</p>
+        <p class="mt-0.5 text-xs leading-relaxed text-red-400/90">
+          {{ fetchError }}
+        </p>
       </div>
     </div>
 
@@ -251,8 +246,8 @@ onMounted(() => {
         v-for="(shop, idx) in filteredShops"
         :key="shop.name"
         :style="{ '--card-idx': idx }"
-        @click="openShopDetails(shop)"
         class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800/80 bg-[#11131c]/40 p-4 shadow-xl backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-700/80 hover:bg-[#11131c]/60 cursor-pointer"
+        @click="openShopDetails(shop)"
       >
         <div>
           <!-- Header -->
@@ -269,16 +264,20 @@ onMounted(() => {
 
           <!-- Owner Head & Username -->
           <div class="mt-2.5 flex items-center gap-2">
-            <img
-              :src="apiBase + '/heads/' + (shop.ownerName || shop.owner) + '.png'"
-              alt=""
-              class="h-5 w-5 rounded bg-slate-950 border border-slate-800"
-              @error="
-                (e) => {
-                  e.target.src = apiBase + '/heads/steve.png';
-                }
-              "
-            />
+            <div
+              class="h-5 w-5 rounded bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden relative"
+            >
+              <span class="text-[8px] font-bold text-slate-500 select-none z-0">{{
+                getOwnerInitial(shop)
+              }}</span>
+              <img
+                v-if="!failedAvatars['card-' + shop.owner]"
+                :src="apiBase + '/heads/' + (shop.ownerName || shop.owner) + '.png'"
+                alt=""
+                class="absolute inset-0 h-full w-full object-cover z-10"
+                @error="handleAvatarError('card-' + shop.owner)"
+              />
+            </div>
             <div class="flex flex-col">
               <span class="text-xs font-semibold text-slate-300">{{
                 shop.ownerName || 'Shop Owner'
@@ -296,8 +295,8 @@ onMounted(() => {
               <span>X: {{ shop.plotX }} · Z: {{ shop.plotZ }}</span>
             </div>
             <button
-              @click.stop="copyCoordinates(shop.plotX, shop.plotZ)"
               class="rounded bg-slate-900/60 px-1.5 py-0.5 text-[9px] font-bold text-slate-400 transition-all hover:bg-slate-800 hover:text-blue-400"
+              @click.stop="copyCoordinates(shop.plotX, shop.plotZ)"
             >
               {{ copiedText === `${shop.plotX}, ${shop.plotZ}` ? 'Copied!' : 'Copy' }}
             </button>
@@ -361,16 +360,22 @@ onMounted(() => {
             class="flex items-center justify-between border-b border-slate-800 bg-[#11131c] px-6 py-4"
           >
             <div class="flex items-center gap-3">
-              <img
-                :src="apiBase + '/heads/' + (selectedShop.ownerName || selectedShop.owner) + '.png'"
-                alt=""
-                class="h-8 w-8 rounded bg-slate-950 border border-slate-800"
-                @error="
-                  (e) => {
-                    e.target.src = apiBase + '/heads/steve.png';
-                  }
-                "
-              />
+              <div
+                class="h-8 w-8 rounded bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden relative"
+              >
+                <span class="text-xs font-bold text-slate-500 select-none z-0">{{
+                  getOwnerInitial(selectedShop)
+                }}</span>
+                <img
+                  v-if="!failedAvatars['modal-' + selectedShop.owner]"
+                  :src="
+                    apiBase + '/heads/' + (selectedShop.ownerName || selectedShop.owner) + '.png'
+                  "
+                  alt=""
+                  class="absolute inset-0 h-full w-full object-cover z-10"
+                  @error="handleAvatarError('modal-' + selectedShop.owner)"
+                />
+              </div>
               <div>
                 <h3 class="text-base font-bold text-white leading-tight">
                   🛒 Shop Details: {{ selectedShop.name.replace(/_/g, ' ') }}
@@ -388,8 +393,8 @@ onMounted(() => {
               </div>
             </div>
             <button
-              @click="closeModal"
               class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-slate-400 transition-all hover:bg-slate-800 hover:text-white"
+              @click="closeModal"
             >
               <font-awesome-icon icon="times" />
             </button>
@@ -409,8 +414,8 @@ onMounted(() => {
                     X: {{ selectedShop.plotX }} , Z: {{ selectedShop.plotZ }}
                   </span>
                   <button
-                    @click="copyCoordinates(selectedShop.plotX, selectedShop.plotZ)"
                     class="rounded bg-slate-800 px-2 py-1 text-[10px] font-bold text-blue-400 hover:bg-slate-750"
+                    @click="copyCoordinates(selectedShop.plotX, selectedShop.plotZ)"
                   >
                     {{
                       copiedText === `${selectedShop.plotX}, ${selectedShop.plotZ}`
@@ -460,7 +465,9 @@ onMounted(() => {
                     class="flex items-center justify-between rounded-lg border border-slate-900 bg-slate-950/40 p-2.5 text-xs"
                   >
                     <div>
-                      <p class="font-semibold text-slate-200">{{ formatItemName(list.item) }}</p>
+                      <p class="font-semibold text-slate-200">
+                        {{ formatItemName(list.item) }}
+                      </p>
                       <p class="text-[10px] text-slate-500">Stock: {{ list.amount }} units</p>
                     </div>
                     <div class="font-mono font-bold text-emerald-400">
@@ -490,7 +497,9 @@ onMounted(() => {
                     class="flex items-center justify-between rounded-lg border border-slate-900 bg-slate-950/40 p-2.5 text-xs"
                   >
                     <div>
-                      <p class="font-semibold text-slate-200">{{ formatItemName(list.item) }}</p>
+                      <p class="font-semibold text-slate-200">
+                        {{ formatItemName(list.item) }}
+                      </p>
                       <p class="text-[10px] text-slate-500">Wants: {{ list.amount }} units</p>
                     </div>
                     <div class="font-mono font-bold text-blue-400">
@@ -511,8 +520,8 @@ onMounted(() => {
           <!-- Footer -->
           <div class="flex justify-end border-t border-slate-800 bg-[#11131c] px-6 py-3.5">
             <button
-              @click="closeModal"
               class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-blue-500"
+              @click="closeModal"
             >
               Close
             </button>

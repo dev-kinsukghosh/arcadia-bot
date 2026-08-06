@@ -5,6 +5,50 @@ const redis = require('../utils/redis.js');
 const { db } = require('../utils/db.js');
 const { currencies, currencyHistory, internal } = require('../db/schema.js');
 const { and, eq, lt } = require('drizzle-orm');
+const axios = require('axios');
+
+const resolvedUsernames = new Map();
+
+async function resolveUuidToUsername(uuid) {
+  if (!uuid) return 'Unknown';
+  const cleanUuid = uuid.replace(/-/g, '').toLowerCase();
+
+  if (resolvedUsernames.has(cleanUuid)) {
+    return resolvedUsernames.get(cleanUuid);
+  }
+
+  if (redis && redis.status === 'ready') {
+    try {
+      const cachedName = await redis.get(`uuid:name:${cleanUuid}`);
+      if (cachedName) {
+        resolvedUsernames.set(cleanUuid, cachedName);
+        return cachedName;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  try {
+    const res = await axios.get(
+      `https://sessionserver.mojang.com/session/minecraft/profile/${cleanUuid}`,
+      { timeout: 3000 }
+    );
+    if (res.data && res.data.name) {
+      const username = res.data.name;
+      resolvedUsernames.set(cleanUuid, username);
+
+      if (redis && redis.status === 'ready') {
+        await redis.setex(`uuid:name:${cleanUuid}`, 7 * 24 * 60 * 60, username);
+      }
+      return username;
+    }
+  } catch (err) {
+    logger.warn(`Failed Mojang profile lookup for clean UUID ${cleanUuid}: ${err.message}`);
+  }
+
+  return 'Unknown';
+}
 
 const SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const HISTORY_RETENTION_DAYS = 120;
@@ -90,6 +134,7 @@ async function upsertCurrencies(currencyList) {
             standardItem: c.standardItem || 'UNKNOWN',
             nation: c.nation || 'Unknown',
             creatorUuid: c.creator || '',
+            creatorName: c.creatorName || 'Unknown',
             arcPerUnitBase: String(parseFloat(c.arcPerUnitBase) || 0),
             arcPerUnitLive: String(parseFloat(c.arcPerUnitLive) || 0),
           })
@@ -101,6 +146,7 @@ async function upsertCurrencies(currencyList) {
           standardItem: c.standardItem || 'UNKNOWN',
           nation: c.nation || 'Unknown',
           creatorUuid: c.creator || '',
+          creatorName: c.creatorName || 'Unknown',
           arcPerUnitBase: String(parseFloat(c.arcPerUnitBase) || 0),
           arcPerUnitLive: String(parseFloat(c.arcPerUnitLive) || 0),
         });
@@ -238,6 +284,17 @@ async function syncCurrencies() {
       logger.error('Invalid currencies API response format (expected currencies array).');
       return;
     }
+
+    // Resolve creator usernames in parallel
+    await Promise.all(
+      data.currencies.map(async (c) => {
+        if (c.creator) {
+          c.creatorName = await resolveUuidToUsername(c.creator);
+        } else {
+          c.creatorName = 'Unknown';
+        }
+      })
+    );
 
     // Update in-memory cache
     currencyCache = {

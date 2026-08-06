@@ -9,6 +9,9 @@ const {
 } = require('discord.js');
 const { arcadiaApi } = require('../../utils/apiClient.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
+const redisClient = require('../../utils/redis.js');
+const { db } = require('../../utils/db.js');
+const { playerShops } = require('../../db/schema.js');
 
 const userLastAutocomplete = new Map();
 
@@ -22,6 +25,51 @@ async function fetchShopsData() {
   if (shopsCache && now - lastCacheFetch < CACHE_TTL) {
     return shopsCache;
   }
+
+  // 1. Try Redis cache
+  if (redisClient && redisClient.status === 'ready') {
+    try {
+      const cached = await redisClient.get('cache:shops');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.shops)) {
+          shopsCache = parsed.shops;
+          lastCacheFetch = now;
+          return shopsCache;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2. Try MySQL DB
+  if (db) {
+    try {
+      const dbShops = await db.select().from(playerShops);
+      if (dbShops && dbShops.length > 0) {
+        shopsCache = dbShops.map((shop) => ({
+          key: shop.key,
+          name: shop.name,
+          owner: shop.owner,
+          ownerName: shop.ownerName || 'Unknown',
+          world: shop.world,
+          plotX: shop.plotX,
+          plotZ: shop.plotZ,
+          currency: shop.currency,
+          balances: shop.balances ? JSON.parse(shop.balances) : {},
+          sellListings: shop.sellListings ? JSON.parse(shop.sellListings) : [],
+          buyListings: shop.buyListings ? JSON.parse(shop.buyListings) : [],
+        }));
+        lastCacheFetch = now;
+        return shopsCache;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 3. Fallback to API
   try {
     const data = await arcadiaApi.getShops();
     if (data && Array.isArray(data.shops)) {
@@ -31,8 +79,8 @@ async function fetchShopsData() {
     }
   } catch {
     if (shopsCache) return shopsCache;
-    return [];
   }
+
   return [];
 }
 

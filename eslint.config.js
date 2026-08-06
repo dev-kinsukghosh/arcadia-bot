@@ -1,10 +1,13 @@
 const js = require('@eslint/js');
 const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended');
 const globals = require('globals');
+const pluginVue = require('eslint-plugin-vue');
+const eslintConfigPrettier = require('eslint-config-prettier');
 
 module.exports = [
   js.configs.recommended,
   eslintPluginPrettierRecommended,
+  ...pluginVue.configs['flat/recommended'],
   {
     languageOptions: {
       ecmaVersion: 'latest',
@@ -20,12 +23,36 @@ module.exports = [
     },
   },
   {
-    files: ['dashboard/**/*.js', 'dashboard/vite.config.mjs'],
+    files: ['dashboard/**/*.js', 'dashboard/**/*.vue', 'dashboard/vite.config.mjs'],
     languageOptions: {
       sourceType: 'module',
       globals: {
         ...globals.browser,
         ...globals.node,
+      },
+    },
+  },
+  {
+    files: ['**/*.vue'],
+    languageOptions: {
+      parserOptions: {
+        sourceType: 'module',
+      },
+    },
+  },
+  {
+    files: ['tests/**/*.js'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
       },
     },
   },
@@ -40,4 +67,5 @@ module.exports = [
       'GEMINI.md',
     ],
   },
+  eslintConfigPrettier,
 ];

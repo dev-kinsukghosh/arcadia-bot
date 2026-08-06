@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
+import { onMounted, computed } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useConvoyStore } from '../stores/convoyStore.js';
 
 const props = defineProps({
   apiBase: {
@@ -9,32 +10,14 @@ const props = defineProps({
   },
 });
 
-const convoyItems = ref([]);
-const isLoading = ref(true);
-const fetchError = ref(null);
-const searchQuery = ref('');
-const activeRarityFilter = ref('all');
-const activeSubView = ref('live'); // 'live' or 'all'
-
-async function fetchConvoyData() {
-  isLoading.value = true;
-  fetchError.value = null;
-  try {
-    const res = await axios.get(`${props.apiBase}/currencies/convoy/all`);
-    convoyItems.value = res.data.map((item) => ({
-      ...item,
-      imageError: false,
-    }));
-  } catch (err) {
-    console.error('Failed to fetch convoy stock:', err);
-    fetchError.value = 'Could not load convoy stock trades. Is the backend server running?';
-  } finally {
-    isLoading.value = false;
-  }
-}
+const convoyStore = useConvoyStore();
+const { convoyItems, isLoading, fetchError, searchQuery, activeRarityFilter, activeSubView } =
+  storeToRefs(convoyStore);
 
 onMounted(() => {
-  fetchConvoyData();
+  if (convoyItems.value.length === 0) {
+    convoyStore.fetchConvoyData();
+  }
 });
 
 // Helper to format item name (e.g. OAK_CHEST_BOAT -> Oak Chest Boat)
@@ -177,6 +160,20 @@ function getRarityDotBg(rarity) {
 function handleImageError(item) {
   item.imageError = true;
 }
+
+function formatLastSeen(timestamp) {
+  if (!timestamp) return 'Never';
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (60 * 1000));
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
 </script>
 
 <template>
@@ -196,8 +193,8 @@ function handleImageError(item) {
       </div>
 
       <button
-        @click="fetchConvoyData"
         class="flex cursor-pointer items-center gap-2 self-start rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800 sm:self-auto"
+        @click="fetchConvoyData"
       >
         <font-awesome-icon icon="rotate" :spin="isLoading" />
         Sync Stock
@@ -207,24 +204,24 @@ function handleImageError(item) {
     <!-- Segmented Control View Selector -->
     <div class="flex max-w-[280px] rounded-xl border border-slate-900 bg-slate-950/85 p-1">
       <button
-        @click="activeSubView = 'live'"
         :class="
           activeSubView === 'live'
             ? 'bg-slate-900 text-white shadow-md'
             : 'text-slate-400 hover:text-slate-200'
         "
         class="flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-center text-[10px] font-semibold tracking-wider uppercase transition-all duration-200"
+        @click="activeSubView = 'live'"
       >
         Convoy Live
       </button>
       <button
-        @click="activeSubView = 'all'"
         :class="
           activeSubView === 'all'
             ? 'bg-slate-900 text-white shadow-md'
             : 'text-slate-400 hover:text-slate-200'
         "
         class="flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-center text-[10px] font-semibold tracking-wider uppercase transition-all duration-200"
+        @click="activeSubView = 'all'"
       >
         All Items
       </button>
@@ -241,7 +238,9 @@ function handleImageError(item) {
       class="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-center text-red-400"
     >
       <font-awesome-icon icon="triangle-exclamation" class="mb-2 text-2xl" />
-      <h4 class="text-sm font-semibold">{{ fetchError }}</h4>
+      <h4 class="text-sm font-semibold">
+        {{ fetchError }}
+      </h4>
     </div>
 
     <!-- Active Sections -->
@@ -254,8 +253,8 @@ function handleImageError(item) {
               <span class="relative flex h-2 w-2">
                 <span
                   class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
-                ></span>
-                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                />
+                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
               <h3 class="text-xs font-bold tracking-wider text-slate-200 uppercase">
                 Live Shop Trades
@@ -289,7 +288,7 @@ function handleImageError(item) {
                 <span
                   class="h-1.5 w-1.5 animate-pulse rounded-full"
                   :class="getRarityDotBg(rarity)"
-                ></span>
+                />
                 {{ rarity }} Tier
               </h4>
 
@@ -329,9 +328,9 @@ function handleImageError(item) {
                     <img
                       v-if="!item.imageError"
                       :src="props.apiBase + '/icons/' + item.item + '.png'"
-                      @error="handleImageError(item)"
                       class="image-rendering-pixelated h-14 w-14 object-contain transition-transform duration-300 group-hover:scale-110"
                       :alt="item.item"
+                      @error="handleImageError(item)"
                     />
                     <div v-else class="flex flex-col items-center gap-1.5 text-slate-600">
                       <font-awesome-icon icon="cube" class="text-3xl text-slate-600" />
@@ -395,7 +394,7 @@ function handleImageError(item) {
                                 : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]',
                           ]"
                           :style="{ width: (item.stock / item.maxStock) * 100 + '%' }"
-                        ></div>
+                        />
                       </div>
                     </div>
                   </div>
@@ -425,11 +424,11 @@ function handleImageError(item) {
                   Catalog Filters
                 </h4>
                 <button
+                  class="cursor-pointer text-[9px] font-semibold tracking-wider text-slate-500 uppercase transition-colors duration-150 hover:text-slate-300"
                   @click="
                     searchQuery = '';
                     activeRarityFilter = 'all';
                   "
-                  class="cursor-pointer text-[9px] font-semibold tracking-wider text-slate-500 uppercase transition-colors duration-150 hover:text-slate-300"
                 >
                   Reset
                 </button>
@@ -448,8 +447,8 @@ function handleImageError(item) {
                     <font-awesome-icon icon="search" />
                   </span>
                   <input
-                    type="text"
                     v-model="searchQuery"
+                    type="text"
                     placeholder="Search item name..."
                     class="block w-full rounded-lg border border-slate-800 bg-slate-950 py-1.5 pr-3 pl-8 text-xs text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
@@ -464,13 +463,13 @@ function handleImageError(item) {
                 >
                 <div class="space-y-1">
                   <button
-                    @click="activeRarityFilter = 'all'"
                     :class="
                       activeRarityFilter === 'all'
                         ? 'border-blue-500/30 bg-blue-600/15 text-blue-300'
                         : 'border-slate-800/60 bg-slate-950/40 text-slate-400 hover:text-slate-200'
                     "
                     class="flex w-full cursor-pointer items-center justify-between rounded-lg border px-3 py-1.5 text-left text-xs font-medium transition-all duration-150"
+                    @click="activeRarityFilter = 'all'"
                   >
                     <span>All Rarities</span>
                     <span
@@ -481,13 +480,13 @@ function handleImageError(item) {
                   <button
                     v-for="rarity in uniqueRarities.filter((r) => r !== 'all')"
                     :key="'filter-' + rarity"
-                    @click="activeRarityFilter = rarity"
                     :class="
                       activeRarityFilter === rarity
                         ? 'border-blue-500/30 bg-blue-600/15 text-blue-300'
                         : 'border-slate-800/60 bg-slate-950/40 text-slate-400 hover:text-slate-200'
                     "
                     class="flex w-full cursor-pointer items-center justify-between rounded-lg border px-3 py-1.5 text-left text-xs font-medium capitalize transition-all duration-150"
+                    @click="activeRarityFilter = rarity"
                   >
                     <span :class="getRarityTextClass(rarity)">{{ rarity.toLowerCase() }}</span>
                     <span
@@ -537,7 +536,7 @@ function handleImageError(item) {
                     class="flex items-center gap-2 border-b border-slate-900 pb-1 text-xs font-bold tracking-wider uppercase"
                     :class="getRarityTextClass(rarity)"
                   >
-                    <span class="h-1.5 w-1.5 rounded-full" :class="getRarityDotBg(rarity)"></span>
+                    <span class="h-1.5 w-1.5 rounded-full" :class="getRarityDotBg(rarity)" />
                     {{ rarity }} Items
                     <span class="ml-1 font-mono text-[9px] font-normal text-slate-500"
                       >({{ items.length }})</span
@@ -592,9 +591,9 @@ function handleImageError(item) {
                         <img
                           v-if="!item.imageError"
                           :src="props.apiBase + '/icons/' + item.item + '.png'"
-                          @error="handleImageError(item)"
                           class="image-rendering-pixelated h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-110"
                           :alt="item.item"
+                          @error="handleImageError(item)"
                         />
                         <div v-else class="flex flex-col items-center gap-1 text-slate-600">
                           <font-awesome-icon icon="cube" class="text-2xl text-slate-600" />
@@ -672,8 +671,16 @@ function handleImageError(item) {
                                   (!item.current_p ? '100' : (item.stock / item.maxStock) * 100) +
                                   '%',
                               }"
-                            ></div>
+                            />
                           </div>
+                        </div>
+
+                        <!-- Last Seen -->
+                        <div
+                          class="mt-1 flex items-center justify-between text-[8px] font-medium text-slate-500"
+                        >
+                          <span>Last Seen</span>
+                          <span class="font-mono">{{ formatLastSeen(item.updatedAt) }}</span>
                         </div>
                       </div>
                     </div>

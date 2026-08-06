@@ -1,7 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { storeToRefs } from 'pinia';
 import axios from 'axios';
+import { useMarketStore } from './stores/marketStore.js';
 
 // Retrieve API URL from Vite environment variables (falls back to relative path '')
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -45,34 +47,19 @@ function navigate(path) {
   router.push(path);
   smoothScrollToTop(600);
 }
-const currenciesStats = ref([]);
-const isLoading = ref(true);
-const fetchError = ref(null);
+const marketStore = useMarketStore();
+const { currenciesStats, isLoading, fetchError } = storeToRefs(marketStore);
 
 // --- API FETCHING ---
-async function fetchLatestStats() {
-  isLoading.value = true;
-  fetchError.value = null;
-  try {
-    const savedMarketDays = localStorage.getItem('market:days');
-    const parsedMarketDays = savedMarketDays ? parseInt(savedMarketDays, 10) : 30;
-    const limit = isNaN(parsedMarketDays) ? 30 : parsedMarketDays;
-
-    const res = await axios.get(`${API_BASE}/currencies/stats?days=${limit}`);
-    currenciesStats.value = res.data;
-  } catch (error) {
-    console.error('API Fetch Error:', error);
-    fetchError.value = 'Failed to fetch currency records. Is the bot server online?';
-  } finally {
-    isLoading.value = false;
-  }
+function fetchLatestStats() {
+  marketStore.fetchLatestStats();
 }
 
 // Establish WebSocket connection for real-time updates
 let socket = null;
 function initWebSocket() {
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  let wsUrl = '';
+  let wsUrl;
 
   const envApiUrl = import.meta.env.VITE_API_URL;
   if (envApiUrl && envApiUrl.startsWith('http')) {
@@ -164,73 +151,73 @@ onMounted(() => {
 
       <nav class="flex items-center gap-1 rounded-xl border border-slate-900 bg-slate-950/80 p-1">
         <button
-          @click.prevent="navigate('/live-market')"
           :class="
             route.path === '/live-market' || route.path === '/monitor' || route.path === '/'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
           class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          @click.prevent="navigate('/live-market')"
         >
           <font-awesome-icon icon="coins" />
           Live Currency Market
         </button>
         <button
-          @click.prevent="navigate('/currency-history')"
           :class="
             route.path === '/currency-history'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
           class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          @click.prevent="navigate('/currency-history')"
         >
           <font-awesome-icon icon="chart-line" />
           Currency History
         </button>
         <button
-          @click.prevent="navigate('/exchange')"
           :class="
             route.path === '/exchange'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
           class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          @click.prevent="navigate('/exchange')"
         >
           <font-awesome-icon icon="calculator" />
           Exchange
         </button>
         <button
-          @click.prevent="navigate('/convoy')"
           :class="
             route.path === '/convoy'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
           class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          @click.prevent="navigate('/convoy')"
         >
           <font-awesome-icon icon="cube" />
           Convoy Shop
         </button>
         <button
-          @click.prevent="navigate('/towny')"
           :class="
             route.path === '/towny'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
           class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          @click.prevent="navigate('/towny')"
         >
           <font-awesome-icon icon="globe" />
           Towny
         </button>
         <button
-          @click.prevent="navigate('/shops')"
           :class="
             route.path === '/shops'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
           "
           class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          @click.prevent="navigate('/shops')"
         >
           <font-awesome-icon icon="shop" />
           Player Shops
@@ -248,7 +235,9 @@ onMounted(() => {
         <font-awesome-icon icon="circle-exclamation" class="mt-0.5 text-red-400" />
         <div>
           <h4 class="text-sm font-bold">Synchronicity Issue</h4>
-          <p class="mt-0.5 text-xs leading-relaxed text-red-400/90">{{ fetchError }}</p>
+          <p class="mt-0.5 text-xs leading-relaxed text-red-400/90">
+            {{ fetchError }}
+          </p>
         </div>
       </div>
 
@@ -262,7 +251,7 @@ onMounted(() => {
         >
           <div
             class="h-10 w-10 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500"
-          ></div>
+          />
           <div class="text-center">
             <h4 class="text-sm font-semibold text-slate-300">Synchronizing Telemetry Nodes</h4>
             <p class="mt-1 text-xs text-slate-500">
@@ -293,19 +282,19 @@ onMounted(() => {
         <div>ArcadiaMC Community Bot. Built by webdevkin</div>
         <div class="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
           <span class="flex items-center gap-1">
-            <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500"></span>
+            <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" />
             System Online
           </span>
           <span class="font-mono text-[10px]">v1.1.5</span>
           <button
-            @click="openBotInvite"
             class="relative flex items-center gap-2 rounded-lg border border-indigo-500/30 bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_0_10px_rgba(99,102,241,0.3)] transition-all duration-300 hover:scale-105 hover:border-indigo-400 active:scale-95 group overflow-hidden animate-pulse-glow"
             title="Add Discord Bot to your Guild"
+            @click="openBotInvite"
           >
             <!-- Shine transition overlay -->
             <span
               class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shine"
-            ></span>
+            />
 
             <!-- Discord SVG Icon -->
             <svg

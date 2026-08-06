@@ -166,7 +166,7 @@ const chartDatasets = computed(() => {
     }
 
     // Align values with chartLabels, default to 0 if not present
-    const curr = props.currencies.find(c => c.id === data.currencyId);
+    const curr = props.currencies.find((c) => c.id === data.currencyId);
     const rates = chartLabels.value.map((dateLabel) => {
       return recordsMap[dateLabel] ?? curr?.baseRate ?? 0;
     });
@@ -358,24 +358,24 @@ const chartOptions = computed(() => ({
         <!-- Chart Mode Toggle Buttons (Side-by-side Segmented Control) -->
         <div class="flex gap-0.5 rounded-lg border border-slate-900 bg-slate-950 p-0.5">
           <button
-            @click="chartMode = 'raw'"
             :class="
               chartMode === 'raw'
                 ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
                 : 'text-slate-400 hover:text-slate-200'
             "
             class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 select-none"
+            @click="chartMode = 'raw'"
           >
             Raw Rate (₳)
           </button>
           <button
-            @click="chartMode = 'percentage'"
             :class="
               chartMode === 'percentage'
                 ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
                 : 'text-slate-400 hover:text-slate-200'
             "
             class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 select-none"
+            @click="chartMode = 'percentage'"
           >
             Compare to Base (%)
           </button>
@@ -422,8 +422,8 @@ const chartOptions = computed(() => ({
           />
           <button
             v-if="searchQuery"
-            @click="searchQuery = ''"
             class="absolute top-1/2 right-2.5 -translate-y-1/2 text-xs text-slate-500 transition-all duration-200 hover:scale-110 hover:text-slate-300"
+            @click="searchQuery = ''"
           >
             <font-awesome-icon icon="times" />
           </button>
@@ -436,18 +436,18 @@ const chartOptions = computed(() => ({
         >
           <div
             v-for="curr in filteredCurrencies"
-            :key="curr.id"
             :id="'item-' + curr.id"
+            :key="curr.id"
             class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors duration-150 hover:bg-slate-950"
             @click="toggleSelection(curr.id)"
           >
             <input
-              type="checkbox"
               :id="'check-' + curr.id"
+              type="checkbox"
               :value="curr.id"
               :checked="selectedCurrencies.includes(curr.id)"
-              @change.stop
               class="h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900"
+              @change.stop
             />
             <span class="truncate text-sm font-medium text-slate-300 select-none">
               {{ curr.name }}

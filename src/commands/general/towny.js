@@ -4,10 +4,20 @@ const {
   AttachmentBuilder,
   ApplicationIntegrationType,
   InteractionContextType,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
 } = require('discord.js');
 const { arcadiaApi } = require('../../utils/apiClient.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
-const { drawTopChart, drawCompareChart } = require('../../utils/canvasGraph.js');
+const {
+  drawTopChart,
+  drawCompareChart,
+  drawHistoryLineChart,
+} = require('../../utils/canvasGraph.js');
+const { db } = require('../../utils/db.js');
+const { townyHistory } = require('../../db/schema.js');
+const { and, eq, gte, asc } = require('drizzle-orm');
 
 // Map for autocomplete debouncing per user (500ms)
 const userLastAutocomplete = new Map();
@@ -111,6 +121,49 @@ module.exports = {
             .setRequired(true)
             .setAutocomplete(true)
         )
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('history')
+        .setDescription('View population or territory history for a town or nation')
+        .addStringOption((opt) =>
+          opt
+            .setName('type')
+            .setDescription('Type of target to check history for')
+            .setRequired(true)
+            .addChoices({ name: 'Town', value: 'town' }, { name: 'Nation', value: 'nation' })
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('name')
+            .setDescription('Name of the town or nation')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('metric')
+            .setDescription('Metric to display in the graph (default: Residents)')
+            .setRequired(false)
+            .addChoices(
+              { name: 'Residents', value: 'residents' },
+              { name: 'Claims (Chunks) / Town Count', value: 'chunks' }
+            )
+        )
+        .addNumberOption((opt) =>
+          opt
+            .setName('days')
+            .setDescription('Number of past days to fetch history for (default: 30)')
+            .setRequired(false)
+            .addChoices(
+              { name: '7 Days', value: 7 },
+              { name: '15 Days', value: 15 },
+              { name: '30 Days', value: 30 },
+              { name: '60 Days', value: 60 },
+              { name: '90 Days', value: 90 },
+              { name: '120 Days', value: 120 }
+            )
+        )
     ),
 
   async autocomplete(interaction) {
@@ -136,12 +189,14 @@ module.exports = {
     }
 
     const subcommand = interaction.options.getSubcommand();
+    const type = interaction.options.getString('type') || 'town';
     let choices = [];
 
     if (
       (focusedOption.name === 'name' && subcommand === 'town') ||
       focusedOption.name === 'town1' ||
-      focusedOption.name === 'town2'
+      focusedOption.name === 'town2' ||
+      (focusedOption.name === 'name' && subcommand === 'history' && type === 'town')
     ) {
       const towns = Array.isArray(data.towns) ? data.towns : [];
       const filtered = towns.filter((t) => {
@@ -164,7 +219,10 @@ module.exports = {
           value: t.name || t.slug || t.id,
         };
       });
-    } else if (focusedOption.name === 'name' && subcommand === 'nation') {
+    } else if (
+      (focusedOption.name === 'name' && subcommand === 'nation') ||
+      (focusedOption.name === 'name' && subcommand === 'history' && type === 'nation')
+    ) {
       const nations = Array.isArray(data.nations) ? data.nations : [];
       const filtered = nations.filter((n) => {
         if (!n) return false;
@@ -690,6 +748,359 @@ module.exports = {
         .setImage('attachment://compare-chart.png');
 
       return interaction.editReply({ embeds: [embed], files: [attachment] });
+    }
+
+    // ── Subcommand: History ───────────────────────────────────────────
+    if (subcommand === 'history') {
+      const typeInput = interaction.options.getString('type') || 'town';
+      const nameInput = interaction.options.getString('name')?.trim().toLowerCase() || '';
+      const metric = interaction.options.getString('metric') || 'residents';
+      const days = interaction.options.getNumber('days') ?? 30;
+
+      if (!db) {
+        return interaction.editReply({
+          embeds: [
+            errorEmbed(
+              'Database Unavailable',
+              'Database connection is currently not available to fetch history data.'
+            ),
+          ],
+        });
+      }
+
+      // 1. Fetch history from DB
+      const cutoffDate = new Date();
+      cutoffDate.setUTCDate(cutoffDate.getUTCDate() - days);
+      const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+      let historyData;
+      try {
+        historyData = await db
+          .select()
+          .from(townyHistory)
+          .where(
+            and(
+              eq(townyHistory.name, nameInput),
+              eq(townyHistory.type, typeInput),
+              gte(townyHistory.date, cutoffStr)
+            )
+          )
+          .orderBy(asc(townyHistory.date));
+      } catch (err) {
+        return interaction.editReply({
+          embeds: [errorEmbed('Database Error', `Failed to fetch history data: ${err.message}`)],
+        });
+      }
+
+      // 2. Fallback: If no history, check if currently active
+      if (!historyData || historyData.length === 0) {
+        let activeObj = null;
+        if (typeInput === 'town') {
+          const towns = Array.isArray(data.towns) ? data.towns : [];
+          activeObj = towns.find(
+            (t) => t?.name?.toLowerCase() === nameInput || t?.slug?.toLowerCase() === nameInput
+          );
+        } else {
+          const nations = Array.isArray(data.nations) ? data.nations : [];
+          activeObj = nations.find(
+            (n) => n?.name?.toLowerCase() === nameInput || n?.slug?.toLowerCase() === nameInput
+          );
+        }
+
+        if (!activeObj) {
+          const capitalizedType = typeInput.charAt(0).toUpperCase() + typeInput.slice(1);
+          return interaction.editReply({
+            embeds: [
+              errorEmbed(
+                `${capitalizedType} Not Found`,
+                `The ${typeInput} \`${nameInput}\` was not found in active listings or history records.`
+              ),
+            ],
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+
+        const formattedName = activeObj.name ? activeObj.name.replace(/_/g, ' ') : nameInput;
+        const capitalizedType = typeInput.charAt(0).toUpperCase() + typeInput.slice(1);
+        return interaction.editReply({
+          embeds: [
+            createBaseEmbed()
+              .setColor(EMBED_COLORS.INFO)
+              .setTitle(`ℹ️ No History for ${formattedName}`)
+              .setDescription(
+                `No historical snapshots exist for the ${typeInput} **${formattedName}** in the last ${days} days.\n\n` +
+                  `*Note: The history tracker has recently been initialized. Please trigger a manual database sync via \`/forcesync\` or wait for the scheduler to capture stats.*`
+              ),
+          ],
+        });
+      }
+
+      // 3. Process history records
+      const formattedName = (historyData[0].name || nameInput)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      const isNation = typeInput === 'nation';
+
+      const records = historyData.map((row) => {
+        const dateStr =
+          typeof row.date === 'string'
+            ? row.date.substring(0, 10)
+            : new Date(row.date).toISOString().split('T')[0];
+
+        const residents = row.residents || 0;
+        const chunks = row.chunks || 0;
+        const townsCount = row.townsCount || 0;
+
+        let value = metric === 'residents' ? residents : chunks;
+
+        return {
+          dateStr,
+          residents,
+          chunks,
+          townsCount,
+          value,
+        };
+      });
+
+      const values = records.map((r) => r.value);
+
+      // 4. Summary metrics
+      const startVal = values[0];
+      const endVal = values[values.length - 1];
+      const minVal = Math.min(...values);
+      const maxVal = Math.max(...values);
+      const avgVal = values.reduce((sum, v) => sum + v, 0) / values.length;
+
+      const changeVal = endVal - startVal;
+      const pctChange = startVal > 0 ? (changeVal / startVal) * 100 : 0;
+      const changeSign = changeVal >= 0 ? '+' : '';
+      const changeStr = `${changeSign}${changeVal.toLocaleString()} (${changeSign}${pctChange.toFixed(2)}%)`;
+
+      // Sparkline builder
+      const sparklineBlocks = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+      let sparklineStr = '[ No Data ]';
+      if (values.length > 0) {
+        if (values.length === 1) {
+          sparklineStr = `[ ${sparklineBlocks[3]} ]`;
+        } else {
+          const min = Math.min(...values);
+          const max = Math.max(...values);
+          if (min === max) {
+            sparklineStr = `[ ${sparklineBlocks[3].repeat(values.length)} ]`;
+          } else {
+            const spark = values
+              .map((v) => {
+                const norm = (v - min) / (max - min);
+                const idx = Math.min(7, Math.max(0, Math.round(norm * 7)));
+                return sparklineBlocks[idx];
+              })
+              .join('');
+            sparklineStr = `[ ${spark} ]`;
+          }
+        }
+      }
+
+      // 5. Generate line chart
+      let chartBuffer;
+      const metricLabel =
+        metric === 'residents' ? 'Residents' : isNation ? 'Town Count' : 'Claimed Chunks';
+
+      try {
+        chartBuffer = drawHistoryLineChart(
+          records.map((r) => r.dateStr),
+          [
+            {
+              label: `${formattedName} (${metricLabel})`,
+              rates: values,
+            },
+          ],
+          `${formattedName} ${metricLabel} History (${days}d)`
+        );
+      } catch (err) {
+        return interaction.editReply({
+          embeds: [
+            errorEmbed(
+              'Chart Render Failure',
+              `Failed to render history line chart: ${err.message}`
+            ),
+          ],
+        });
+      }
+
+      const file = new AttachmentBuilder(chartBuffer, { name: 'towny-history-chart.png' });
+
+      // Table formatting utility
+      const buildTable = (chunk) => {
+        const headerDate = 'Date';
+        let headerVal =
+          metric === 'residents' ? 'Residents' : isNation ? 'Towns (Chunks)' : 'Chunks';
+        const header = `${headerDate.padEnd(12)} ${headerVal}`;
+        const separator = '─'.repeat(28);
+
+        const rows = chunk.map((item) => {
+          const dStr = item.dateStr.padEnd(12);
+          let vStr;
+          if (metric === 'residents') {
+            vStr = `${item.residents.toLocaleString()}`;
+          } else {
+            vStr = isNation
+              ? `${item.townsCount} (${item.chunks.toLocaleString()})`
+              : `${item.chunks.toLocaleString()}`;
+          }
+          return `${dStr} ${vStr}`;
+        });
+
+        return '```text\n' + [header, separator, ...rows].join('\n') + '\n```';
+      };
+
+      // 6. Pagination layout setup (reverse to show newest first in log)
+      const displayRecords = [...records].reverse();
+      const ITEMS_PER_PAGE = 8;
+      const pages = [];
+      for (let i = 0; i < displayRecords.length; i += ITEMS_PER_PAGE) {
+        pages.push(displayRecords.slice(i, i + ITEMS_PER_PAGE));
+      }
+      const totalPages = pages.length;
+      let currentPage = 0;
+
+      const buildEmbed = (pageIdx) => {
+        const chunk = pages[pageIdx];
+        const displayMetric = metric === 'residents' ? 'Residents' : 'Claimed Chunks';
+
+        return createBaseEmbed()
+          .setColor(EMBED_COLORS.CYBER)
+          .setTitle(`📈 ${formattedName} History`)
+          .setDescription(
+            `**Type:** ${typeInput.toUpperCase()} · **Metric:** ${displayMetric} · **Window:** Past ${days} Days`
+          )
+          .addFields(
+            {
+              name: `📊 ${days}-Day Trend (${metricLabel})`,
+              value: `\`${sparklineStr}\``,
+              inline: false,
+            },
+            {
+              name: `▶️ Start ${metricLabel}`,
+              value: `\`${startVal.toLocaleString()}\``,
+              inline: true,
+            },
+            {
+              name: `⏹️ End ${metricLabel}`,
+              value: `\`${endVal.toLocaleString()}\``,
+              inline: true,
+            },
+            {
+              name: '📈 Total Change',
+              value: `\`${changeStr}\``,
+              inline: true,
+            },
+            {
+              name: `⬇️ Min ${metricLabel}`,
+              value: `\`${minVal.toLocaleString()}\``,
+              inline: true,
+            },
+            {
+              name: `⬆️ Max ${metricLabel}`,
+              value: `\`${maxVal.toLocaleString()}\``,
+              inline: true,
+            },
+            {
+              name: `⚖️ Average ${metricLabel}`,
+              value: `\`${Math.round(avgVal).toLocaleString()}\``,
+              inline: true,
+            },
+            {
+              name: `📜 History Log (Page ${pageIdx + 1}/${totalPages})`,
+              value: buildTable(chunk),
+              inline: false,
+            }
+          )
+          .setImage('attachment://towny-history-chart.png');
+      };
+
+      const buildButtons = (pageIdx) => {
+        return new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`townyhist_prev_${interaction.id}`)
+            .setLabel('◀ Prev')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(pageIdx === 0),
+          new ButtonBuilder()
+            .setCustomId(`townyhist_page_${interaction.id}`)
+            .setLabel(`${pageIdx + 1} / ${totalPages}`)
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true),
+          new ButtonBuilder()
+            .setCustomId(`townyhist_next_${interaction.id}`)
+            .setLabel('Next ▶')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(pageIdx === totalPages - 1)
+        );
+      };
+
+      const message = await interaction.editReply({
+        embeds: [buildEmbed(currentPage)],
+        components: totalPages > 1 ? [buildButtons(currentPage)] : [],
+        files: [file],
+      });
+
+      if (totalPages > 1) {
+        const collector = message.createMessageComponentCollector({
+          time: 5 * 60 * 1000,
+        });
+
+        collector.on('collect', async (btn) => {
+          if (btn.user.id !== interaction.user.id) {
+            return btn.reply({
+              content: '❌ Only the command invoker can use these buttons.',
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+
+          if (btn.customId === `townyhist_prev_${interaction.id}`) {
+            currentPage = Math.max(0, currentPage - 1);
+            await btn.update({
+              embeds: [buildEmbed(currentPage)],
+              components: [buildButtons(currentPage)],
+            });
+          } else if (btn.customId === `townyhist_next_${interaction.id}`) {
+            currentPage = Math.min(totalPages - 1, currentPage + 1);
+            await btn.update({
+              embeds: [buildEmbed(currentPage)],
+              components: [buildButtons(currentPage)],
+            });
+          }
+        });
+
+        collector.on('end', async () => {
+          try {
+            const disabledRow = new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setCustomId('townyhist_prev_done')
+                .setLabel('◀ Prev')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true),
+              new ButtonBuilder()
+                .setCustomId('townyhist_page_done')
+                .setLabel(`${currentPage + 1} / ${totalPages}`)
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(true),
+              new ButtonBuilder()
+                .setCustomId('townyhist_next_done')
+                .setLabel('Next ▶')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true)
+            );
+            await interaction.editReply({
+              embeds: [buildEmbed(currentPage)],
+              components: [disabledRow],
+            });
+          } catch {
+            // Message may have been deleted
+          }
+        });
+      }
+      return;
     }
   },
 };

@@ -576,3 +576,76 @@ The following rules MUST be followed at all times:
   - Added a concurrent development script `"dev:all": "run-p dev dashboard:dev"` inside `package.json` utilizing the project's existing `npm-run-all` dependency to run the backend and frontend servers in parallel from a single terminal.
   - Added a `nodemonConfig` block to `package.json` to ignore modifications under `dashboard/`, `logs/`, `src/icons/` and `src/heads/`, completely preventing hot-reload backend restarts when editing frontend files or caching download assets.
   - Updated custom developer guidelines inside `.agents/AGENTS.md` to document hot-reloading exclusions, code-splitting rules, concurrent scripts, and linter modules setup, helping future AI agent turns build optimized features cleanly and efficiently.
+
+### 06-08-2026
+
+- **Project Telemetry & Codebase Audit**:
+  - Performed comprehensive static analysis scan of bot slash commands, background services, database schema, and Vite dashboard configurations.
+  - Formulated a roadmap of brand-new suggestions (documented in `new_todo_suggestions.md` inside session artifacts) outlining Towny historical growth telemetry, player shop price threshold alert subscriptions, convoy rotation history log, custom admin role permission controls, 24h/7d rate trend alerts on the dashboard, and a developer profiling latency utility.
+- **Player Heads Storage, Round-Robin APIs & Redis/MySQL Caching Integration**:
+  - Created `player_heads` table schema inside `src/db/schema.js` using standard varchar `uuid` as primary key and a custom Drizzle `mediumblob` column to store PNG binaries.
+  - Executed safe schema migration (`0009_calm_fabian_cortez.sql`) in MySQL database.
+  - Redesigned `src/services/headManager.js` to fetch player heads from 4 APIs in round-robin fashion with failover: Minotar, Crafatar, Crafthead, and MC-Heads.
+  - Implemented automatic username-to-UUID resolution with fallback caching in Redis (7 days), MySQL, and memory, including deterministic offline UUID generation for rate-limiting bypass.
+  - Programmed `getHeadBuffer` caching architecture: checks Redis (30-min cache) -> MySQL (Cache Forever) -> API. Serving is done directly from memory buffers.
+  - Set up a scheduled 6-hour concurrency worker executing concurrent updates (limit 5) for all cached player heads, distributing load evenly across APIs.
+  - Refactored `/heads/:username.png` API route in `src/server.js` to serve head images directly from memory buffers utilizing the new `getHeadBuffer` routine.
+  - Integrated the player heads sync scheduler to start automatically during backend initialization in `bot.js`.
+  - Created a comprehensive test suite `tests/heads.test.js` verifying the download loop, MySQL persistence, Redis caching, and concurrent updates. Registered it inside `tests/runner.js` and the developer `/test` slash command.
+- **NPM Dependency Audit & Cleanup**:
+  - Conducted a codebase-wide audit of workspace dependencies and devDependencies using a custom AST/heuristic scanning script.
+  - Discovered 6 unused production dependencies (`@iconify/vue`, `autoprefixer`, `chalk`, `ms`, `postcss`, and `winston`) and 2 unused devDependencies (`eslint-plugin-vue` and `vue-tsc`).
+  - Uninstalled `vue-tsc`, `winston`, `chalk`, `autoprefixer`, `@iconify/vue`, and `ms` packages to optimize workspace footprint.
+  - Integrated `eslint-plugin-vue` with `eslint.config.js` to enable active linting of dashboard `.vue` files.
+  - Extended browser globals (e.g., `window`, `document`, `requestAnimationFrame`) to dashboard component files, resolving related lint errors.
+  - Resolved `no-useless-assignment` warning for `wsUrl` inside `dashboard/src/App.vue`.
+  - Executed a repository-wide Prettier format (`npm run format`) and linter check to ensure clean and conformant source code.
+- **Vitest Migration & Test Suite Enhancements**:
+  - Installed `vitest` devDependency and configured it via `vitest.config.js` to run test files sequentially.
+  - Created `tests/setup.js` to configure test environment log levels, automatically setting `LOG_LEVEL=SUCCESS` to silence verbose info logs and make console output cleaner.
+  - Refactored all 6 existing test files (`env.test.js`, `api.test.js`, `database.test.js`, `blacklist.test.js`, `notify.test.js`, `heads.test.js`) from custom stand-alone executable runners to standard Vitest suites utilizing global assertions and lifecycle hooks.
+  - Created a brand-new unit test suite `tests/embedHelper.test.js` verifying the layout, branding, and status colors of all core Discord embeds.
+  - Updated the developer `/test` slash command inside `src/commands/general/test.js` to trigger suites via `npx vitest run` instead of raw Node runners.
+  - Removed the obsolete legacy runner script `tests/runner.js`.
+  - Audited and updated the file mapping repository document `fs.md`.
+- **Global State Management & Pinia Stores Migration**:
+  - Created four global state Pinia stores inside `dashboard/src/stores/` to centralize telemetry data fetching and state caching:
+    - `marketStore.js`: Holds active nation currency rates and manages API loading/error synchronization.
+    - `convoyStore.js`: Cache for convoy shop trades list, active subviews, search inputs, and rarity filters.
+    - `townyStore.js`: Caches Towny telemetry data, active tab view states, search parameters, and modal details.
+    - `shopsStore.js`: Persistent store for players shop listings, search terms, and active detail modals.
+  - Bootstrapped and registered the Pinia plugin inside the main Vue bootstrap entry point `dashboard/src/main.js`.
+  - Refactored core views and layout components (`App.vue`, `ConvoyStock.vue`, `TownyMonitor.vue`, `ShopsMonitor.vue`) to retrieve states dynamically from Pinia stores using `storeToRefs` to retain search filters, tabs, and detail modals during tab navigations.
+  - Configured state caching so that API requests are skipped on component remount if data is already populated in the store, reducing load and enhancing page rendering speeds.
+  - Audited the production prerendering compiler and verified successful build via `npm run dashboard:build` with zero warnings/errors.
+- **Player Shops Database Integration & Caching**:
+  - Defined the `player_shops` Drizzle schema table inside `src/db/schema.js` with columns for coordinates, owner UUID, primary currency, and JSON stringified text columns for `balances`, `sellListings`, and `buyListings`.
+  - Generated and safely executed schema migration in MySQL database.
+  - Created background worker service `src/services/shopsSync.js` fetching player shops every 30 minutes, resolving owner names in parallel with Mojang API and cache lookups, storing them in database, and caching them in Redis with a 25-minute TTL.
+  - Integrated `shopsSync` worker to auto-trigger on bot startup in `bot.js`.
+  - Refactored `handleShopsRequest` in `src/server.js` and `fetchShopsData` in `src/commands/general/shops.js` to look up shops from the 25-minute Redis cache and MySQL database first, parsing listings via JSON.parse. This prevents external API queries, making the dashboard, API, and bot commands significantly faster.
+  - Created `tests/shops.test.js` to verify synchronization, database persistence, and 25-minute Redis TTL caching, and registered it in the `/test` command.
+  - Updated directory mapping in `fs.md`.
+- **Separate Service Execution Controls**:
+  - Added CLI flag `--bot-only` checking in `bot.js` to prevent starting the Express server when only executing the bot.
+  - Configured `src/server.js` with a self-execution block (`require.main === module` handler) to boot the Express webserver standalone if executed directly.
+  - Registered separate production and development execution scripts inside `package.json`: `start:bot`, `dev:bot`, `start:server`, and `dev:server` to support modular execution of bot and server microservices.
+- **Player Heads Provider API Adjustments**:
+  - Cleaned up active skin download sources to use exactly 2 primary stable APIs: Minotar and Crafthead.
+  - Removed the dead `crafatar.com` API endpoint.
+  - Removed the `visage.surgeplay.com` (vzge.me) and `mc-heads.net` API endpoints to restrict round-robin queries to 2 providers, and removed unused UUID validation checks from `src/services/headManager.js`.
+- **Frontend Dashboard Adjustments**:
+  - Removed the redundant "Refresh Database" button from `dashboard/src/components/ShopsMonitor.vue` template.
+- **Currency Creator UUID Reverse Resolution (Backend)**:
+  - Added `creatorName` VARCHAR(255) column to the `currencies` Drizzle schema table inside `src/db/schema.js`, defaulting to `'Unknown'`.
+  - Generated and safely executed schema migration (`0011_flaky_marten_broadcloak.sql`).
+  - Created `resolveUuidToUsername` helper inside `src/services/currencySync.js` with a 3-layer cache lookup: in-memory Map → Redis `uuid:name:<uuid>` (7-day TTL) → Mojang session server API fallback.
+  - Integrated parallel UUID-to-username resolution into `syncCurrencies()` via `Promise.all()`, enriching every currency object with `creatorName` before database upsert and in-memory cache population.
+  - Updated `upsertCurrencies()` to persist the resolved `creatorName` column into MySQL alongside existing currency fields.
+- **Convoy All Items — Last Seen Timestamps (ConvoyStock.vue)**:
+  - Added `formatLastSeen()` relative time helper function inside `dashboard/src/components/ConvoyStock.vue` `<script setup>` block, computing human-readable durations (e.g. "5m ago", "2h ago", "3d ago") from the convoy item `updatedAt` database column.
+  - Rendered `Last Seen` row below the stock capacity progress bar in each All Items tab card, displaying the formatted relative timestamp.
+- **Towny Head Image Preloading & Browser Cache Optimization**:
+  - Added `preloadHeadImages()` function inside `dashboard/src/stores/townyStore.js` that extracts all unique mayor/king usernames from the Towny API response and preloads their head images using `new Image()` objects in the background immediately after data fetch completes.
+  - Integrated the preloader call into `fetchTownyData()` so head images are warmed in the browser cache before Vue renders the spotlight cards and modals, eliminating the visible placeholder-to-head swap effect.
+  - Added `Cache-Control: public, max-age=3600, stale-while-revalidate=1800` response header to the `/heads/:username.png` API endpoint in `src/server.js`, enabling 1-hour browser disk caching with 30-minute stale-while-revalidate for head images.

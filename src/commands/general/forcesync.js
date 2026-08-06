@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { syncConvoy } = require('../../services/convoySync.js');
+const { syncCurrencies } = require('../../services/currencySync.js');
+const { syncTowny } = require('../../services/townySync.js');
 const { successEmbed, errorEmbed } = require('../../utils/embedHelper.js');
 const logger = require('../../utils/logger.js');
 const pc = require('picocolors');
@@ -35,7 +37,7 @@ module.exports = {
     );
 
     try {
-      await syncConvoy(true);
+      await Promise.all([syncConvoy(true), syncCurrencies(), syncTowny()]);
 
       logger.success('Manual forced synchronization complete.');
 
@@ -47,7 +49,7 @@ module.exports = {
         embeds: [
           successEmbed(
             'Sync Complete',
-            'Successfully forced synchronization of all Convoy shop items from the API.'
+            'Successfully forced synchronization of all Convoy, Currency, and Towny data from the API.'
           ),
         ],
       });

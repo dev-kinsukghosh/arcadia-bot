@@ -64,6 +64,34 @@
       "when": 1782989816805,
       "tag": "0008_premium_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1785956382650,
+      "tag": "0009_calm_fabian_cortez",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1786007422870,
+      "tag": "0010_fluffy_lady_vermin",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1786009033131,
+      "tag": "0011_flaky_marten_broadcloak",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1786011247170,
+      "tag": "0012_chilly_valeria_richards",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE `currencies` ADD `creator_name` varchar(255) DEFAULT 'Unknown' NOT NULL;

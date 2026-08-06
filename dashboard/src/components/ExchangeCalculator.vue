@@ -119,15 +119,15 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
         >
         <div class="relative rounded-lg shadow-sm">
           <input
-            type="text"
             v-model="amountInput"
+            type="text"
+            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-4 py-2.5 font-mono text-sm text-slate-100 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            placeholder="Enter value"
             @input="
               amountInput = $event.target.value
                 .replace(/[^0-9.]/g, '')
                 .replace(/(\..*?)\..*/g, '$1')
             "
-            class="block w-full rounded-lg border border-slate-800 bg-slate-950 px-4 py-2.5 font-mono text-sm text-slate-100 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-            placeholder="Enter value"
           />
         </div>
       </div>
@@ -149,9 +149,9 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
 
         <div class="flex justify-center pt-5 md:col-span-1">
           <button
-            @click="swapCurrencies"
             class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-300 transition-all duration-200 hover:border-slate-700 hover:bg-slate-800"
             title="Swap source and destination"
+            @click="swapCurrencies"
           >
             <font-awesome-icon icon="rotate" class="text-sm" />
           </button>
@@ -175,10 +175,10 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
       <!-- Server Tax Toggle -->
       <div class="mt-1 flex items-center gap-3">
         <label class="relative inline-flex cursor-pointer items-center select-none">
-          <input type="checkbox" v-model="taxEnabled" class="peer sr-only" />
+          <input v-model="taxEnabled" type="checkbox" class="peer sr-only" />
           <div
             class="h-5 w-9 rounded-full border border-slate-700 bg-slate-800 transition-colors duration-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-600 peer-focus:ring-1 peer-focus:ring-emerald-500 after:absolute after:top-[3px] after:left-[3px] after:h-3.5 after:w-3.5 after:rounded-full after:bg-slate-400 after:transition-all after:duration-200 after:content-[''] peer-checked:after:translate-x-4 peer-checked:after:bg-white"
-          ></div>
+          />
         </label>
         <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase"
           >Include Server Tax (5%)</span

@@ -28,12 +28,17 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── main.js
 │       ├── router.js
 │       ├── style.css
-│       └── components/
-│           ├── ConvoyStock.vue
-│           ├── ExchangeCalculator.vue
-│           ├── HistoryChart.vue
-│           ├── MarketMonitor.vue
-│           └── TownyMonitor.vue
+│       ├── components/
+│       │   ├── ConvoyStock.vue
+│       │   ├── ExchangeCalculator.vue
+│       │   ├── HistoryChart.vue
+│       │   ├── MarketMonitor.vue
+│       │   └── TownyMonitor.vue
+│       └── stores/
+│           ├── convoyStore.js
+│           ├── marketStore.js
+│           ├── shopsStore.js
+│           └── townyStore.js
 ├── scripts/
 │   ├── setup.js
 │   ├── migrate-safe.js
@@ -80,7 +85,9 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── services/
 │   │   ├── convoySync.js
 │   │   ├── currencySync.js
-│   │   └── headManager.js
+│   │   ├── headManager.js
+│   │   ├── shopsSync.js
+│   │   └── townySync.js
 │   └── utils/
 │       ├── apiClient.js
 │       ├── blacklistHelper.js
@@ -94,12 +101,15 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── redis.js
 │       └── redisOm.js
 ├── tests/
-│   ├── runner.js
+│   ├── setup.js
 │   ├── blacklist.test.js
+│   ├── embedHelper.test.js
 │   ├── env.test.js
+│   ├── heads.test.js
 │   ├── api.test.js
 │   ├── database.test.js
-│   └── notify.test.js
+│   ├── notify.test.js
+│   └── shops.test.js
 ├── .env
 ├── .env.example
 ├── .dockerignore
@@ -109,6 +119,7 @@ This file serves as a reference guide for the directory structure and file respo
 ├── eslint.config.js
 ├── .prettierrc
 ├── package.json
+├── vitest.config.js
 └── wiki_table.md
 ```
 
@@ -119,6 +130,7 @@ This file serves as a reference guide for the directory structure and file respo
 - [bot.js](./bot.js): Main application entry point. Loads configuration, starts the logger, initializes DB/Redis clients, and boots up the Discord client.
 - [drizzle.config.js](./drizzle.config.js): Database configurations mapping Drizzle schema generation to the MySQL server environment.
 - [eslint.config.js](./eslint.config.js): ESLint static analysis configuration provided by the user.
+- [vitest.config.js](./vitest.config.js): Vitest compiler and runner configuration options for executing sequentially.
 - [.prettierrc](./.prettierrc): Settings for the Prettier formatter.
 - [package.json](./package.json): Workspace script targets (`npm start`, `npm run dev`, `npm run deploy`, `npm run lint`, etc.) and dependencies listing.
 - [.env.example](./.env.example): Template configuration containing environment variable keys.
@@ -165,6 +177,11 @@ This file serves as a reference guide for the directory structure and file respo
     - [dashboard/src/components/MarketMonitor.vue](./dashboard/src/components/MarketMonitor.vue): Unified market table view displaying pinned favorites and category filters.
     - [dashboard/src/components/ShopsMonitor.vue](./dashboard/src/components/ShopsMonitor.vue): Player Shops directory with searching, item filtering, coordinates copy tool, and detail modal.
     - [dashboard/src/components/TownyMonitor.vue](./dashboard/src/components/TownyMonitor.vue): Towny monitor displaying overview counts, towns, and nations with detail modals.
+  - 📂 **dashboard/src/stores/**: Pinia global state management stores.
+    - [dashboard/src/stores/convoyStore.js](./dashboard/src/stores/convoyStore.js): Manages convoy shop stock trades, search queries, and filters.
+    - [dashboard/src/stores/marketStore.js](./dashboard/src/stores/marketStore.js): Manages active nation currencies stats, loading states, and API fetching.
+    - [dashboard/src/stores/shopsStore.js](./dashboard/src/stores/shopsStore.js): Manages player shop directories, categorization filters, and modal details.
+    - [dashboard/src/stores/townyStore.js](./dashboard/src/stores/townyStore.js): Manages Towny nations/towns datasets, search parameters, and modal details.
 
 ### 📂 src/
 
@@ -208,6 +225,8 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/services/convoySync.js](./src/services/convoySync.js): Synchronization worker to fetch and track convoy shop items.
   - [src/services/currencySync.js](./src/services/currencySync.js): Synchronization worker to fetch, track, and cache currencies.
   - [src/services/headManager.js](./src/services/headManager.js): Backend manager controlling local serving, cache downloads, and 7-day batch sync checks of player head images.
+  - [src/services/shopsSync.js](./src/services/shopsSync.js): Synchronization worker to fetch, resolve, and cache player shops in MySQL and Redis.
+  - [src/services/townySync.js](./src/services/townySync.js): Synchronization worker to fetch, cache, and record daily historical snapshots of town/nation residents & claims.
 - 📂 **src/utils/**: Helper modules.
   - [src/utils/apiClient.js](./src/utils/apiClient.js): Axios HTTP wrapper configured for ArcadiaMC.
   - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.
@@ -221,9 +240,12 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/redis.js](./src/utils/redis.js): Connection client for Redis cache operations.
   - [src/utils/redisOm.js](./src/utils/redisOm.js): Redis-OM client wrapper initialization.
 - 📂 **tests/**: Codebase testing suite and validation tools.
-  - [tests/runner.js](./tests/runner.js): Master test runner executing all suites sequentially.
+  - [tests/setup.js](./tests/setup.js): Global Vitest setup configuring log levels during execution.
   - [tests/blacklist.test.js](./tests/blacklist.test.js): Integration tests for blacklist helper methods and caching.
+  - [tests/embedHelper.test.js](./tests/embedHelper.test.js): Unit tests for central Discord embed rendering helpers.
   - [tests/env.test.js](./tests/env.test.js): Health check test for configuration, database connection pools, and Redis pings.
+  - [tests/heads.test.js](./tests/heads.test.js): Integration tests for player heads downloading, caching and cron updates.
   - [tests/notify.test.js](./tests/notify.test.js): Integration tests for item stock notifications table mapping.
+  - [tests/shops.test.js](./tests/shops.test.js): Integration tests for player shops database query mappings, sync scheduler, and 25-minute TTL cache.
   - [tests/api.test.js](./tests/api.test.js): Connection verification and response validation test for the ArcadiaMC API endpoints.
   - [tests/database.test.js](./tests/database.test.js): Direct query health validation for Drizzle ORM and MySQL tables.

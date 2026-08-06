@@ -1,4 +1,5 @@
 import { createSSRApp } from 'vue';
+import { createPinia } from 'pinia';
 import './style.css';
 import App from './App.vue';
 import { createRouterInstance } from './router';
@@ -68,7 +69,9 @@ library.add(
 export function createSSRApplication() {
   const app = createSSRApp(App);
   const router = createRouterInstance();
+  const pinia = createPinia();
+  app.use(pinia);
   app.use(router);
-  app.component('font-awesome-icon', FontAwesomeIcon);
-  return { app, router };
+  app.component('FontAwesomeIcon', FontAwesomeIcon);
+  return { app, router, pinia };
 }
