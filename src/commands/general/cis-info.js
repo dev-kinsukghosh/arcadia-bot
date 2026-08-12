@@ -9,16 +9,17 @@ const {
   InteractionContextType,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
-const { convoyItems, nguildData } = require('../../db/schema.js');
-const { eq } = require('drizzle-orm');
+const { convoyItems } = require('../../db/schema.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
+const { getAppEmojis } = require('../../utils/emojiCache.js');
+const { getGuildCurrency } = require('../../utils/guildConfigHelper.js');
+const { getAllItemsCache } = require('../../services/convoySync.js');
 const path = require('path');
 const fs = require('fs');
 const redis = require('../../utils/redis.js');
 const logger = require('../../utils/logger.js');
 
-const userLastAutocomplete = new Map();
 let cachedAutocompleteItems = [];
 let cacheInitialized = false;
 
@@ -139,27 +140,17 @@ module.exports = {
     ensureCacheInitialized();
   },
 
-  async autocomplete(interaction) {
-    if (!db) return interaction.respond([]);
+  getCache() {
+    ensureCacheInitialized();
+    return cachedAutocompleteItems;
+  },
 
+  async autocomplete(interaction) {
     try {
       const focusedValue = interaction.options.getFocused().toLowerCase();
 
       // Ensure cache is initialized and scheduled
       ensureCacheInitialized();
-
-      // Debounce: Wait 1.5 seconds after user stops typing (only if query is not empty)
-      if (focusedValue !== '') {
-        const userId = interaction.user.id;
-        const currentInteractionId = interaction.id;
-        userLastAutocomplete.set(userId, currentInteractionId);
-
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        if (userLastAutocomplete.get(userId) !== currentInteractionId) {
-          return; // Ignore older keystrokes
-        }
-      }
 
       // Filter and sort cached items by score descending
       let filtered = cachedAutocompleteItems;
@@ -206,18 +197,7 @@ module.exports = {
     let conversion = { prefix: '₳', suffix: '', rate: 1.0 };
 
     if (interaction.guildId) {
-      try {
-        const configRow = await db
-          .select()
-          .from(nguildData)
-          .where(eq(nguildData.guildId, interaction.guildId));
-
-        if (configRow.length > 0 && configRow[0].currency) {
-          activeCurrency = configRow[0].currency.toLowerCase();
-        }
-      } catch {
-        // Ignore DB issues, default to 'arc'
-      }
+      activeCurrency = await getGuildCurrency(interaction.guildId);
     }
 
     if (activeCurrency !== 'arc') {
@@ -236,16 +216,14 @@ module.exports = {
 
     const itemArg = interaction.options.getString('item');
 
-    // Fetch application emojis
-    let appEmojis = null;
-    try {
-      appEmojis = await interaction.client.application.emojis.fetch();
-    } catch {
-      // Ignore failures fetching app emojis
-    }
+    // Fetch application emojis from cache
+    const appEmojis = await getAppEmojis(interaction.client);
 
-    // Fetch all items from DB
-    const allItems = await db.select().from(convoyItems);
+    // Fetch all items from cache
+    let allItems = getAllItemsCache();
+    if (!allItems || allItems.length === 0) {
+      allItems = await db.select().from(convoyItems);
+    }
 
     if (!allItems || allItems.length === 0) {
       return interaction.editReply({

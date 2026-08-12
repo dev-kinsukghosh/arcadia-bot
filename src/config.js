@@ -14,7 +14,7 @@ const config = {
     name: process.env.DB_NAME,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || '10', 10),
+    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || '30', 10),
   },
   redis: {
     host: process.env.REDIS_HOST || '127.0.0.1',

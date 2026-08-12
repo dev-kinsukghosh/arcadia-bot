@@ -137,11 +137,29 @@ async function syncShops() {
 
     await Promise.all(dbPromises);
 
-    // Clean up shops not present anymore
+    // Clean up shops not present anymore (with safety check to prevent wiping database on empty API response)
     if (activeKeys.length > 0) {
-      await db.delete(playerShops).where(notInArray(playerShops.key, activeKeys));
+      // Find the names of the stale shops to log them
+      const obsoleteShops = await db
+        .select({ key: playerShops.key, name: playerShops.name })
+        .from(playerShops)
+        .where(notInArray(playerShops.key, activeKeys));
+
+      const deleteRes = await db.delete(playerShops).where(notInArray(playerShops.key, activeKeys));
+      const deletedShopsCount = deleteRes[0]?.affectedRows || 0;
+      if (deletedShopsCount > 0) {
+        const deletedNames =
+          obsoleteShops.length > 0
+            ? obsoleteShops.map((s) => `${s.name} (${s.key})`).join(', ')
+            : 'None';
+        logger.info(
+          `Pruned ${pc.bold(pc.cyan(deletedShopsCount))} stale player shops [${pc.cyan(deletedNames)}] from DB.`
+        );
+      }
     } else {
-      await db.delete(playerShops);
+      logger.warn(
+        'Fetched 0 player shops from API. Skipping pruning to prevent accidental database wipe.'
+      );
     }
 
     // Cache the resolved result to Redis with 25-minute TTL

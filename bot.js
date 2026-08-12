@@ -40,6 +40,11 @@ async function main() {
   logger.info('Loading blacklist cache...');
   await loadBlacklist();
 
+  // Load guild config cache from DB
+  logger.info('Loading guild configurations cache...');
+  const { loadGuildConfigs } = require('./src/utils/guildConfigHelper.js');
+  await loadGuildConfigs();
+
   // 1. Load Event handlers
   logger.info('Initializing event handlers...');
   loadEvents(client);

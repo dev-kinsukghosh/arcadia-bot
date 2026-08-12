@@ -20,14 +20,7 @@ if (!fs.existsSync(headsDir)) {
 const uuidCache = new Map();
 const nameCasingCache = new Map();
 
-// Round-robin counter
-let apiIndex = 0;
-
-// List of APIs to use in round-robin fashion
-const HEAD_APIS = [
-  (id) => `https://minotar.net/avatar/${id}/48.png`,
-  (id) => `https://crafthead.net/avatar/${id}/48`,
-];
+// Round-robin counter has been removed in favor of prioritized fallback fetching to ensure byte consistency
 
 /**
  * Formats a 32-character dashless UUID into a standard 36-character dashed UUID.
@@ -136,29 +129,42 @@ async function resolveUsernameToUuid(username) {
 }
 
 /**
- * Fetches a player head from the available APIs in round-robin fashion, with failover.
+ * Fetches a player head from the preferred API (Crafthead), falling back to Minotar if needed.
+ * This ensures rendering consistency so that we can accurately detect true skin updates.
  */
 async function fetchHeadFromApis(uuid, username) {
-  const attempts = HEAD_APIS.length;
-  for (let i = 0; i < attempts; i++) {
-    const currentApiFn = HEAD_APIS[apiIndex];
-    apiIndex = (apiIndex + 1) % HEAD_APIS.length;
+  const identifier = uuid || username;
 
-    const identifier = uuid || username;
-    const url = currentApiFn(identifier);
-    try {
-      logger.debug(`Fetching player head from API: ${url}`);
-      const response = await axios.get(url, {
-        responseType: 'arraybuffer',
-        timeout: 4000,
-      });
-      if (response.data && response.data.length > 0) {
-        return response.data;
-      }
-    } catch (err) {
-      logger.warn(`Failed to fetch head from ${url}: ${err.message}`);
+  // 1. Try Crafthead (Primary)
+  try {
+    const url = `https://crafthead.net/avatar/${identifier}/48`;
+    logger.debug(`Fetching player head from Crafthead: ${url}`);
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      timeout: 4000,
+    });
+    if (response.data && response.data.length > 0) {
+      return response.data;
     }
+  } catch (err) {
+    logger.warn(`Failed to fetch head from Crafthead for ${username}/${uuid}: ${err.message}`);
   }
+
+  // 2. Try Minotar (Fallback)
+  try {
+    const url = `https://minotar.net/avatar/${identifier}/48.png`;
+    logger.debug(`Fetching player head from Minotar: ${url}`);
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      timeout: 4000,
+    });
+    if (response.data && response.data.length > 0) {
+      return response.data;
+    }
+  } catch (err) {
+    logger.warn(`Failed to fetch head from Minotar for ${username}/${uuid}: ${err.message}`);
+  }
+
   throw new Error(`Failed to fetch player head for ${username}/${uuid} from all APIs`);
 }
 
@@ -414,7 +420,7 @@ async function checkScheduleAndRunBatch(townyData) {
 
 /**
  * Concurrency update job run every 6 hours.
- * Uses 2-3 API services (round-robin cycled) to update every tracked head in parallel.
+ * Fetches player heads using prioritized consistency lookup to check for changes.
  */
 async function updateAllHeadsConcurrencyJob() {
   if (!db) {
@@ -433,44 +439,30 @@ async function updateAllHeadsConcurrencyJob() {
 
     logger.info(`Found ${records.length} player heads to check. Starting updates concurrently...`);
 
-    const tasks = records.map((record, index) => async () => {
+    const tasks = records.map((record) => async () => {
       const { uuid, username, pngData: oldPng } = record;
 
-      // Select API in round-robin manner based on record index to distribute API load
-      const apiChoiceIndex = index % HEAD_APIS.length;
-      const apiFn = HEAD_APIS[apiChoiceIndex];
-      const url = apiFn(uuid);
-
       try {
-        const response = await axios.get(url, {
-          responseType: 'arraybuffer',
-          timeout: 5000,
-        });
+        const newPng = await fetchHeadFromApis(uuid, username);
+        const hasChanged = !oldPng || Buffer.compare(oldPng, newPng) !== 0;
 
-        if (response.data && response.data.length > 0) {
-          const newPng = response.data;
-          const hasChanged = !oldPng || Buffer.compare(oldPng, newPng) !== 0;
+        if (hasChanged) {
+          // Update MySQL
+          await db
+            .update(playerHeads)
+            .set({ pngData: newPng, updatedAt: new Date() })
+            .where(eq(playerHeads.uuid, uuid));
 
-          if (hasChanged) {
-            // Update MySQL
-            await db
-              .update(playerHeads)
-              .set({ pngData: newPng, updatedAt: new Date() })
-              .where(eq(playerHeads.uuid, uuid));
-
-            // Evict Redis Cache
-            if (redisClient && redisClient.status === 'ready') {
-              const redisKey = `cache:head:username:${username.toLowerCase()}`;
-              await redisClient.del(redisKey);
-            }
-
-            logger.info(`Updated player head for ${username} (UUID: ${uuid}) - skin updated.`);
+          // Evict Redis Cache
+          if (redisClient && redisClient.status === 'ready') {
+            const redisKey = `cache:head:username:${username.toLowerCase()}`;
+            await redisClient.del(redisKey);
           }
+
+          logger.info(`Updated player head for ${username} (UUID: ${uuid}) - skin updated.`);
         }
       } catch (err) {
-        logger.warn(
-          `Failed to update player head for ${username} (UUID: ${uuid}) from ${url}: ${err.message}`
-        );
+        logger.warn(`Failed to update player head for ${username} (UUID: ${uuid}): ${err.message}`);
       }
     });
 

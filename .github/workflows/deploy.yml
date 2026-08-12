@@ -102,6 +102,7 @@ jobs:
               -e LOG_LEVEL="${{ vars.LOG_LEVEL }}" \
               -e NODE_ENV=production \
               -e PORT="${{ vars.PORT }}" \
+              -e DB_CONNECTION_LIMIT=30 \
               ${{ env.IMAGE_NAME }}:latest
 
             # ── Cleanup: remove old dangling images to free disk ──

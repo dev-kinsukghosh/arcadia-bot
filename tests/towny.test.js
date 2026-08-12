@@ -3,6 +3,8 @@ const { townyHistory } = require('../src/db/schema.js');
 const { eq } = require('drizzle-orm');
 const logger = require('../src/utils/logger.js');
 const pc = require('picocolors');
+const { syncTowny } = require('../src/services/townySync.js');
+const { arcadiaApi } = require('../src/utils/apiClient.js');
 
 describe('Towny History Database Query Suite', () => {
   afterAll(async () => {
@@ -58,5 +60,70 @@ describe('Towny History Database Query Suite', () => {
     expect(verifyCleanup.length).toBe(0);
 
     logger.success(`Verified CRUD operations on ${pc.bold('towny_history')} table successfully.`);
+  });
+
+  it('should sync towny data and prune deleted towns/nations', async () => {
+    // 1. Setup mock responses
+    const mockData1 = {
+      towns: [
+        { name: 'ActiveTown1', residents: 10, claims: { claimedChunks: 50 } },
+        { name: 'ActiveTown2', residents: 5, claims: { claimedChunks: 20 } },
+      ],
+      nations: [{ name: 'ActiveNation1', residents: 15, chunks: 70, towns: 2 }],
+    };
+
+    const mockData2 = {
+      towns: [
+        { name: 'ActiveTown1', residents: 12, claims: { claimedChunks: 55 } },
+        // ActiveTown2 is now "deleted" (missing)
+      ],
+      nations: [{ name: 'ActiveNation1', residents: 12, chunks: 55, towns: 1 }],
+    };
+
+    // Spy/Mock getTowny
+    const getTownySpy = vi.spyOn(arcadiaApi, 'getTowny');
+    getTownySpy.mockResolvedValue(mockData1);
+
+    // Clean up potential leftover test data
+    await db.delete(townyHistory).where(eq(townyHistory.name, 'activetown1'));
+    await db.delete(townyHistory).where(eq(townyHistory.name, 'activetown2'));
+    await db.delete(townyHistory).where(eq(townyHistory.name, 'activenation1'));
+
+    // Initial sync
+    await syncTowny();
+
+    // Verify both towns exist in history
+    const townsInDb1 = await db.select().from(townyHistory);
+    const activeTown1Row = townsInDb1.find((t) => t.name === 'activetown1');
+    const activeTown2Row = townsInDb1.find((t) => t.name === 'activetown2');
+    const activeNation1Row = townsInDb1.find((t) => t.name === 'activenation1');
+
+    expect(activeTown1Row).toBeDefined();
+    expect(activeTown2Row).toBeDefined();
+    expect(activeNation1Row).toBeDefined();
+
+    // Now switch mock to data2 (ActiveTown2 is deleted)
+    getTownySpy.mockResolvedValue(mockData2);
+
+    // Sync again
+    await syncTowny();
+
+    // Verify ActiveTown2 has been pruned, but ActiveTown1 and ActiveNation1 remain
+    const townsInDb2 = await db.select().from(townyHistory);
+    const prunedTownRow = townsInDb2.find((t) => t.name === 'activetown2');
+    const remainingTownRow = townsInDb2.find((t) => t.name === 'activetown1');
+    const remainingNationRow = townsInDb2.find((t) => t.name === 'activenation1');
+
+    expect(prunedTownRow).toBeUndefined();
+    expect(remainingTownRow).toBeDefined();
+    expect(remainingNationRow).toBeDefined();
+
+    // Clean up
+    await db.delete(townyHistory).where(eq(townyHistory.name, 'activetown1'));
+    await db.delete(townyHistory).where(eq(townyHistory.name, 'activetown2'));
+    await db.delete(townyHistory).where(eq(townyHistory.name, 'activenation1'));
+
+    getTownySpy.mockRestore();
+    logger.success('Verified synchronization and deleted town pruning logic successfully.');
   });
 });

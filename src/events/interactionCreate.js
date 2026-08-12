@@ -84,14 +84,10 @@ module.exports = {
       setTimeout(() => timestamps.delete(userId), cooldownAmount);
     }
 
-    // Track statistics in Redis
+    // Track statistics in Redis (non-blocking)
     if (redis && redis.status === 'ready') {
-      try {
-        await redis.incr('stats:commands:total');
-        await redis.hincrby('stats:commands:usage', interaction.commandName, 1);
-      } catch {
-        // Ignore stats tracking errors
-      }
+      redis.incr('stats:commands:total').catch(() => {});
+      redis.hincrby('stats:commands:usage', interaction.commandName, 1).catch(() => {});
     }
 
     try {

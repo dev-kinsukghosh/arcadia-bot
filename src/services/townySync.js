@@ -5,7 +5,7 @@ const pc = require('picocolors');
 const redis = require('../utils/redis.js');
 const { db } = require('../utils/db.js');
 const { townyHistory } = require('../db/schema.js');
-const { and, eq, lt } = require('drizzle-orm');
+const { and, eq, lt, notInArray, sql } = require('drizzle-orm');
 
 const SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const HISTORY_RETENTION_DAYS = 120;
@@ -62,83 +62,79 @@ async function syncTowny() {
 
     const today = getTodayUTC();
 
-    // 3. Upsert Town History snapshots
+    // 3. Bulk Upsert Town History snapshots
     const towns = Array.isArray(data.towns) ? data.towns : [];
-    const townPromises = towns.map(async (t) => {
-      if (!t || !t.name) return;
+    if (towns.length > 0) {
+      const townRows = towns
+        .filter((t) => t && t.name)
+        .map((t) => ({
+          name: t.name.toLowerCase(),
+          type: 'town',
+          date: today,
+          residents: t.residents || 0,
+          chunks: t.claims?.claimedChunks || 0,
+          townsCount: 0,
+        }));
 
-      const nameLower = t.name.toLowerCase();
-      const residents = t.residents || 0;
-      const chunks = t.claims?.claimedChunks || 0;
-
-      try {
-        await db
-          .insert(townyHistory)
-          .values({
-            name: nameLower,
-            type: 'town',
-            date: today,
-            residents,
-            chunks,
-            townsCount: 0,
-          })
-          .onDuplicateKeyUpdate({
-            set: {
-              residents,
-              chunks,
-              updatedAt: new Date(),
-            },
-          });
-      } catch (err) {
-        logger.error(
-          `Failed to record history for town ${pc.bold(t.name)}: ${pc.red(err.message)}`
-        );
+      if (townRows.length > 0) {
+        try {
+          await db
+            .insert(townyHistory)
+            .values(townRows)
+            .onDuplicateKeyUpdate({
+              set: {
+                residents: sql`VALUES(\`residents\`)`,
+                chunks: sql`VALUES(\`chunks\`)`,
+                updatedAt: sql`CURRENT_TIMESTAMP`,
+              },
+            });
+        } catch (err) {
+          logger.error(`Failed to record bulk history for towns: ${pc.red(err.message)}`, err);
+        }
       }
-    });
+    }
 
-    // 4. Upsert Nation History snapshots
+    // 4. Bulk Upsert Nation History snapshots
     const nations = Array.isArray(data.nations) ? data.nations : [];
-    const nationPromises = nations.map(async (n) => {
-      if (!n || !n.name) return;
+    if (nations.length > 0) {
+      const nationRows = nations
+        .filter((n) => n && n.name)
+        .map((n) => ({
+          name: n.name.toLowerCase(),
+          type: 'nation',
+          date: today,
+          residents: n.residents || 0,
+          chunks: n.chunks || 0,
+          townsCount: n.towns || 0,
+        }));
 
-      const nameLower = n.name.toLowerCase();
-      const residents = n.residents || 0;
-      const chunks = n.chunks || 0; // Total claimed chunks in the nation
-      const townsCount = n.towns || 0;
-
-      try {
-        await db
-          .insert(townyHistory)
-          .values({
-            name: nameLower,
-            type: 'nation',
-            date: today,
-            residents,
-            chunks,
-            townsCount,
-          })
-          .onDuplicateKeyUpdate({
-            set: {
-              residents,
-              chunks,
-              townsCount,
-              updatedAt: new Date(),
-            },
-          });
-      } catch (err) {
-        logger.error(
-          `Failed to record history for nation ${pc.bold(n.name)}: ${pc.red(err.message)}`
-        );
+      if (nationRows.length > 0) {
+        try {
+          await db
+            .insert(townyHistory)
+            .values(nationRows)
+            .onDuplicateKeyUpdate({
+              set: {
+                residents: sql`VALUES(\`residents\`)`,
+                chunks: sql`VALUES(\`chunks\`)`,
+                townsCount: sql`VALUES(\`towns_count\`)`,
+                updatedAt: sql`CURRENT_TIMESTAMP`,
+              },
+            });
+        } catch (err) {
+          logger.error(`Failed to record bulk history for nations: ${pc.red(err.message)}`, err);
+        }
       }
-    });
-
-    await Promise.all([...townPromises, ...nationPromises]);
+    }
     logger.success(
       `Successfully updated daily Towny history for ${pc.bold(pc.green(towns.length))} towns and ${pc.bold(pc.green(nations.length))} nations.`
     );
 
     // 5. Prune history rows older than 120 days
     await pruneOldTownyHistory();
+
+    // 6. Prune history rows for deleted towns and nations
+    await pruneDeletedTownsNations(towns, nations);
   } catch (error) {
     const { reportError } = require('../utils/errorHandler.js');
     await reportError(error, 'Towny Sync Service');
@@ -190,6 +186,62 @@ async function pruneOldTownyHistory() {
     }
   } catch (err) {
     logger.warn(`Failed to prune old Towny history records: ${pc.yellow(err.message)}`);
+  }
+}
+
+/**
+ * Delete records for towns and nations that no longer exist in the active lists
+ * @param {Array} currentTowns
+ * @param {Array} currentNations
+ */
+async function pruneDeletedTownsNations(currentTowns, currentNations) {
+  try {
+    const activeTowns = currentTowns.map((t) => t?.name?.toLowerCase()).filter(Boolean);
+    const activeNations = currentNations.map((n) => n?.name?.toLowerCase()).filter(Boolean);
+
+    let deletedTownsCount = 0;
+    let deletedNationsCount = 0;
+    let obsoleteTowns = [];
+    let obsoleteNations = [];
+
+    // Safety guard: only prune if we received a non-empty active list to prevent accidental wipes on API failures
+    if (activeTowns.length > 0) {
+      obsoleteTowns = await db
+        .select({ name: townyHistory.name })
+        .from(townyHistory)
+        .where(and(eq(townyHistory.type, 'town'), notInArray(townyHistory.name, activeTowns)))
+        .groupBy(townyHistory.name);
+
+      const deleteTownsRes = await db
+        .delete(townyHistory)
+        .where(and(eq(townyHistory.type, 'town'), notInArray(townyHistory.name, activeTowns)));
+      deletedTownsCount = deleteTownsRes[0]?.affectedRows || 0;
+    }
+
+    if (activeNations.length > 0) {
+      obsoleteNations = await db
+        .select({ name: townyHistory.name })
+        .from(townyHistory)
+        .where(and(eq(townyHistory.type, 'nation'), notInArray(townyHistory.name, activeNations)))
+        .groupBy(townyHistory.name);
+
+      const deleteNationsRes = await db
+        .delete(townyHistory)
+        .where(and(eq(townyHistory.type, 'nation'), notInArray(townyHistory.name, activeNations)));
+      deletedNationsCount = deleteNationsRes[0]?.affectedRows || 0;
+    }
+
+    if (deletedTownsCount > 0 || deletedNationsCount > 0) {
+      const townNames =
+        obsoleteTowns.length > 0 ? obsoleteTowns.map((t) => t.name).join(', ') : 'None';
+      const nationNames =
+        obsoleteNations.length > 0 ? obsoleteNations.map((n) => n.name).join(', ') : 'None';
+      logger.info(
+        `Pruned historical records for ${pc.bold(pc.cyan(deletedTownsCount))} deleted towns [${pc.cyan(townNames)}] and ${pc.bold(pc.cyan(deletedNationsCount))} deleted nations [${pc.cyan(nationNames)}].`
+      );
+    }
+  } catch (err) {
+    logger.warn(`Failed to prune deleted towns/nations: ${pc.yellow(err.message)}`);
   }
 }
 

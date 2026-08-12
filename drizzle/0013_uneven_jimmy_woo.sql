@@ -1,0 +1,1 @@
+CREATE INDEX `date_idx` ON `towny_history` (`date`);

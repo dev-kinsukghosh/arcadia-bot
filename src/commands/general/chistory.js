@@ -15,8 +15,6 @@ const { getCurrencyCache } = require('../../services/currencySync.js');
 const { eq, gte, and, asc } = require('drizzle-orm');
 const { drawHistoryLineChart } = require('../../utils/canvasGraph.js');
 
-const userLastAutocomplete = new Map();
-
 /**
  * Construct a text-based sparkline visualization using Unicode block elements.
  */
@@ -117,35 +115,25 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
-    const focusedValue = interaction.options.getFocused().toLowerCase();
+    try {
+      const focusedValue = interaction.options.getFocused().toLowerCase();
+      const cache = getCurrencyCache();
+      const currencies = cache.currencies || [];
 
-    // Debounce: Wait 500ms after user stops typing
-    if (focusedValue !== '') {
-      const userId = interaction.user.id;
-      const currentInteractionId = interaction.id;
-      userLastAutocomplete.set(userId, currentInteractionId);
+      const filtered = currencies.filter(
+        (c) =>
+          c.id?.toLowerCase().includes(focusedValue) || c.name?.toLowerCase().includes(focusedValue)
+      );
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const choices = filtered.slice(0, 25).map((c) => ({
+        name: `${c.name || c.id} (${c.id.toUpperCase()})`,
+        value: c.id,
+      }));
 
-      if (userLastAutocomplete.get(userId) !== currentInteractionId) {
-        return; // Ignore older keystrokes
-      }
+      await interaction.respond(choices);
+    } catch {
+      // Silently ignore autocomplete errors
     }
-
-    const cache = getCurrencyCache();
-    const currencies = cache.currencies || [];
-
-    const filtered = currencies.filter(
-      (c) =>
-        c.id?.toLowerCase().includes(focusedValue) || c.name?.toLowerCase().includes(focusedValue)
-    );
-
-    const choices = filtered.slice(0, 25).map((c) => ({
-      name: `${c.name || c.id} (${c.id.toUpperCase()})`,
-      value: c.id,
-    }));
-
-    await interaction.respond(choices).catch(() => {});
   },
 
   async execute(interaction) {

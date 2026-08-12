@@ -51,7 +51,10 @@ function log(level, message, ...args) {
 
     const prefix = `${pc.gray('[')}${timestamp}${pc.gray(']')} ${pc.gray('⟫')} ${pc.gray('[')}${gradientFn(paddedLevel)}${pc.gray(']')} ${pc.gray('⁝')}`;
 
-    const formattedMessage = typeof message === 'string' ? gradientFn(message) : message;
+    const hasAnsi =
+      typeof message === 'string' && (message.includes('\u001b') || message.includes('\x1b'));
+    const formattedMessage =
+      typeof message === 'string' && !hasAnsi ? gradientFn(message) : message;
 
     const logFn =
       {

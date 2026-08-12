@@ -26,6 +26,14 @@ module.exports = {
     const { checkAndUploadEmojis } = require('../../scripts/upload-emojis.js');
     checkAndUploadEmojis(client).catch(() => {});
 
+    // Pre-fetch application emojis to warm cache
+    const { getAppEmojis } = require('../utils/emojiCache.js');
+    getAppEmojis(client)
+      .then(() => {
+        logger.info('Application emojis cache warmed up successfully.');
+      })
+      .catch(() => {});
+
     // Initialize autocomplete suggestions cache for cis-info command
     const cisInfoCommand = client.commands.get('cis-info');
     if (cisInfoCommand && typeof cisInfoCommand.initCache === 'function') {

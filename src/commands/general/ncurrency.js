@@ -1,11 +1,8 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { db } = require('../../utils/db.js');
-const { nguildData } = require('../../db/schema.js');
-const { eq } = require('drizzle-orm');
 const { errorEmbed, successEmbed } = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
-
-const userLastAutocomplete = new Map();
+const { setGuildCurrency } = require('../../utils/guildConfigHelper.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -28,41 +25,32 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
-    const focusedValue = interaction.options.getFocused().toLowerCase();
+    try {
+      const focusedValue = interaction.options.getFocused().toLowerCase();
 
-    // Debounce: Wait 500ms after user stops typing
-    if (focusedValue !== '') {
-      const userId = interaction.user.id;
-      const currentInteractionId = interaction.id;
-      userLastAutocomplete.set(userId, currentInteractionId);
+      // Get currencies list from memory cache
+      const cache = getCurrencyCache();
+      const currencies = cache.currencies || [];
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Combine standard currencies with ARC option
+      const allOptions = [{ id: 'arc', name: 'Arc' }, ...currencies];
 
-      if (userLastAutocomplete.get(userId) !== currentInteractionId) {
-        return; // Ignore older keystrokes
-      }
+      // Filter based on input
+      const filtered = allOptions.filter(
+        (c) =>
+          c.id?.toLowerCase().includes(focusedValue) || c.name?.toLowerCase().includes(focusedValue)
+      );
+
+      // Limit to Discord's maximum of 25 choices
+      const choices = filtered.slice(0, 25).map((c) => ({
+        name: `${c.name || c.id} (${c.id.toUpperCase()})`,
+        value: c.id,
+      }));
+
+      await interaction.respond(choices);
+    } catch {
+      // Silently ignore autocomplete errors
     }
-
-    // Get currencies list from memory cache
-    const cache = getCurrencyCache();
-    const currencies = cache.currencies || [];
-
-    // Combine standard currencies with ARC option
-    const allOptions = [{ id: 'arc', name: 'Arc' }, ...currencies];
-
-    // Filter based on input
-    const filtered = allOptions.filter(
-      (c) =>
-        c.id?.toLowerCase().includes(focusedValue) || c.name?.toLowerCase().includes(focusedValue)
-    );
-
-    // Limit to Discord's maximum of 25 choices
-    const choices = filtered.slice(0, 25).map((c) => ({
-      name: `${c.name || c.id} (${c.id.toUpperCase()})`,
-      value: c.id,
-    }));
-
-    await interaction.respond(choices).catch(() => {});
   },
 
   async execute(interaction) {
@@ -115,23 +103,7 @@ module.exports = {
 
       try {
         const guildId = interaction.guildId;
-
-        // Check if guild mapping already exists
-        const existing = await db.select().from(nguildData).where(eq(nguildData.guildId, guildId));
-
-        if (existing.length > 0) {
-          // Update
-          await db
-            .update(nguildData)
-            .set({ currency: currencyId })
-            .where(eq(nguildData.guildId, guildId));
-        } else {
-          // Insert
-          await db.insert(nguildData).values({
-            guildId,
-            currency: currencyId,
-          });
-        }
+        await setGuildCurrency(guildId, currencyId);
 
         const embed = successEmbed(
           'Currency Configured',

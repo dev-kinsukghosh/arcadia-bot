@@ -11,34 +11,7 @@ const { db } = require('../../utils/db.js');
 const { currencies: currenciesTable } = require('../../db/schema.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
-
-// Module-level cache for application emojis to prevent slow HTTP calls on every command
-let cachedEmojis = null;
-let lastEmojiFetch = 0;
-const EMOJI_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
-
-async function getAppEmojis(client) {
-  const now = Date.now();
-  if (cachedEmojis && now - lastEmojiFetch < EMOJI_CACHE_TTL) {
-    return cachedEmojis;
-  }
-
-  // If cache is empty but client cache is populated, reuse it
-  if (client.application.emojis.cache.size > 0) {
-    cachedEmojis = client.application.emojis.cache;
-    lastEmojiFetch = now;
-    return cachedEmojis;
-  }
-
-  try {
-    const fetched = await client.application.emojis.fetch();
-    cachedEmojis = fetched;
-    lastEmojiFetch = now;
-    return fetched;
-  } catch {
-    return client.application.emojis.cache;
-  }
-}
+const { getAppEmojis } = require('../../utils/emojiCache.js');
 
 module.exports = {
   data: new SlashCommandBuilder()

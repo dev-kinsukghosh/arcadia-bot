@@ -9,6 +9,8 @@ const {
 } = require('../../utils/embedHelper.js');
 const { eq, and } = require('drizzle-orm');
 
+const userLastAutocomplete = new Map();
+
 function formatItemName(name) {
   return name
     .toLowerCase()
@@ -55,6 +57,23 @@ module.exports = {
       const subcommand = interaction.options.getSubcommand();
       const focusedValue = interaction.options.getFocused().toLowerCase();
 
+      // Debounce: Wait 150ms after user stops typing to reduce DB load
+      if (focusedValue !== '') {
+        const userId = interaction.user.id;
+        const currentInteractionId = interaction.id;
+        userLastAutocomplete.set(userId, currentInteractionId);
+
+        await new Promise((resolve) => setTimeout(resolve, 150));
+
+        if (userLastAutocomplete.get(userId) !== currentInteractionId) {
+          return; // Ignore older keystrokes
+        }
+      }
+
+      // Retrieve items from cis-info cache
+      const cisInfoCmd = interaction.client.commands.get('cis-info');
+      const items = cisInfoCmd ? cisInfoCmd.getCache() : [];
+
       if (subcommand === 'remove') {
         // Query only items this user is subscribed to
         const userNotifs = await db
@@ -67,11 +86,6 @@ module.exports = {
         if (subbedItems.length === 0) {
           return interaction.respond([]);
         }
-
-        // Get details of these items from convoyItems
-        const items = await db
-          .select({ item: convoyItems.item, rarity: convoyItems.rarity })
-          .from(convoyItems);
 
         const filtered = items
           .filter(
@@ -90,7 +104,7 @@ module.exports = {
 
         const results = [
           ...filtered.map((choice) => ({
-            name: `${formatItemName(choice.item)} (${choice.rarity})`,
+            name: `${formatItemName(choice.item)} (${choice.rarity ? choice.rarity.toUpperCase() : 'COMMON'})`,
             value: choice.item,
           })),
           ...missingFiltered.map((item) => ({
@@ -111,10 +125,6 @@ module.exports = {
 
         const subbedItems = userNotifs.map((n) => n.item);
 
-        const items = await db
-          .select({ item: convoyItems.item, rarity: convoyItems.rarity })
-          .from(convoyItems);
-
         const filtered = items
           .filter(
             (choice) =>
@@ -124,7 +134,7 @@ module.exports = {
 
         return interaction.respond(
           filtered.map((choice) => ({
-            name: `${formatItemName(choice.item)} (${choice.rarity})`,
+            name: `${formatItemName(choice.item)} (${choice.rarity ? choice.rarity.toUpperCase() : 'COMMON'})`,
             value: choice.item,
           }))
         );
@@ -155,10 +165,24 @@ module.exports = {
     if (subcommand === 'add') {
       const itemArg = interaction.options.getString('item').toUpperCase().trim();
 
-      // Verify the item exists in the convoy database
-      const itemExists = await db.select().from(convoyItems).where(eq(convoyItems.item, itemArg));
+      // Verify the item exists in the convoy database (using cache first)
+      const { getAllItemsCache } = require('../../services/convoySync.js');
+      const allCached = getAllItemsCache();
+      let exists = allCached.some((i) => i.item === itemArg);
 
-      if (itemExists.length === 0) {
+      if (!exists && db) {
+        try {
+          const itemExists = await db
+            .select()
+            .from(convoyItems)
+            .where(eq(convoyItems.item, itemArg));
+          exists = itemExists.length > 0;
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!exists) {
         return interaction.editReply({
           embeds: [
             errorEmbed(

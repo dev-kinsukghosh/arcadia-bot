@@ -7,31 +7,8 @@ const { db } = require('../../utils/db.js');
 const { currencies: currenciesTable, currencyHistory } = require('../../db/schema.js');
 const { gte, asc } = require('drizzle-orm');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
-
-// Module-level cache for application emojis to prevent slow HTTP calls on every command
-let cachedEmojis = null;
-let lastEmojiFetch = 0;
-const EMOJI_CACHE_TTL = 10 * 60 * 1000;
-
-async function getAppEmojis(client) {
-  const now = Date.now();
-  if (cachedEmojis && now - lastEmojiFetch < EMOJI_CACHE_TTL) {
-    return cachedEmojis;
-  }
-  if (client.application.emojis.cache.size > 0) {
-    cachedEmojis = client.application.emojis.cache;
-    lastEmojiFetch = now;
-    return cachedEmojis;
-  }
-  try {
-    const fetched = await client.application.emojis.fetch();
-    cachedEmojis = fetched;
-    lastEmojiFetch = now;
-    return fetched;
-  } catch {
-    return client.application.emojis.cache;
-  }
-}
+const { getAppEmojis } = require('../../utils/emojiCache.js');
+const { getCurrencyCache } = require('../../services/currencySync.js');
 
 function formatPrice(val) {
   const n = parseFloat(val);
@@ -129,7 +106,12 @@ module.exports = {
       cutoffDate.setUTCDate(cutoffDate.getUTCDate() - retentionDays);
       const cutoffStr = cutoffDate.toISOString().split('T')[0];
 
-      const latestCurrencies = await db.select().from(currenciesTable);
+      const cache = getCurrencyCache();
+      let latestCurrencies = cache.currencies || [];
+
+      if (latestCurrencies.length === 0 && db) {
+        latestCurrencies = await db.select().from(currenciesTable);
+      }
 
       if (!latestCurrencies || latestCurrencies.length === 0) {
         return interaction.editReply({

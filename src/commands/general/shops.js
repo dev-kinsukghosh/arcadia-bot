@@ -12,13 +12,12 @@ const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embed
 const redisClient = require('../../utils/redis.js');
 const { db } = require('../../utils/db.js');
 const { playerShops } = require('../../db/schema.js');
-
-const userLastAutocomplete = new Map();
+const { getAppEmojis } = require('../../utils/emojiCache.js');
 
 // Local cache for shops data during autocomplete to prevent excessive API requests
 let shopsCache = null;
 let lastCacheFetch = 0;
-const CACHE_TTL = 30 * 1000; // 30 seconds TTL
+const CACHE_TTL = 300 * 1000; // 5 minutes TTL
 
 async function fetchShopsData() {
   const now = Date.now();
@@ -126,66 +125,57 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
-    const focusedOption = interaction.options.getFocused(true);
-    const focusedValue = focusedOption.value ? focusedOption.value.toLowerCase().trim() : '';
+    try {
+      const focusedOption = interaction.options.getFocused(true);
+      const focusedValue = focusedOption.value ? focusedOption.value.toLowerCase().trim() : '';
 
-    // Debounce: Wait 500ms after user stops typing
-    if (focusedValue !== '') {
-      const userId = interaction.user.id;
-      const currentInteractionId = interaction.id;
-      userLastAutocomplete.set(userId, currentInteractionId);
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      if (userLastAutocomplete.get(userId) !== currentInteractionId) {
-        return; // Ignore older keystrokes
-      }
-    }
-
-    const shops = await fetchShopsData();
-    if (!shops || shops.length === 0) {
-      return interaction.respond([]).catch(() => {});
-    }
-
-    let choices = [];
-
-    if (focusedOption.name === 'shop') {
-      const filtered = shops.filter((s) => {
-        const name = s.name ? s.name.toLowerCase() : '';
-        const nameClean = s.name ? s.name.toLowerCase().replace(/_/g, ' ') : '';
-        return name.includes(focusedValue) || nameClean.includes(focusedValue);
-      });
-
-      choices = filtered.slice(0, 25).map((s) => ({
-        name: s.name.replace(/_/g, ' '),
-        value: s.key || s.name.toLowerCase(),
-      }));
-    } else if (focusedOption.name === 'item') {
-      const allItems = new Set();
-      for (const s of shops) {
-        if (Array.isArray(s.sellListings)) {
-          s.sellListings.forEach((l) => {
-            if (l.item) allItems.add(l.item.toUpperCase());
-          });
-        }
-        if (Array.isArray(s.buyListings)) {
-          s.buyListings.forEach((l) => {
-            if (l.item) allItems.add(l.item.toUpperCase());
-          });
-        }
+      const shops = await fetchShopsData();
+      if (!shops || shops.length === 0) {
+        return interaction.respond([]);
       }
 
-      const filtered = Array.from(allItems).filter((item) =>
-        item.toLowerCase().includes(focusedValue)
-      );
+      let choices = [];
 
-      choices = filtered.slice(0, 25).map((item) => ({
-        name: item.replace(/_/g, ' '),
-        value: item,
-      }));
+      if (focusedOption.name === 'shop') {
+        const filtered = shops.filter((s) => {
+          const name = s.name ? s.name.toLowerCase() : '';
+          const nameClean = s.name ? s.name.toLowerCase().replace(/_/g, ' ') : '';
+          return name.includes(focusedValue) || nameClean.includes(focusedValue);
+        });
+
+        choices = filtered.slice(0, 25).map((s) => ({
+          name: s.name.replace(/_/g, ' '),
+          value: s.key || s.name.toLowerCase(),
+        }));
+      } else if (focusedOption.name === 'item') {
+        const allItems = new Set();
+        for (const s of shops) {
+          if (Array.isArray(s.sellListings)) {
+            s.sellListings.forEach((l) => {
+              if (l.item) allItems.add(l.item.toUpperCase());
+            });
+          }
+          if (Array.isArray(s.buyListings)) {
+            s.buyListings.forEach((l) => {
+              if (l.item) allItems.add(l.item.toUpperCase());
+            });
+          }
+        }
+
+        const filtered = Array.from(allItems).filter((item) =>
+          item.toLowerCase().includes(focusedValue)
+        );
+
+        choices = filtered.slice(0, 25).map((item) => ({
+          name: item.replace(/_/g, ' '),
+          value: item,
+        }));
+      }
+
+      await interaction.respond(choices);
+    } catch {
+      // Silently ignore autocomplete errors
     }
-
-    await interaction.respond(choices).catch(() => {});
   },
 
   async execute(interaction) {
@@ -201,8 +191,8 @@ module.exports = {
       });
     }
 
-    // Fetch Application Emojis to map block/item textures
-    const appEmojis = await interaction.client.application.emojis.fetch().catch(() => null);
+    // Fetch Application Emojis to map block/item textures (using cache helper)
+    const appEmojis = await getAppEmojis(interaction.client);
 
     // Helper to format currency values
     const formatPrice = (val, currencyName = '₳') => {

@@ -9,6 +9,7 @@ const {
   date,
   customType,
   text,
+  index,
 } = require('drizzle-orm/mysql-core');
 
 const convoyItems = mysqlTable('convoy_items', {
@@ -119,7 +120,10 @@ const townyHistory = mysqlTable(
     townsCount: int('towns_count').default(0).notNull(), // towns count for nations, 0 for towns
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
   },
-  (table) => [primaryKey({ columns: [table.name, table.type, table.date] })]
+  (table) => [
+    primaryKey({ columns: [table.name, table.type, table.date] }),
+    index('date_idx').on(table.date),
+  ]
 );
 
 module.exports = {

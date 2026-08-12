@@ -15,10 +15,12 @@ const {
   InteractionContextType,
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
-const { convoyItems, nguildData } = require('../../db/schema.js');
+const { convoyItems } = require('../../db/schema.js');
 const { eq } = require('drizzle-orm');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
+const { getGuildCurrency } = require('../../utils/guildConfigHelper.js');
+const { getActiveItemsCache } = require('../../services/convoySync.js');
 const path = require('path');
 const fs = require('fs');
 
@@ -245,18 +247,7 @@ module.exports = {
     let conversion = { prefix: '₳', suffix: '', rate: 1.0 };
 
     if (interaction.guildId) {
-      try {
-        const configRow = await db
-          .select()
-          .from(nguildData)
-          .where(eq(nguildData.guildId, interaction.guildId));
-
-        if (configRow.length > 0 && configRow[0].currency) {
-          activeCurrency = configRow[0].currency.toLowerCase();
-        }
-      } catch {
-        // Ignore DB issues, default to 'arc'
-      }
+      activeCurrency = await getGuildCurrency(interaction.guildId);
     }
 
     if (activeCurrency !== 'arc') {
@@ -273,7 +264,10 @@ module.exports = {
       }
     }
 
-    const items = await db.select().from(convoyItems).where(eq(convoyItems.current_p, true));
+    let items = getActiveItemsCache();
+    if (!items || items.length === 0) {
+      items = await db.select().from(convoyItems).where(eq(convoyItems.current_p, true));
+    }
 
     if (!items || items.length === 0) {
       return interaction.editReply({

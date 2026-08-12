@@ -685,3 +685,52 @@ The following rules MUST be followed at all times:
   - Resolved Tailwind class name conflict errors (removed duplicate `capitalize` overlapping with `uppercase`) on rarity badges inside `dashboard/src/components/ConvoyStock.vue`.
   - Configured Express server (`src/server.js`) to dynamically disable CORS restrictions in development mode (`process.env.NODE_ENV !== 'production'`) by setting `origin: true` (reflecting any requesting origin to allow standard credentials-based fetch lookups).
   - Formatted the entire codebase with Prettier (`npm run format`) and verified that the ESLint checks compile successfully with zero errors.
+
+### 12-08-2026
+
+- **Optimized Autocomplete Response Latencies**:
+  - Eliminated high artificial autocomplete delays (1.5-second debounce in `/cis-info` and 500ms debounces in `/ccompare`, `/chistory`, `/exchange`, `/ncurrency`, `/shops`, and `/towny`) since these handlers process in-memory cache data and do not need to throttle keystrokes.
+  - Redesigned `/towny` autocomplete fetching logic (`fetchTownyData`) to read from the local Redis `'cache:towny'` cache (populated by the `townySync` worker) first. Falls back to direct API fetches only if Redis is empty or offline, completely removing API blocking latencies on keystrokes.
+  - Increased local memory cache TTL to 5 minutes (`300 * 1000` ms) for both player shops and towny datasets, keeping datasets cached in memory longer to minimize Redis queries.
+  - Optimized `/notifyiic` autocomplete by fetching the tracked convoy items catalog directly from the `/cis-info` command memory cache (`getCache()`), completely removing the expensive database query targeting `convoy_items` on every keystroke. Added a lightweight 150ms debounce for the user's personal notifications query to protect MySQL database resources.
+  - Removed all unused `userLastAutocomplete` Map variables across all commands to resolve ESLint warnings.
+  - Formatted the codebase and successfully verified that all linter rules pass with zero warnings or errors.
+- **Towny Historical Database Optimization**:
+  - Imported `index` from `drizzle-orm/mysql-core` and defined a new index `date_idx` on the `date` column of the `towny_history` database table schema in `src/db/schema.js` to optimize range-based date deletions.
+  - Successfully generated and applied the database schema migration `0013_uneven_jimmy_woo.sql` using Drizzle Kit.
+- **Automatic Deletion of Stale/Non-Existent Towns and Nations**:
+  - Restructured `src/services/townySync.js` to identify historical records of towns/nations that are no longer returned in the active API response lists.
+  - Implemented `pruneDeletedTownsNations(currentTowns, currentNations)` to automatically clean up all historical entries of deleted/non-existent towns and nations.
+  - Configured logging using `logger.info` and `picocolors` to print details of pruned towns and nations, with standard safety checks preventing accidental prunes on API failure.
+  - Formatted the codebase and successfully verified that all linter rules pass with zero warnings or errors.
+- **Bypassed Message Gradients inside Cyber Logger on ANSI Matches**:
+  - Modified the logging output formatter inside `src/utils/logger.js` to automatically detect whether a message contains existing ANSI escape color configurations (e.g. from `picocolors`).
+  - Bypasses applying the full neon gradients over the message if ANSI matches are present, allowing localized `picocolors` coloring to render correctly without producing broken escape bracket sequences (`[1m[36m...`) in the terminal console.
+- **Safety Failsafes and Auto-Deletions across all Sync Workers**:
+  - Integrated a safety check for player shops in `src/services/shopsSync.js` to skip database pruning if the API yields an empty shops array, preventing accidental wipeouts of the local database. Added detailed pruning logger outputs.
+  - Configured a similar failsafe inside `src/services/convoySync.js` to skip resetting item activity status in both MySQL and Redis-OM if the fetched convoy trades count is 0.
+  - Implemented automatic pruning of deleted currencies in `src/services/currencySync.js` to clean up the `currencies` database table and remove related rows from the `currency_history` table once a nation's currency is deleted. Added the same failsafe to skip deletions if 0 active currencies are returned.
+- **Detailed Pruning Database Logs**:
+  - Updated database pruning operations in `src/services/currencySync.js`, `src/services/shopsSync.js`, and `src/services/townySync.js` to query and log the exact names and IDs of pruned/deleted currencies, stale shops, and deleted towns and nations before removing them.
+- **Convoy Sync 2-Minute Scheduler Fix**:
+  - Restructured `syncConvoy` in `src/services/convoySync.js` to prevent the backup 2-minute sync from resetting/rescheduling the 1-hour primary rotation checker. Added an `isBackup` flag to ensure the 1-hour primary check is only rescheduled if a true rotation is detected, if forced manually via `/forcesync`, or if no scheduler is currently running.
+- **Towny History Daily Sync Query Optimization**:
+  - Refactored individual town and nation upsert queries in `src/services/townySync.js` into highly efficient bulk upsert queries (processing towns and nations in one batch each). This resolves database connection pool exhaustion and query acquisition timeouts.
+  - Replaced passing `new Date()` as a raw javascript parameter for `updated_at` with native `CURRENT_TIMESTAMP` using the Drizzle `sql` helper, avoiding local timezone serialization discrepancies.
+  - Enhanced error catching inside `townySync.js` to pass the original `err` error instance into `logger.error`, allowing the cyber logger to print the full error stack and `cause` object.
+- **Database Connection Pool Increase**:
+  - Configured `DB_CONNECTION_LIMIT=30` inside `.env` and updated the default fallback value in `src/config.js` to `30` to increase database throughput.
+- **Zero-Latency In-Memory Slash Command Cache Optimizations**:
+  - Created `src/utils/guildConfigHelper.js` to manage an in-memory cache of the `nguild_data` table (mapping `guildId -> currency`), pre-populated on bot startup, to eliminate redundant database checks when checking configured server currencies.
+  - Created `src/utils/emojiCache.js` to implement a centralized, TTL-backed (10-minute) cache of application emojis, replacing slow, redundant Discord API HTTP fetch calls across `/cis-info`, `/currencies`, `/cstats`, and `/shops`.
+  - Added an in-memory cache of convoy items (both active and total recorded) inside `src/services/convoySync.js` updated automatically on synchronization runs and warmed up on boot.
+  - Refactored `/cstock`, `/cis-info`, and `/notifyiic` slash commands to query the new in-memory convoy items caches, eliminating database lookup latencies on command executions.
+  - Updated `/ncurrency` set command to update the guild configurations memory cache when altering settings.
+  - Updated `src/events/interactionCreate.js` to run Redis command tracking statistics asynchronously (non-blocking, fire-and-forget), eliminating network roundtrip latencies from the command execution flow.
+  - Warmed up the application emoji cache on client ready inside `src/events/ready.js` to prevent cold start response delay.
+  - Formatted the codebase and successfully verified that all linter rules pass with zero warnings or errors.
+- **Resolved Redundant Skin Updates and Log Spam**:
+  - Fixed a logic bug inside `src/services/headManager.js` where player heads were retrieved using round-robin API selection (alternating between Crafthead and Minotar). Since the two APIs render PNGs differently (different palettes/layout/compression), `Buffer.compare` was failing on every 6-hour update job execution, triggering useless MySQL writes, Redis cache evictions, and spamming the console with false "skin updated" notifications.
+  - Refactored `fetchHeadFromApis` and `updateAllHeadsConcurrencyJob` to use a prioritized fetching scheme (always requesting from Crafthead as primary, falling back to Minotar only if Crafthead is down).
+  - This ensures binary consistency; unchanged skins now yield identical PNG buffers, bypassing updates and logs.
+  - Formatted the codebase and successfully verified that all linter rules pass with zero warnings or errors.

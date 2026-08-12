@@ -93,9 +93,11 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── blacklistHelper.js
 │       ├── canvasGraph.js
 │       ├── db.js
+│       ├── emojiCache.js
 │       ├── embedHelper.js
 │       ├── emitter.js
 │       ├── errorHandler.js
+│       ├── guildConfigHelper.js
 │       ├── iconDownloader.js
 │       ├── logger.js
 │       ├── redis.js
@@ -232,9 +234,11 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.
   - [src/utils/canvasGraph.js](./src/utils/canvasGraph.js): Generates high-quality bar and line charts using @napi-rs/canvas.
   - [src/utils/db.js](./src/utils/db.js): Drizzle ORM database instance client.
+  - [src/utils/emojiCache.js](./src/utils/emojiCache.js): Manages in-memory caching of application custom emojis.
   - [src/utils/embedHelper.js](./src/utils/embedHelper.js): Central helper module to build styled, uniform Discord embeds.
   - [src/utils/emitter.js](./src/utils/emitter.js): Central EventEmitter instance for cross-module real-time communications.
   - [src/utils/errorHandler.js](./src/utils/errorHandler.js): Exception wrapper to prevent process crashes and route alerts.
+  - [src/utils/guildConfigHelper.js](./src/utils/guildConfigHelper.js): Manages memory caching of guild nation currency configurations.
   - [src/utils/iconDownloader.js](./src/utils/iconDownloader.js): Downloads missing block and item icons from assets.mcasset.cloud.
   - [src/utils/logger.js](./src/utils/logger.js): Winston/Picocolors logger.
   - [src/utils/redis.js](./src/utils/redis.js): Connection client for Redis cache operations.

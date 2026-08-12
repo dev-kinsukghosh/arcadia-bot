@@ -9,12 +9,14 @@ const redis = require('../utils/redis.js');
 let lastApiUpdatedAt = null;
 let discordClient = null;
 let lastSyncTime = 0;
+let cachedActiveItems = [];
+let cachedAllItems = [];
 
 /**
  * Fetch convoy data from API and sync with the MySQL database
  * @param {boolean} force - Whether to bypass the short-term rate limit check
  */
-async function syncConvoy(force = false) {
+async function syncConvoy(force = false, isBackup = false) {
   if (!db) {
     logger.warn('Database is not active. Skipping convoy sync.');
     return;
@@ -194,11 +196,13 @@ async function syncConvoy(force = false) {
         .set({ current_p: false })
         .where(notInArray(convoyItems.item, activeItemNames));
     } else {
-      await db.update(convoyItems).set({ current_p: false });
+      logger.warn(
+        'Fetched 0 active convoy items from API. Skipping update of current_p status to prevent marking all items as inactive.'
+      );
     }
 
     // 4. Mark items not present in this API response as inactive in Redis-OM
-    if (isOmReady) {
+    if (isOmReady && activeItemNames.length > 0) {
       try {
         const allRedisItems = await convoyItemRepository.fetchAll();
         for (const item of allRedisItems) {
@@ -391,6 +395,14 @@ async function syncConvoy(force = false) {
       }
     }
 
+    // Update local cache
+    try {
+      cachedAllItems = await db.select().from(convoyItems);
+      cachedActiveItems = cachedAllItems.filter((i) => i.current_p);
+    } catch (err) {
+      logger.error('Failed to populate local convoy items cache:', err);
+    }
+
     logger.success(
       `Convoy sync complete: ${pc.bold(pc.green(inserted))} inserted, ` +
         `${pc.bold(pc.yellow(updatedPriceSeen))} returned in new rotation (+1 timesSeen), ` +
@@ -398,8 +410,11 @@ async function syncConvoy(force = false) {
     );
 
     if (discordClient) {
-      const lastMs = parseUpdatedAtToMs(lastApiUpdatedAt) || Date.now();
-      scheduleNextSync(discordClient, lastMs);
+      const shouldSchedule = !isBackup || isNewRotation || !syncTimeout;
+      if (shouldSchedule) {
+        const lastMs = parseUpdatedAtToMs(lastApiUpdatedAt) || Date.now();
+        scheduleNextSync(discordClient, lastMs);
+      }
     }
   } catch (error) {
     const { reportError } = require('../utils/errorHandler.js');
@@ -458,6 +473,7 @@ function scheduleNextSync(client, lastUpdatedMs) {
 
   syncTimeout = setTimeout(async () => {
     logger.info('Executing scheduled convoy rotation check...');
+    syncTimeout = null;
     await syncConvoy();
   }, delay);
 }
@@ -471,13 +487,22 @@ function startConvoySync(client) {
   logger.info('Initializing Convoy Sync scheduler...');
 
   // Run once immediately on bot startup
-  syncConvoy();
+  syncConvoy().then(async () => {
+    if (cachedAllItems.length === 0 && db) {
+      try {
+        cachedAllItems = await db.select().from(convoyItems);
+        cachedActiveItems = cachedAllItems.filter((i) => i.current_p);
+      } catch (err) {
+        logger.error('Failed to pre-populate convoy items cache:', err);
+      }
+    }
+  });
 
   // Schedule a backup interval checker running every 2 minutes
   setInterval(
     async () => {
       logger.info('Executing backup 2-minute convoy sync check...');
-      await syncConvoy();
+      await syncConvoy(false, true);
     },
     2 * 60 * 1000
   );
@@ -486,4 +511,6 @@ function startConvoySync(client) {
 module.exports = {
   syncConvoy,
   startConvoySync,
+  getActiveItemsCache: () => cachedActiveItems,
+  getAllItemsCache: () => cachedAllItems,
 };

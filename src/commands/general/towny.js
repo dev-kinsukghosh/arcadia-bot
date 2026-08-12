@@ -19,19 +19,33 @@ const { db } = require('../../utils/db.js');
 const { townyHistory } = require('../../db/schema.js');
 const { and, eq, gte, asc } = require('drizzle-orm');
 
-// Map for autocomplete debouncing per user (500ms)
-const userLastAutocomplete = new Map();
-
 // Local cache for towny data during autocomplete to prevent excessive API requests
 let townyCache = null;
 let lastCacheFetch = 0;
-const CACHE_TTL = 60 * 1000; // 60 seconds TTL
+const CACHE_TTL = 300 * 1000; // 5 minutes TTL
 
 async function fetchTownyData() {
   const now = Date.now();
   if (townyCache && now - lastCacheFetch < CACHE_TTL) {
     return townyCache;
   }
+
+  // 1. Try Redis cache first (populated by background worker townySync)
+  const redisClient = require('../../utils/redis.js');
+  if (redisClient && redisClient.status === 'ready') {
+    try {
+      const cached = await redisClient.get('cache:towny');
+      if (cached) {
+        townyCache = JSON.parse(cached);
+        lastCacheFetch = now;
+        return townyCache;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2. Fallback to API if Redis is down or empty
   try {
     const data = await arcadiaApi.getTowny();
     if (data) {
@@ -167,86 +181,77 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
-    const focusedOption = interaction.options.getFocused(true);
-    const focusedValue = focusedOption.value ? focusedOption.value.toLowerCase().trim() : '';
+    try {
+      const focusedOption = interaction.options.getFocused(true);
+      const focusedValue = focusedOption.value ? focusedOption.value.toLowerCase().trim() : '';
 
-    // Debounce: Wait 500ms after user stops typing
-    if (focusedValue !== '') {
-      const userId = interaction.user.id;
-      const currentInteractionId = interaction.id;
-      userLastAutocomplete.set(userId, currentInteractionId);
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      if (userLastAutocomplete.get(userId) !== currentInteractionId) {
-        return; // Ignore older keystrokes
+      const data = await fetchTownyData();
+      if (!data) {
+        return interaction.respond([]).catch(() => {});
       }
+
+      const subcommand = interaction.options.getSubcommand();
+      const type = interaction.options.getString('type') || 'town';
+      let choices = [];
+
+      if (
+        (focusedOption.name === 'name' && subcommand === 'town') ||
+        focusedOption.name === 'town1' ||
+        focusedOption.name === 'town2' ||
+        (focusedOption.name === 'name' && subcommand === 'history' && type === 'town')
+      ) {
+        const towns = Array.isArray(data.towns) ? data.towns : [];
+        const filtered = towns.filter((t) => {
+          if (!t) return false;
+          const name = t.name ? t.name.toLowerCase() : '';
+          const nameClean = t.name ? t.name.toLowerCase().replace(/_/g, ' ') : '';
+          const slug = t.slug ? t.slug.toLowerCase() : '';
+          return (
+            name.includes(focusedValue) ||
+            nameClean.includes(focusedValue) ||
+            slug.includes(focusedValue)
+          );
+        });
+
+        choices = filtered.slice(0, 25).map((t) => {
+          const displayName = t.name ? t.name.replace(/_/g, ' ') : t.slug || 'Unknown Town';
+          const nationTag = t.nation?.name ? ` [${t.nation.name.replace(/_/g, ' ')}]` : '';
+          return {
+            name: `${displayName}${nationTag}`.slice(0, 100),
+            value: t.name || t.slug || t.id,
+          };
+        });
+      } else if (
+        (focusedOption.name === 'name' && subcommand === 'nation') ||
+        (focusedOption.name === 'name' && subcommand === 'history' && type === 'nation')
+      ) {
+        const nations = Array.isArray(data.nations) ? data.nations : [];
+        const filtered = nations.filter((n) => {
+          if (!n) return false;
+          const name = n.name ? n.name.toLowerCase() : '';
+          const nameClean = n.name ? n.name.toLowerCase().replace(/_/g, ' ') : '';
+          const slug = n.slug ? n.slug.toLowerCase() : '';
+          return (
+            name.includes(focusedValue) ||
+            nameClean.includes(focusedValue) ||
+            slug.includes(focusedValue)
+          );
+        });
+
+        choices = filtered.slice(0, 25).map((n) => {
+          const displayName = n.name ? n.name.replace(/_/g, ' ') : n.slug || 'Unknown Nation';
+          const townsInfo = ` (${n.towns ?? 0} towns)`;
+          return {
+            name: `${displayName}${townsInfo}`.slice(0, 100),
+            value: n.name || n.slug || n.id,
+          };
+        });
+      }
+
+      await interaction.respond(choices);
+    } catch {
+      // Silently ignore autocomplete errors
     }
-
-    const data = await fetchTownyData();
-    if (!data) {
-      return interaction.respond([]).catch(() => {});
-    }
-
-    const subcommand = interaction.options.getSubcommand();
-    const type = interaction.options.getString('type') || 'town';
-    let choices = [];
-
-    if (
-      (focusedOption.name === 'name' && subcommand === 'town') ||
-      focusedOption.name === 'town1' ||
-      focusedOption.name === 'town2' ||
-      (focusedOption.name === 'name' && subcommand === 'history' && type === 'town')
-    ) {
-      const towns = Array.isArray(data.towns) ? data.towns : [];
-      const filtered = towns.filter((t) => {
-        if (!t) return false;
-        const name = t.name ? t.name.toLowerCase() : '';
-        const nameClean = t.name ? t.name.toLowerCase().replace(/_/g, ' ') : '';
-        const slug = t.slug ? t.slug.toLowerCase() : '';
-        return (
-          name.includes(focusedValue) ||
-          nameClean.includes(focusedValue) ||
-          slug.includes(focusedValue)
-        );
-      });
-
-      choices = filtered.slice(0, 25).map((t) => {
-        const displayName = t.name ? t.name.replace(/_/g, ' ') : t.slug || 'Unknown Town';
-        const nationTag = t.nation?.name ? ` [${t.nation.name.replace(/_/g, ' ')}]` : '';
-        return {
-          name: `${displayName}${nationTag}`.slice(0, 100),
-          value: t.name || t.slug || t.id,
-        };
-      });
-    } else if (
-      (focusedOption.name === 'name' && subcommand === 'nation') ||
-      (focusedOption.name === 'name' && subcommand === 'history' && type === 'nation')
-    ) {
-      const nations = Array.isArray(data.nations) ? data.nations : [];
-      const filtered = nations.filter((n) => {
-        if (!n) return false;
-        const name = n.name ? n.name.toLowerCase() : '';
-        const nameClean = n.name ? n.name.toLowerCase().replace(/_/g, ' ') : '';
-        const slug = n.slug ? n.slug.toLowerCase() : '';
-        return (
-          name.includes(focusedValue) ||
-          nameClean.includes(focusedValue) ||
-          slug.includes(focusedValue)
-        );
-      });
-
-      choices = filtered.slice(0, 25).map((n) => {
-        const displayName = n.name ? n.name.replace(/_/g, ' ') : n.slug || 'Unknown Nation';
-        const townsInfo = ` (${n.towns ?? 0} towns)`;
-        return {
-          name: `${displayName}${townsInfo}`.slice(0, 100),
-          value: n.name || n.slug || n.id,
-        };
-      });
-    }
-
-    await interaction.respond(choices).catch(() => {});
   },
 
   async execute(interaction) {

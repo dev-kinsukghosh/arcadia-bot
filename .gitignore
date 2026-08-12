@@ -39,3 +39,7 @@ components.d.ts
 stats.html*
 .eslintrc-auto-import.json
 
+# my Custom script
+
+## calc line count and some other stats
+loc-temp.js

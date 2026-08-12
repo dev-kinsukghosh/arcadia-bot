@@ -4,7 +4,7 @@ const pc = require('picocolors');
 const redis = require('../utils/redis.js');
 const { db } = require('../utils/db.js');
 const { currencies, currencyHistory, internal } = require('../db/schema.js');
-const { and, eq, lt } = require('drizzle-orm');
+const { and, eq, lt, notInArray } = require('drizzle-orm');
 const axios = require('axios');
 
 const resolvedUsernames = new Map();
@@ -367,6 +367,40 @@ async function syncCurrencies() {
 
     // 4. Prune rows older than 120 days
     await pruneOldHistory();
+
+    // 4.5. Prune deleted currencies from database
+    const activeCurrencyIds = data.currencies.map((c) => c.id).filter(Boolean);
+    if (activeCurrencyIds.length > 0) {
+      // Find the names or IDs of the deleted currencies to log them
+      const obsoleteCurrencies = await db
+        .select({ id: currencies.id, name: currencies.name })
+        .from(currencies)
+        .where(notInArray(currencies.id, activeCurrencyIds));
+
+      const deleteCurrenciesRes = await db
+        .delete(currencies)
+        .where(notInArray(currencies.id, activeCurrencyIds));
+      const deletedCurrenciesCount = deleteCurrenciesRes[0]?.affectedRows || 0;
+
+      const deleteHistoryRes = await db
+        .delete(currencyHistory)
+        .where(notInArray(currencyHistory.currencyId, activeCurrencyIds));
+      const deletedHistoryCount = deleteHistoryRes[0]?.affectedRows || 0;
+
+      if (deletedCurrenciesCount > 0 || deletedHistoryCount > 0) {
+        const deletedNames =
+          obsoleteCurrencies.length > 0
+            ? obsoleteCurrencies.map((c) => `${c.name} (${c.id})`).join(', ')
+            : 'None';
+        logger.info(
+          `Pruned ${pc.bold(pc.cyan(deletedCurrenciesCount))} deleted currencies [${pc.cyan(deletedNames)}] and ${pc.bold(pc.cyan(deletedHistoryCount))} historical rate records from DB.`
+        );
+      }
+    } else {
+      logger.warn(
+        'Fetched 0 active currencies from API. Skipping pruning to prevent accidental database wipe.'
+      );
+    }
 
     // 5. Download missing standardItem icons and upload as Discord emojis
     const standardItems = [...new Set(data.currencies.map((c) => c.standardItem).filter(Boolean))];

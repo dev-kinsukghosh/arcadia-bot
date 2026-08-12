@@ -6,8 +6,6 @@ const {
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
 
-const userLastAutocomplete = new Map();
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('exchange')
@@ -50,38 +48,28 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
-    const focusedValue = interaction.options.getFocused().toLowerCase();
+    try {
+      const focusedValue = interaction.options.getFocused().toLowerCase();
+      const cache = getCurrencyCache();
+      const currencies = cache.currencies || [];
 
-    // Debounce: Wait 500ms after user stops typing
-    if (focusedValue !== '') {
-      const userId = interaction.user.id;
-      const currentInteractionId = interaction.id;
-      userLastAutocomplete.set(userId, currentInteractionId);
+      // Prepend ARC/Arc
+      const allOptions = [{ id: 'arc', name: 'Arc' }, ...currencies];
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const filtered = allOptions.filter(
+        (c) =>
+          c.id?.toLowerCase().includes(focusedValue) || c.name?.toLowerCase().includes(focusedValue)
+      );
 
-      if (userLastAutocomplete.get(userId) !== currentInteractionId) {
-        return; // Ignore older keystrokes
-      }
+      const choices = filtered.slice(0, 25).map((c) => ({
+        name: `${c.name || c.id} (${c.id.toUpperCase()})`,
+        value: c.id,
+      }));
+
+      await interaction.respond(choices);
+    } catch {
+      // Silently ignore autocomplete errors
     }
-
-    const cache = getCurrencyCache();
-    const currencies = cache.currencies || [];
-
-    // Prepend ARC/Arc
-    const allOptions = [{ id: 'arc', name: 'Arc' }, ...currencies];
-
-    const filtered = allOptions.filter(
-      (c) =>
-        c.id?.toLowerCase().includes(focusedValue) || c.name?.toLowerCase().includes(focusedValue)
-    );
-
-    const choices = filtered.slice(0, 25).map((c) => ({
-      name: `${c.name || c.id} (${c.id.toUpperCase()})`,
-      value: c.id,
-    }));
-
-    await interaction.respond(choices).catch(() => {});
   },
 
   async execute(interaction) {
