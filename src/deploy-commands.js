@@ -66,6 +66,12 @@ const rest = new REST({ version: '10' }).setToken(token);
         const command = require(filePath);
         if (command && command.data && typeof command.execute === 'function') {
           const commandName = command.data.name;
+          if (commandName === 'pemoji') {
+            logger.info(
+              `Skipping deployment registration for ${commandName} (will be registered dynamically)`
+            );
+            return;
+          }
           if (loadedNames.has(commandName)) {
             logger.warn(
               `Duplicate command name detected and skipped: ${commandName} in ${filePath}`

@@ -731,6 +731,40 @@ The following rules MUST be followed at all times:
   - Formatted the codebase and successfully verified that all linter rules pass with zero warnings or errors.
 - **Resolved Redundant Skin Updates and Log Spam**:
   - Fixed a logic bug inside `src/services/headManager.js` where player heads were retrieved using round-robin API selection (alternating between Crafthead and Minotar). Since the two APIs render PNGs differently (different palettes/layout/compression), `Buffer.compare` was failing on every 6-hour update job execution, triggering useless MySQL writes, Redis cache evictions, and spamming the console with false "skin updated" notifications.
-  - Refactored `fetchHeadFromApis` and `updateAllHeadsConcurrencyJob` to use a prioritized fetching scheme (always requesting from Crafthead as primary, falling back to Minotar only if Crafthead is down).
   - This ensures binary consistency; unchanged skins now yield identical PNG buffers, bypassing updates and logs.
   - Formatted the codebase and successfully verified that all linter rules pass with zero warnings or errors.
+
+### 17-08-2026
+
+- **Server-Specific Commands & Toggles (`/cc`, `/ccr`, `/ccl`)**:
+  - Defined and applied the new `guild_options` table in `src/db/schema.js` using Drizzle ORM to record enabled server-specific features per guild. Generated and safely executed database migrations (`0014_past_micromax.sql`).
+  - Created `src/utils/guildOptionsHelper.js` to manage an in-memory cache of configured guild options, populated on bot startup, to eliminate DB latency and enable zero-delay checks during command invocation.
+  - Added option cache loading (`loadGuildOptions()`) to the bot startup lifecycle in `bot.js`.
+  - Left built-in bot commands enabled by default by omitting toggle checks in `src/events/interactionCreate.js`.
+  - Created `/cc` (`src/commands/general/cc.js`) developer-only command to enable server-specific options/features, with autocomplete suggesting placeholder custom commands/events (excluding current built-in bot commands) not currently enabled for the selected server.
+  - Created `/ccr` (`src/commands/general/ccr.js`) developer-only command to remove/disable options, with autocomplete suggestions restricted to custom options that are active in that server.
+  - Created `/ccl` (`src/commands/general/ccl.js`) developer-only command to list all guilds the bot is in along with their enabled options, styled using embeds and paginated button rows.
+  - Created an integration test suite `tests/options.test.js` to verify cache warming, enabling/disabling, DB persistence of custom command/event configurations, and list options retrievals.
+  - Updated the directory tree structure and mapping documentation inside `fs.md`.
+  - Created `/pemoji` (`src/commands/general/pemoji.js`) command to download a Minecraft player skin render and upload it as a guild emoji, with input username validation, UUID resolution, and duplication check failsafes. Switched backend provider to MC-Heads and configured fallback to raw username lookup on Mojang failure.
+  - Added optional `facing` option (choices: `left`, `right`, default: `right`) and optional `type-icon` option (choices: `emoji`, `sticker`, default: `emoji`) to `/pemoji`, with automatic 320x320 pixel resizing using `@napi-rs/canvas` for Discord custom stickers.
+  - Exported `resolveUsernameToUuid` from `src/services/headManager.js` to make it accessible to `/pemoji` and other files.
+  - Increased render download timeout inside `/pemoji` from 5 seconds to 15 seconds to allow cold on-the-fly skin renders to complete without timing out.
+  - Checked and validated the codebase layout using linter and formatter scripts, verifying zero errors.
+- **Reworked Developer Custom Configuration Commands (`/cc` and `/ccr`)**:
+  - Maintained add option on `/cc` (`src/commands/general/cc.js`) and delete/remove option on `/ccr` (`src/commands/general/ccr.js`).
+  - Swapped the option ordering for both `/cc` and `/ccr` so that `serverid` is the first argument, and `id` (the option/feature) is the second argument.
+  - Restricted the options list (`ALL_OPTIONS`) to suggest only `pemoji` (the Player Emoji Uploader module) for now, keeping the design future-proof for future expansion.
+  - Added autocomplete filtering on both commands: `/cc` only suggests options that are **not** already enabled on the server, and `/ccr` only suggests options that **are** enabled on the server.
+  - Implemented dynamic guild-level slash command registration and unregistration: enabling `pemoji` via `/cc` registers the command to the specified guild, and removing it via `/ccr` deletes/unregisters it from that guild.
+  - Excluded the `pemoji` command from static global/dev deployments inside `src/deploy-commands.js`, ensuring it is only deployed dynamically via developer toggles.
+  - Added startup synchronization inside `src/events/ready.js` using `syncAllGuildsCommands(client)` to scan the database and register `/pemoji` only in guilds where it is currently toggled on.
+  - Updated the interaction event handler (`src/events/interactionCreate.js`) to enforce that the `/pemoji` command checks guild options and only runs in toggled guilds, applying the check to all users (including developers).
+  - Updated `tests/options.test.js` to use `pemoji` as its test configuration toggle, and updated the directory tree in `fs.md`.
+  - Verified and formatted the codebase, ensuring all linter and formatting checks pass.
+- **Self-Healing Retry Schedulers for All Sync Services**:
+  - Applied a unified retry-on-failure pattern to all four sync services: **Towny** (`src/services/townySync.js`), **Currency** (`src/services/currencySync.js`), **Shops** (`src/services/shopsSync.js`), and **Convoy** (`src/services/convoySync.js`).
+  - **Towny, Currency, Shops**: Replaced the fixed `setInterval`-based schedulers with self-scheduling `setTimeout`-based approaches. On successful sync, the next run is scheduled at the normal 30-minute interval. On failure (API timeout, network error, decompression abort), the next run is scheduled **10 minutes** later. Once a retry succeeds, the scheduler automatically returns to the normal cadence.
+  - **Convoy**: Added a 10-minute retry fallback inside the catch block. If a convoy sync fails and no rotation-based timeout is already pending, it schedules a retry in 10 minutes. The existing rotation-based dynamic scheduling remains intact for successful syncs.
+  - All four sync functions (`syncTowny`, `syncCurrencies`, `syncShops`) now return `true` on success and `false` on failure to drive the scheduling logic.
+  - Removed unused `syncInterval` variables from all files and cleaned up formatting.

@@ -64,7 +64,6 @@ let currencyCache = {
   currencies: [],
 };
 
-let syncInterval = null;
 let discordClient = null;
 
 /**
@@ -282,7 +281,7 @@ async function syncCurrencies() {
 
     if (!data || !Array.isArray(data.currencies)) {
       logger.error('Invalid currencies API response format (expected currencies array).');
-      return;
+      return false;
     }
 
     // Resolve creator usernames in parallel
@@ -416,9 +415,11 @@ async function syncCurrencies() {
     // Emit event for real-time WebSocket broadcast
     const eventEmitter = require('../utils/emitter.js');
     eventEmitter.emit('currencies:updated', currencyCache.currencies);
+    return true;
   } catch (error) {
     const { reportError } = require('../utils/errorHandler.js');
     await reportError(error, 'Currency Sync Service');
+    return false;
   }
 }
 
@@ -458,19 +459,35 @@ function getCurrenciesByNation(nation) {
  * - Repeats every 30 minutes
  * @param {Client} client - The Discord Client instance
  */
+let syncTimeout = null;
+
+function scheduleNextCurrencySync(delayMs) {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    logger.info('Executing scheduled currency sync...');
+    const success = await syncCurrencies();
+    if (success) {
+      scheduleNextCurrencySync(SYNC_INTERVAL_MS);
+    } else {
+      logger.warn(`Currency sync failed. Retrying in ${pc.yellow('10 minutes')}...`);
+      scheduleNextCurrencySync(10 * 60 * 1000);
+    }
+  }, delayMs);
+}
+
 function startCurrencySync(client) {
   discordClient = client || null;
-  logger.info('Initializing Currency Sync scheduler (30-minute interval)...');
+  logger.info(`Initializing Currency Sync scheduler (${pc.cyan('30-minute interval')})...`);
 
-  // Run once immediately
-  syncCurrencies();
-
-  // Recurring every 30 minutes
-  if (syncInterval) clearInterval(syncInterval);
-  syncInterval = setInterval(async () => {
-    logger.info('Executing scheduled currency sync...');
-    await syncCurrencies();
-  }, SYNC_INTERVAL_MS);
+  (async () => {
+    const success = await syncCurrencies();
+    if (success) {
+      scheduleNextCurrencySync(SYNC_INTERVAL_MS);
+    } else {
+      logger.warn(`Initial currency sync failed. Retrying in ${pc.yellow('10 minutes')}...`);
+      scheduleNextCurrencySync(10 * 60 * 1000);
+    }
+  })();
 }
 
 module.exports = {

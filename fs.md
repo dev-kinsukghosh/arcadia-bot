@@ -52,7 +52,10 @@ This file serves as a reference guide for the directory structure and file respo
 │   │   └── general/
 │   │       ├── blacklist.js
 │   │       ├── broadcast.js
+│   │       ├── cc.js
 │   │       ├── ccompare.js
+│   │       ├── ccl.js
+│   │       ├── ccr.js
 │   │       ├── dashboard.js
 │   │       ├── chistory.js
 │   │       ├── cis-info.js
@@ -66,6 +69,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── invite-bd.js
 │   │       ├── ncurrency.js
 │   │       ├── notifyiic.js
+│   │       ├── pemoji.js
 │   │       ├── ping.js
 │   │       ├── shops.js
 │   │       ├── stats-dev.js
@@ -77,8 +81,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │   └── redisSchema.js
 │   ├── events/
 │   │   ├── ready.js
-│   │   ├── interactionCreate.js
-│   │   └── guildMemberAdd.js
+│   │   └── interactionCreate.js
 │   ├── handlers/
 │   │   ├── commandHandler.js
 │   │   └── eventHandler.js
@@ -98,6 +101,7 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── emitter.js
 │       ├── errorHandler.js
 │       ├── guildConfigHelper.js
+│       ├── guildOptionsHelper.js
 │       ├── iconDownloader.js
 │       ├── logger.js
 │       ├── redis.js
@@ -111,6 +115,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── api.test.js
 │   ├── database.test.js
 │   ├── notify.test.js
+│   ├── options.test.js
 │   └── shops.test.js
 ├── .env
 ├── .env.example
@@ -193,7 +198,10 @@ This file serves as a reference guide for the directory structure and file respo
     - 📂 **src/commands/general/**:
       - [src/commands/general/blacklist.js](./src/commands/general/blacklist.js): `/blacklist` — Manage user blacklist add, remove, and list (Developer Only).
       - [src/commands/general/broadcast.js](./src/commands/general/broadcast.js): `/broadcast` — Broadcast an announcement embed to all servers (Developer Only).
+      - [src/commands/general/cc.js](./src/commands/general/cc.js): `/cc` — Configure/Enable custom commands or events for a specific server (Developer Only).
       - [src/commands/general/ccompare.js](./src/commands/general/ccompare.js): `/ccompare` — Compare the exchange rates of two nation currencies side-by-side with a graph.
+      - [src/commands/general/ccl.js](./src/commands/general/ccl.js): `/ccl` — List all guilds the bot is in along with their enabled options (Developer Only).
+      - [src/commands/general/ccr.js](./src/commands/general/ccr.js): `/ccr` — Remove/Disable custom commands or events for a specific server (Developer Only).
       - [src/commands/general/dashboard.js](./src/commands/general/dashboard.js): `/dashboard` — Returns direct link to the web stats panel.
       - [src/commands/general/chistory.js](./src/commands/general/chistory.js): `/chistory` — View historical price charts and trend sparklines for nation currencies with raw/percentage mode.
       - [src/commands/general/cis-info.js](./src/commands/general/cis-info.js): `/cis-info` — Displays historical, rarity, and frequency telemetry for convoy items.
@@ -207,6 +215,7 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/invite-bd.js](./src/commands/general/invite-bd.js): `/invite-bd` — Generates a single-use invite to join a server the bot is in (Developer Only).
       - [src/commands/general/ncurrency.js](./src/commands/general/ncurrency.js): `/ncurrency` — Set this server's nation currency config (Admin Only).
       - [src/commands/general/notifyiic.js](./src/commands/general/notifyiic.js): `/notifyiic` — Subscribe to item stock notifications in a specific channel.
+      - [src/commands/general/pemoji.js](./src/commands/general/pemoji.js): `/pemoji` — Download a Minecraft player skin render and upload it as a server emoji.
       - [src/commands/general/ping.js](./src/commands/general/ping.js): Ping/latency check.
       - [src/commands/general/shops.js](./src/commands/general/shops.js): `/shops` — List player shops, view shop listings/coordinates, and search for active item offers.
       - [src/commands/general/stats-dev.js](./src/commands/general/stats-dev.js): `/stats-dev` — Displays command execution telemetry and active servers count (Developer Only).
@@ -239,6 +248,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/emitter.js](./src/utils/emitter.js): Central EventEmitter instance for cross-module real-time communications.
   - [src/utils/errorHandler.js](./src/utils/errorHandler.js): Exception wrapper to prevent process crashes and route alerts.
   - [src/utils/guildConfigHelper.js](./src/utils/guildConfigHelper.js): Manages memory caching of guild nation currency configurations.
+  - [src/utils/guildOptionsHelper.js](./src/utils/guildOptionsHelper.js): Manages memory caching and DB state of guild custom command/event configurations.
   - [src/utils/iconDownloader.js](./src/utils/iconDownloader.js): Downloads missing block and item icons from assets.mcasset.cloud.
   - [src/utils/logger.js](./src/utils/logger.js): Winston/Picocolors logger.
   - [src/utils/redis.js](./src/utils/redis.js): Connection client for Redis cache operations.
@@ -250,6 +260,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [tests/env.test.js](./tests/env.test.js): Health check test for configuration, database connection pools, and Redis pings.
   - [tests/heads.test.js](./tests/heads.test.js): Integration tests for player heads downloading, caching and cron updates.
   - [tests/notify.test.js](./tests/notify.test.js): Integration tests for item stock notifications table mapping.
+  - [tests/options.test.js](./tests/options.test.js): Integration tests for guild custom options toggles and memory cache synchronization.
   - [tests/shops.test.js](./tests/shops.test.js): Integration tests for player shops database query mappings, sync scheduler, and 25-minute TTL cache.
   - [tests/api.test.js](./tests/api.test.js): Connection verification and response validation test for the ArcadiaMC API endpoints.
   - [tests/database.test.js](./tests/database.test.js): Direct query health validation for Drizzle ORM and MySQL tables.

@@ -53,9 +53,27 @@ module.exports = {
       return;
     }
 
-    // Cooldown check system to prevent Discord/API rate limits (Bypassed for Developers)
+    // Parse developer IDs from environment configuration
     const devIds = (process.env.DEV_ID || '').split(',').map((id) => id.trim());
     const isDev = devIds.includes(interaction.user.id);
+
+    // Enforce server-specific command options for custom commands (disabled by default, enabled by dev)
+    const CC_COMMANDS = ['pemoji'];
+    if (interaction.guildId && CC_COMMANDS.includes(command.data.name)) {
+      const { isOptionEnabled } = require('../utils/guildOptionsHelper.js');
+      if (!isOptionEnabled(interaction.guildId, command.data.name)) {
+        return interaction.reply({
+          embeds: [
+            errorEmbed(
+              'Command Disabled',
+              `The command \`/${command.data.name}\` is not enabled in this server.\n\n` +
+                'Contact the bot developer to enable it.'
+            ),
+          ],
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    }
 
     if (!isDev) {
       const now = Date.now();

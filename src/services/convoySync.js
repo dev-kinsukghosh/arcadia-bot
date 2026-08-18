@@ -419,6 +419,19 @@ async function syncConvoy(force = false, isBackup = false) {
   } catch (error) {
     const { reportError } = require('../utils/errorHandler.js');
     await reportError(error, 'Convoy Sync Service');
+
+    // Schedule a 10-minute retry on failure if no timeout is already pending
+    if (discordClient && !syncTimeout) {
+      logger.warn(`Convoy sync failed. Scheduling retry in ${pc.yellow('10 minutes')}...`);
+      syncTimeout = setTimeout(
+        async () => {
+          logger.info('Executing convoy sync retry after failure...');
+          syncTimeout = null;
+          await syncConvoy();
+        },
+        10 * 60 * 1000
+      );
+    }
   }
 }
 

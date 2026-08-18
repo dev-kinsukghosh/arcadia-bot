@@ -39,5 +39,11 @@ module.exports = {
     if (cisInfoCommand && typeof cisInfoCommand.initCache === 'function') {
       cisInfoCommand.initCache();
     }
+
+    // Sync guild-specific commands based on database toggles
+    const { syncAllGuildsCommands } = require('../utils/guildOptionsHelper.js');
+    syncAllGuildsCommands(client).catch((err) => {
+      logger.error('Failed to sync guild-specific commands on startup:', err);
+    });
   },
 };

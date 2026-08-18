@@ -126,6 +126,16 @@ const townyHistory = mysqlTable(
   ]
 );
 
+const guildOptions = mysqlTable(
+  'guild_options',
+  {
+    guildId: varchar('guild_id', { length: 255 }).notNull(),
+    optionId: varchar('option_id', { length: 255 }).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.guildId, table.optionId] })]
+);
+
 module.exports = {
   convoyItems,
   blacklist,
@@ -137,4 +147,5 @@ module.exports = {
   playerHeads,
   playerShops,
   townyHistory,
+  guildOptions,
 };

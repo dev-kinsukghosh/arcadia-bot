@@ -567,7 +567,7 @@ module.exports = {
       } else if (btn.customId === `cisinfo_home_${interaction.id}`) {
         viewMode = 'OVERVIEW';
         await btn.update({
-          embeds: [buildOverviewEmbed()],
+          embeds: [buildOverviewEmbed(appEmojis)],
           components: [overviewRow],
         });
       } else if (btn.customId === `cisinfo_prev_${interaction.id}`) {
@@ -596,7 +596,7 @@ module.exports = {
               .setDisabled(true)
           );
           await interaction.editReply({
-            embeds: [buildOverviewEmbed()],
+            embeds: [buildOverviewEmbed(appEmojis)],
             components: [disabledRow],
           });
         } else {

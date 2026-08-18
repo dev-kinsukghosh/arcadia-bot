@@ -506,4 +506,5 @@ module.exports = {
   updateAllHeadsBatch: updateAllHeadsConcurrencyJob,
   getHeadBuffer,
   startHeadsSync,
+  resolveUsernameToUuid,
 };

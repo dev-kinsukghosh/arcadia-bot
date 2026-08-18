@@ -57,7 +57,7 @@ async function resolveUuidToUsername(uuid) {
 async function syncShops() {
   if (!db) {
     logger.warn('Database is not active. Skipping shops sync.');
-    return;
+    return false;
   }
 
   logger.info('Starting player shops synchronization...');
@@ -65,7 +65,7 @@ async function syncShops() {
     const data = await arcadiaApi.getShops();
     if (!data || !Array.isArray(data.shops)) {
       logger.error('Invalid shops API response format (expected shops array).');
-      return;
+      return false;
     }
 
     const shopsList = data.shops;
@@ -179,25 +179,42 @@ async function syncShops() {
     logger.success(
       `Player shops synchronization complete: ${pc.bold(pc.green(shopsList.length))} shops updated in DB.`
     );
+    return true;
   } catch (error) {
     const { reportError } = require('../utils/errorHandler.js');
     await reportError(error, 'Shops Sync Service');
+    return false;
   }
 }
 
-let syncInterval = null;
+let syncTimeout = null;
+
+function scheduleNextShopsSync(delayMs) {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    logger.info('Executing scheduled shops sync...');
+    const success = await syncShops();
+    if (success) {
+      scheduleNextShopsSync(SYNC_INTERVAL_MS);
+    } else {
+      logger.warn(`Shops sync failed. Retrying in ${pc.yellow('10 minutes')}...`);
+      scheduleNextShopsSync(10 * 60 * 1000);
+    }
+  }, delayMs);
+}
 
 function startShopsSync(_client) {
-  logger.info('Initializing Shops Sync scheduler (30-minute interval)...');
+  logger.info(`Initializing Shops Sync scheduler (${pc.cyan('30-minute interval')})...`);
 
-  // Run once immediately
-  syncShops();
-
-  if (syncInterval) clearInterval(syncInterval);
-  syncInterval = setInterval(async () => {
-    logger.info('Executing scheduled shops sync...');
-    await syncShops();
-  }, SYNC_INTERVAL_MS);
+  (async () => {
+    const success = await syncShops();
+    if (success) {
+      scheduleNextShopsSync(SYNC_INTERVAL_MS);
+    } else {
+      logger.warn(`Initial shops sync failed. Retrying in ${pc.yellow('10 minutes')}...`);
+      scheduleNextShopsSync(10 * 60 * 1000);
+    }
+  })();
 }
 
 module.exports = {

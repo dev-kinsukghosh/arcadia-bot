@@ -11,8 +11,6 @@ const SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const HISTORY_RETENTION_DAYS = 120;
 const REDIS_KEY = 'cache:towny';
 
-let syncInterval = null;
-
 /**
  * Get today's date string in UTC (YYYY-MM-DD)
  * @returns {string}
@@ -31,7 +29,7 @@ function getTodayUTC() {
 async function syncTowny() {
   if (!db) {
     logger.warn(`${pc.yellow('Database is not active.')} Skipping Towny sync.`);
-    return;
+    return false;
   }
 
   logger.info(`Starting ${pc.cyan('Towny')} synchronization and history recording...`);
@@ -39,7 +37,7 @@ async function syncTowny() {
     const data = await arcadiaApi.getTowny();
     if (!data) {
       logger.error(`${pc.red('Failed')} to retrieve Towny data from API.`);
-      return;
+      return false;
     }
 
     // 1. Save to Redis cache for dashboard webserver use
@@ -135,9 +133,11 @@ async function syncTowny() {
 
     // 6. Prune history rows for deleted towns and nations
     await pruneDeletedTownsNations(towns, nations);
+    return true;
   } catch (error) {
     const { reportError } = require('../utils/errorHandler.js');
     await reportError(error, 'Towny Sync Service');
+    return false;
   }
 }
 
@@ -245,6 +245,22 @@ async function pruneDeletedTownsNations(currentTowns, currentNations) {
   }
 }
 
+let syncTimeout = null;
+
+function scheduleNextSync(delayMs) {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    logger.info(`Executing scheduled ${pc.cyan('Towny')} sync...`);
+    const success = await syncTowny();
+    if (success) {
+      scheduleNextSync(SYNC_INTERVAL_MS);
+    } else {
+      logger.warn(`Towny sync failed. Retrying in ${pc.yellow('10 minutes')}...`);
+      scheduleNextSync(10 * 60 * 1000);
+    }
+  }, delayMs);
+}
+
 /**
  * Start the Towny sync scheduler
  * @param {Client} client - The Discord Client instance
@@ -252,15 +268,16 @@ async function pruneDeletedTownsNations(currentTowns, currentNations) {
 function startTownySync(_client) {
   logger.info(`Initializing Towny Sync scheduler (${pc.cyan('30-minute interval')})...`);
 
-  // Run once immediately
-  syncTowny();
-
-  // Run every 30 minutes
-  if (syncInterval) clearInterval(syncInterval);
-  syncInterval = setInterval(async () => {
-    logger.info(`Executing scheduled ${pc.cyan('Towny')} sync...`);
-    await syncTowny();
-  }, SYNC_INTERVAL_MS);
+  // Run once immediately and schedule subsequent runs based on success
+  (async () => {
+    const success = await syncTowny();
+    if (success) {
+      scheduleNextSync(SYNC_INTERVAL_MS);
+    } else {
+      logger.warn(`Initial Towny sync failed. Retrying in ${pc.yellow('10 minutes')}...`);
+      scheduleNextSync(10 * 60 * 1000);
+    }
+  })();
 }
 
 module.exports = {

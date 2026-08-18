@@ -45,6 +45,11 @@ async function main() {
   const { loadGuildConfigs } = require('./src/utils/guildConfigHelper.js');
   await loadGuildConfigs();
 
+  // Load guild options cache from DB
+  logger.info('Loading guild options cache...');
+  const { loadGuildOptions } = require('./src/utils/guildOptionsHelper.js');
+  await loadGuildOptions();
+
   // 1. Load Event handlers
   logger.info('Initializing event handlers...');
   loadEvents(client);
