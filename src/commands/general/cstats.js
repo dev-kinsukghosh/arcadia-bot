@@ -237,8 +237,10 @@ module.exports = {
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
         .setTitle(`📊 Currency Market Stats (Past ${retentionDays} Days)`)
+        // TODO: Remove this warning message when the API issues are fixed on the server-side
         .setDescription(
-          `Comprehensive market health & stability analysis for the past **${retentionDays} days**.`
+          `⚠️ **API Outage / Maintenance Notice:** The live API is currently offline/glitched. The stats shown below are frozen from a 7-day backup and are currently static.\n\n` +
+            `Comprehensive market health & stability analysis for the past **${retentionDays} days**.`
         );
 
       embed.addFields(

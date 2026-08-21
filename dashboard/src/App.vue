@@ -340,6 +340,23 @@ onMounted(() => {
 
     <!-- Main Workspace -->
     <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 md:px-10 md:py-8">
+      <!-- TODO: Remove this warning banner when the API issues are fixed on the server-side -->
+      <div
+        class="mb-6 flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-amber-400 shadow-md"
+      >
+        <font-awesome-icon icon="circle-exclamation" class="mt-0.5 text-amber-400" />
+        <div>
+          <h4 class="text-sm font-bold text-amber-300">⚠️ Server API Outage / Maintenance Mode</h4>
+          <p class="mt-1 text-xs leading-relaxed text-slate-300">
+            Due to server-side API errors and data loss on the ArcadiaMC API following the
+            maintenance, the bot's background synchronizations have been temporarily halted. The
+            data shown on this dashboard is frozen from the last valid 7-day backup and is currently
+            static. Real-time updates and stats history tracking will resume once the API is fully
+            stabilized.
+          </p>
+        </div>
+      </div>
+
       <!-- Error Alert -->
       <div
         v-if="fetchError"
