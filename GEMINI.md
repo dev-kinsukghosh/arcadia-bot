@@ -785,3 +785,6 @@ The following rules MUST be followed at all times:
   - Safely merged the old VPS SQL backup dump (`weby_arc_db_2026-08-21_11-56-50_mysql_data_XBqam.sql` from `bak/`) into the remote MySQL database using a temporary node import script with `multipleStatements: true` connection pool overrides.
   - Executed `npm run db:migrate:safe` afterwards to guarantee schema integrity and re-verify the new `active` column.
   - Implemented a failsafe inside `syncCurrencies` (`src/services/currencySync.js`) that detects if the API returns `0.0000` for all base and live currency rates. When active, logs a warning and skips DB and cache updates to protect the restored/merged historical records from database corruption.
+- **Halt of Background Sync Workers**:
+  - Paused all background synchronization tasks (Convoy, Currency, Heads, Shops, Towny scans) by commenting out their initialization in `bot.js`. The bot remains online responding to general slash commands and serving the dashboard API, but no background API scans will execute.
+  - Broadcasted a global notice warning to all 7 servers regarding the API maintenance issues and temporary stats freeze.
