@@ -57,6 +57,7 @@ const currencies = mysqlTable('currencies', {
   creatorName: varchar('creator_name', { length: 255 }).default('Unknown').notNull(),
   arcPerUnitBase: decimal('arc_per_unit_base', { precision: 12, scale: 4 }).notNull(),
   arcPerUnitLive: decimal('arc_per_unit_live', { precision: 12, scale: 4 }).notNull(),
+  active: boolean('active').default(true).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
 

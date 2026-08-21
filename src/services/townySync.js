@@ -5,7 +5,7 @@ const pc = require('picocolors');
 const redis = require('../utils/redis.js');
 const { db } = require('../utils/db.js');
 const { townyHistory } = require('../db/schema.js');
-const { and, eq, lt, notInArray, sql } = require('drizzle-orm');
+const { and, eq, lt, sql } = require('drizzle-orm');
 
 const SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const HISTORY_RETENTION_DAYS = 120;
@@ -194,55 +194,12 @@ async function pruneOldTownyHistory() {
  * @param {Array} currentTowns
  * @param {Array} currentNations
  */
-async function pruneDeletedTownsNations(currentTowns, currentNations) {
-  try {
-    const activeTowns = currentTowns.map((t) => t?.name?.toLowerCase()).filter(Boolean);
-    const activeNations = currentNations.map((n) => n?.name?.toLowerCase()).filter(Boolean);
-
-    let deletedTownsCount = 0;
-    let deletedNationsCount = 0;
-    let obsoleteTowns = [];
-    let obsoleteNations = [];
-
-    // Safety guard: only prune if we received a non-empty active list to prevent accidental wipes on API failures
-    if (activeTowns.length > 0) {
-      obsoleteTowns = await db
-        .select({ name: townyHistory.name })
-        .from(townyHistory)
-        .where(and(eq(townyHistory.type, 'town'), notInArray(townyHistory.name, activeTowns)))
-        .groupBy(townyHistory.name);
-
-      const deleteTownsRes = await db
-        .delete(townyHistory)
-        .where(and(eq(townyHistory.type, 'town'), notInArray(townyHistory.name, activeTowns)));
-      deletedTownsCount = deleteTownsRes[0]?.affectedRows || 0;
-    }
-
-    if (activeNations.length > 0) {
-      obsoleteNations = await db
-        .select({ name: townyHistory.name })
-        .from(townyHistory)
-        .where(and(eq(townyHistory.type, 'nation'), notInArray(townyHistory.name, activeNations)))
-        .groupBy(townyHistory.name);
-
-      const deleteNationsRes = await db
-        .delete(townyHistory)
-        .where(and(eq(townyHistory.type, 'nation'), notInArray(townyHistory.name, activeNations)));
-      deletedNationsCount = deleteNationsRes[0]?.affectedRows || 0;
-    }
-
-    if (deletedTownsCount > 0 || deletedNationsCount > 0) {
-      const townNames =
-        obsoleteTowns.length > 0 ? obsoleteTowns.map((t) => t.name).join(', ') : 'None';
-      const nationNames =
-        obsoleteNations.length > 0 ? obsoleteNations.map((n) => n.name).join(', ') : 'None';
-      logger.info(
-        `Pruned historical records for ${pc.bold(pc.cyan(deletedTownsCount))} deleted towns [${pc.cyan(townNames)}] and ${pc.bold(pc.cyan(deletedNationsCount))} deleted nations [${pc.cyan(nationNames)}].`
-      );
-    }
-  } catch (err) {
-    logger.warn(`Failed to prune deleted towns/nations: ${pc.yellow(err.message)}`);
-  }
+async function pruneDeletedTownsNations(_currentTowns, _currentNations) {
+  // Safe design: We no longer aggressively prune historical records for towns/nations when they are omitted.
+  // Historical snapshots are allowed to age out naturally after 120 days via pruneOldTownyHistory().
+  logger.debug(
+    'Skipping aggressive towny history pruning; letting historical records age out naturally.'
+  );
 }
 
 let syncTimeout = null;

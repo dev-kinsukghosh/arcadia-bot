@@ -9,6 +9,7 @@ const {
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { currencies: currenciesTable } = require('../../db/schema.js');
+const { eq } = require('drizzle-orm');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
 const { getAppEmojis } = require('../../utils/emojiCache.js');
@@ -37,7 +38,10 @@ module.exports = {
     // Fallback to database only if memory cache is empty
     if (currencyList.length === 0 && db) {
       try {
-        currencyList = await db.select().from(currenciesTable);
+        currencyList = await db
+          .select()
+          .from(currenciesTable)
+          .where(eq(currenciesTable.active, true));
       } catch {
         // Ignore DB error, empty list fallback handled below
       }

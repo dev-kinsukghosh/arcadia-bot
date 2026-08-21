@@ -147,7 +147,7 @@ apiRouter.get('/currencies', async (req, res) => {
       }
     }
 
-    const list = await db.select().from(currencies);
+    const list = await db.select().from(currencies).where(eq(currencies.active, true));
     const enrichedList = list.map((c) => ({
       ...c,
       previousRate: previousRates[c.id] !== undefined ? String(previousRates[c.id]) : '0.0000',
@@ -259,7 +259,7 @@ apiRouter.get('/currencies/stats', async (req, res) => {
       .orderBy(asc(currencyHistory.date));
 
     // Fetch latest currency metadata
-    const latestCurrencies = await db.select().from(currencies);
+    const latestCurrencies = await db.select().from(currencies).where(eq(currencies.active, true));
 
     // Group historical rates by currencyId
     const historyMap = {};

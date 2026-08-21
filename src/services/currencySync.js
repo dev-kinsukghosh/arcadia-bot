@@ -4,7 +4,7 @@ const pc = require('picocolors');
 const redis = require('../utils/redis.js');
 const { db } = require('../utils/db.js');
 const { currencies, currencyHistory, internal } = require('../db/schema.js');
-const { and, eq, lt, notInArray } = require('drizzle-orm');
+const { and, eq, lt, notInArray, inArray } = require('drizzle-orm');
 const axios = require('axios');
 
 const resolvedUsernames = new Map();
@@ -136,6 +136,7 @@ async function upsertCurrencies(currencyList) {
             creatorName: c.creatorName || 'Unknown',
             arcPerUnitBase: String(parseFloat(c.arcPerUnitBase) || 0),
             arcPerUnitLive: String(parseFloat(c.arcPerUnitLive) || 0),
+            active: true,
           })
           .where(eq(currencies.id, c.id));
       } else {
@@ -148,6 +149,7 @@ async function upsertCurrencies(currencyList) {
           creatorName: c.creatorName || 'Unknown',
           arcPerUnitBase: String(parseFloat(c.arcPerUnitBase) || 0),
           arcPerUnitLive: String(parseFloat(c.arcPerUnitLive) || 0),
+          active: true,
         });
       }
     } catch (err) {
@@ -284,6 +286,18 @@ async function syncCurrencies() {
       return false;
     }
 
+    // Check if the API response is returning invalid zero rates (e.g. during/after maintenance)
+    const allZeroRates = data.currencies.every(
+      (c) => parseFloat(c.arcPerUnitLive) === 0 && parseFloat(c.arcPerUnitBase) === 0
+    );
+
+    if (allZeroRates && data.currencies.length > 0) {
+      logger.warn(
+        'ArcadiaMC API returned 0.0000 for all currency rates (likely in maintenance/uninitialized state). Skipping DB and cache updates to protect historical records.'
+      );
+      return false;
+    }
+
     // Resolve creator usernames in parallel
     await Promise.all(
       data.currencies.map(async (c) => {
@@ -323,7 +337,9 @@ async function syncCurrencies() {
         const previousRates = previousRatesRaw ? JSON.parse(previousRatesRaw) : {};
 
         // Query DB as fallback for missing items
-        const dbCurrencies = db ? await db.select().from(currencies) : [];
+        const dbCurrencies = db
+          ? await db.select().from(currencies).where(eq(currencies.active, true))
+          : [];
         const dbMap = {};
         for (const curr of dbCurrencies) {
           dbMap[curr.id] = parseFloat(curr.arcPerUnitLive) || 0;
@@ -367,32 +383,33 @@ async function syncCurrencies() {
     // 4. Prune rows older than 120 days
     await pruneOldHistory();
 
-    // 4.5. Prune deleted currencies from database
+    // 4.5. Deactivate currencies omitted from API; delete only if inactive for >14 days
     const activeCurrencyIds = data.currencies.map((c) => c.id).filter(Boolean);
     if (activeCurrencyIds.length > 0) {
-      // Find the names or IDs of the deleted currencies to log them
+      // 1. Mark newly omitted currencies as inactive (active = false)
+      // Transitioning them to active = false updates their updatedAt timestamp once
+      await db
+        .update(currencies)
+        .set({ active: false })
+        .where(and(notInArray(currencies.id, activeCurrencyIds), eq(currencies.active, true)));
+
+      // 2. Identify and clear currencies that have been inactive for more than 14 days
+      const cutoffDate = new Date();
+      cutoffDate.setUTCDate(cutoffDate.getUTCDate() - 14);
+
       const obsoleteCurrencies = await db
         .select({ id: currencies.id, name: currencies.name })
         .from(currencies)
-        .where(notInArray(currencies.id, activeCurrencyIds));
+        .where(and(eq(currencies.active, false), lt(currencies.updatedAt, cutoffDate)));
 
-      const deleteCurrenciesRes = await db
-        .delete(currencies)
-        .where(notInArray(currencies.id, activeCurrencyIds));
-      const deletedCurrenciesCount = deleteCurrenciesRes[0]?.affectedRows || 0;
+      if (obsoleteCurrencies.length > 0) {
+        const obsoleteIds = obsoleteCurrencies.map((c) => c.id);
+        const deleteRes = await db.delete(currencies).where(inArray(currencies.id, obsoleteIds));
+        const deletedCurrenciesCount = deleteRes[0]?.affectedRows || 0;
 
-      const deleteHistoryRes = await db
-        .delete(currencyHistory)
-        .where(notInArray(currencyHistory.currencyId, activeCurrencyIds));
-      const deletedHistoryCount = deleteHistoryRes[0]?.affectedRows || 0;
-
-      if (deletedCurrenciesCount > 0 || deletedHistoryCount > 0) {
-        const deletedNames =
-          obsoleteCurrencies.length > 0
-            ? obsoleteCurrencies.map((c) => `${c.name} (${c.id})`).join(', ')
-            : 'None';
+        const deletedNames = obsoleteCurrencies.map((c) => `${c.name} (${c.id})`).join(', ');
         logger.info(
-          `Pruned ${pc.bold(pc.cyan(deletedCurrenciesCount))} deleted currencies [${pc.cyan(deletedNames)}] and ${pc.bold(pc.cyan(deletedHistoryCount))} historical rate records from DB.`
+          `Pruned ${pc.bold(pc.cyan(deletedCurrenciesCount))} currencies inactive for >14 days: [${pc.cyan(deletedNames)}] from DB active currencies table. Historical rates kept intact.`
         );
       }
     } else {

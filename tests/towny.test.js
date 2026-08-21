@@ -62,7 +62,7 @@ describe('Towny History Database Query Suite', () => {
     logger.success(`Verified CRUD operations on ${pc.bold('towny_history')} table successfully.`);
   });
 
-  it('should sync towny data and prune deleted towns/nations', async () => {
+  it('should sync towny data and preserve history for deleted towns/nations', async () => {
     // 1. Setup mock responses
     const mockData1 = {
       towns: [
@@ -108,13 +108,13 @@ describe('Towny History Database Query Suite', () => {
     // Sync again
     await syncTowny();
 
-    // Verify ActiveTown2 has been pruned, but ActiveTown1 and ActiveNation1 remain
+    // Verify ActiveTown2 history has NOT been pruned, and ActiveTown1 and ActiveNation1 remain
     const townsInDb2 = await db.select().from(townyHistory);
     const prunedTownRow = townsInDb2.find((t) => t.name === 'activetown2');
     const remainingTownRow = townsInDb2.find((t) => t.name === 'activetown1');
     const remainingNationRow = townsInDb2.find((t) => t.name === 'activenation1');
 
-    expect(prunedTownRow).toBeUndefined();
+    expect(prunedTownRow).toBeDefined();
     expect(remainingTownRow).toBeDefined();
     expect(remainingNationRow).toBeDefined();
 
@@ -124,6 +124,6 @@ describe('Towny History Database Query Suite', () => {
     await db.delete(townyHistory).where(eq(townyHistory.name, 'activenation1'));
 
     getTownySpy.mockRestore();
-    logger.success('Verified synchronization and deleted town pruning logic successfully.');
+    logger.success('Verified synchronization and history preservation logic successfully.');
   });
 });

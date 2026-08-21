@@ -5,7 +5,7 @@ const {
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { currencies: currenciesTable, currencyHistory } = require('../../db/schema.js');
-const { gte, asc } = require('drizzle-orm');
+const { gte, asc, eq } = require('drizzle-orm');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getAppEmojis } = require('../../utils/emojiCache.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
@@ -110,7 +110,10 @@ module.exports = {
       let latestCurrencies = cache.currencies || [];
 
       if (latestCurrencies.length === 0 && db) {
-        latestCurrencies = await db.select().from(currenciesTable);
+        latestCurrencies = await db
+          .select()
+          .from(currenciesTable)
+          .where(eq(currenciesTable.active, true));
       }
 
       if (!latestCurrencies || latestCurrencies.length === 0) {

@@ -768,3 +768,20 @@ The following rules MUST be followed at all times:
   - **Convoy**: Added a 10-minute retry fallback inside the catch block. If a convoy sync fails and no rotation-based timeout is already pending, it schedules a retry in 10 minutes. The existing rotation-based dynamic scheduling remains intact for successful syncs.
   - All four sync functions (`syncTowny`, `syncCurrencies`, `syncShops`) now return `true` on success and `false` on failure to drive the scheduling logic.
   - Removed unused `syncInterval` variables from all files and cleaned up formatting.
+
+### 21-08-2026
+
+- **Historical Database Deletion Safeguards**:
+  - Modified `src/services/currencySync.js` to prevent the deletion of historical rate records from `currency_history` for inactive or deleted currencies. Inactive currencies are still pruned from the active `currencies` table, but their historical rate snapshots are kept intact, allowing them to age out naturally after 120 days.
+  - Modified `src/services/townySync.js` to disable aggressive deletion of historical town and nation records (`pruneDeletedTownsNations`) when they are omitted from the active API response. Historical residents and claims metrics are now preserved and allowed to age out naturally after 120 days via `pruneOldTownyHistory`.
+  - Updated `tests/towny.test.js` to assert history preservation for omitted towns and nations rather than asserting immediate pruning.
+  - Verified codebase-wide formatting and lint checks.
+- **14-Day Soft Grace Period for Missing Currencies**:
+  - Added an `active` boolean column to the `currencies` table schema in `src/db/schema.js` and successfully generated/applied the `0015_massive_captain_britain.sql` migration.
+  - Configured `syncCurrencies` inside `src/services/currencySync.js` to set `active = true` when upserting active currencies returned by the API.
+  - Implemented logic in `syncCurrencies` to immediately mark omitted currencies as `active = false` (transitioning once, keeping their `updatedAt` timestamp as the deactivation time), and only delete them from the database active table if they have been inactive for more than 14 days.
+  - Updated `/currencies` and `/cstats` commands fallbacks and the server `/currencies` and `/currencies/stats` routes to query only active currencies (`active = true`), successfully hiding them from the commands and active dashboard panels while allowing them to toggle back immediately if returned again by the API within 14 days.
+- **Database Backup Restoration & Zero-Rates API Failsafe**:
+  - Safely merged the old VPS SQL backup dump (`weby_arc_db_2026-08-21_11-56-50_mysql_data_XBqam.sql` from `bak/`) into the remote MySQL database using a temporary node import script with `multipleStatements: true` connection pool overrides.
+  - Executed `npm run db:migrate:safe` afterwards to guarantee schema integrity and re-verify the new `active` column.
+  - Implemented a failsafe inside `syncCurrencies` (`src/services/currencySync.js`) that detects if the API returns `0.0000` for all base and live currency rates. When active, logs a warning and skips DB and cache updates to protect the restored/merged historical records from database corruption.

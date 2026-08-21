@@ -1,0 +1,1 @@
+ALTER TABLE `currencies` ADD `active` boolean DEFAULT true NOT NULL;
