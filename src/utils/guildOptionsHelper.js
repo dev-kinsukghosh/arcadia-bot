@@ -141,40 +141,37 @@ async function syncGuildCommands(client, guildId) {
     }
 
     const enabled = getEnabledOptions(guildId);
-    const wantsPemoji = enabled.includes('pemoji');
+    const DYNAMIC_COMMAND_NAMES = ['pemoji', 'al-nadd', 'al-nrm', 'al-setseat', 'al-seatcalc'];
 
     logger.debug(
-      `[Command Sync] Guild: ${guild.name} (${guildId}) | Enabled options: [${enabled.join(', ')}] | wantsPemoji: ${wantsPemoji}`
+      `[Command Sync] Guild: ${guild.name} (${guildId}) | Enabled options: [${enabled.join(', ')}]`
     );
-
-    const pemojiCommand = client.commands.get('pemoji');
-    if (!pemojiCommand) {
-      logger.warn('[Command Sync] pemoji command not found in client.commands collection.');
-      return;
-    }
 
     // Fetch existing guild commands
     const guildCommands = await guild.commands.fetch();
-    const existingPemoji = guildCommands.find((cmd) => cmd.name === 'pemoji');
 
-    logger.debug(
-      `[Command Sync] Guild: ${guild.name} | Existing /pemoji registered: ${!!existingPemoji}`
-    );
+    for (const cmdName of DYNAMIC_COMMAND_NAMES) {
+      const wantsCmd = enabled.includes(cmdName);
+      const commandObj = client.commands.get(cmdName);
+      const existingCmd = guildCommands.find((cmd) => cmd.name === cmdName);
 
-    if (wantsPemoji) {
-      if (!existingPemoji) {
-        logger.info(`[Command Sync] Registering /pemoji for guild: ${guild.name} (${guildId})`);
-        await guild.commands.create(pemojiCommand.data.toJSON());
-        logger.success(`[Command Sync] Successfully registered /pemoji for guild: ${guild.name}`);
+      if (wantsCmd) {
+        if (!existingCmd) {
+          if (commandObj) {
+            logger.info(
+              `[Command Sync] Registering /${cmdName} for guild: ${guild.name} (${guildId})`
+            );
+            await guild.commands.create(commandObj.data.toJSON());
+            logger.success(
+              `[Command Sync] Successfully registered /${cmdName} for guild: ${guild.name}`
+            );
+          }
+        }
       } else {
-        logger.debug(
-          `[Command Sync] /pemoji already registered for guild: ${guild.name}, skipping.`
-        );
-      }
-    } else {
-      if (existingPemoji) {
-        logger.info(`[Command Sync] Removing /pemoji from guild: ${guild.name} (${guildId})`);
-        await guild.commands.delete(existingPemoji.id);
+        if (existingCmd) {
+          logger.info(`[Command Sync] Removing /${cmdName} from guild: ${guild.name} (${guildId})`);
+          await guild.commands.delete(existingCmd.id);
+        }
       }
     }
   } catch (error) {

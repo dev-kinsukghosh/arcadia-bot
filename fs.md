@@ -50,6 +50,10 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── deploy-commands.js
 │   ├── commands/
 │   │   └── general/
+│   │       ├── al-nadd.js
+│   │       ├── al-nrm.js
+│   │       ├── al-seatcalc.js
+│   │       ├── al-setseat.js
 │   │       ├── blacklist.js
 │   │       ├── broadcast.js
 │   │       ├── cc.js
@@ -93,6 +97,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │   ├── shopsSync.js
 │   │   └── townySync.js
 │   └── utils/
+│       ├── alAuthHelper.js
 │       ├── apiClient.js
 │       ├── blacklistHelper.js
 │       ├── canvasGraph.js
@@ -197,6 +202,10 @@ This file serves as a reference guide for the directory structure and file respo
 - [src/deploy-commands.js](./src/deploy-commands.js): Slash Command deployment script utilizing the Discord REST API.
   - 📂 **src/commands/**: Contains category subfolders containing Discord Slash Commands.
     - 📂 **src/commands/general/**:
+      - [src/commands/general/al-nadd.js](./src/commands/general/al-nadd.js): `/al-nadd` — Add a nation to the Al-Sam database list with autocomplete (Developer Only).
+      - [src/commands/general/al-nrm.js](./src/commands/general/al-nrm.js): `/al-nrm` — Remove a nation from the Al-Sam database list with autocomplete (Developer Only).
+      - [src/commands/general/al-seatcalc.js](./src/commands/general/al-seatcalc.js): `/al-seatcalc` — Calculate representative seat allocations (Mukhtarun) for Al-Sam nations (Developer Only).
+      - [src/commands/general/al-setseat.js](./src/commands/general/al-setseat.js): `/al-setseat` — Set the number of seats for Al-Sam in the `weby_custom` database table (Developer Only).
       - [src/commands/general/blacklist.js](./src/commands/general/blacklist.js): `/blacklist` — Manage user blacklist add, remove, and list (Developer Only).
       - [src/commands/general/broadcast.js](./src/commands/general/broadcast.js): `/broadcast` — Broadcast an announcement embed to all servers (Developer Only).
       - [src/commands/general/cc.js](./src/commands/general/cc.js): `/cc` — Configure/Enable custom commands or events for a specific server (Developer Only).
@@ -240,6 +249,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/services/shopsSync.js](./src/services/shopsSync.js): Synchronization worker to fetch, resolve, and cache player shops in MySQL and Redis.
   - [src/services/townySync.js](./src/services/townySync.js): Synchronization worker to fetch, cache, and record daily historical snapshots of town/nation residents & claims.
 - 📂 **src/utils/**: Helper modules.
+  - [src/utils/alAuthHelper.js](./src/utils/alAuthHelper.js): Authorization helper managing role locks (`al-rolelock` in `weby_custom`) and developer bypasses for Al-* commands.
   - [src/utils/apiClient.js](./src/utils/apiClient.js): Axios HTTP wrapper configured for ArcadiaMC.
   - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.
   - [src/utils/canvasGraph.js](./src/utils/canvasGraph.js): Generates high-quality bar and line charts using @napi-rs/canvas.

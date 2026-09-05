@@ -806,3 +806,34 @@ The following rules MUST be followed at all times:
   - Updated `src/commands/general/broadcast.js` with an optional `ping` parameter (choices: `@everyone` / `@here`) to allow developers to tag `@everyone` or `@here` when sending announcement broadcasts across servers.
   - Created `src/commands/general/help.js` to provide a clean, categorized public slash command guide. Excludes developer-only commands and provides short summaries, usage examples, and command detail lookups with autocomplete.
   - Updated `fs.md` with the new file mapping.
+
+- **Developer Commands — `/al-nadd` and `/al-nrm` (Al-Sam Table Management)**:
+  - Created `al_sam` MySQL table schema in `src/db/schema.js` with columns: `id` (Auto-increment PK), `nation_name` (Unique string), and `created_at` (Timestamp).
+  - Generated and safely applied migration `drizzle/0016_rapid_blur.sql` using `drizzle-kit generate` and `scripts/migrate-safe.js`.
+  - Created developer-only custom command `src/commands/general/al-nadd.js` (`/al-nadd`) to add nations to the `al_sam` table with developer permission check and autocomplete suggesting untracked nations from Towny/Currencies data.
+  - Created developer-only custom command `src/commands/general/al-nrm.js` (`/al-nrm`) to remove nations from the `al_sam` table with autocomplete suggesting currently added nations.
+  - Integrated `al-nadd` and `al-nrm` into `src/commands/general/cc.js`, `src/commands/general/ccr.js`, `src/events/interactionCreate.js`, `src/deploy-commands.js`, and `src/utils/guildOptionsHelper.js` for dynamic per-guild registration and management.
+  - Updated file mappings in `fs.md` and executed codebase formatting (`npm run format`) and linting (`npm run lint`).
+
+- **Developer Commands — `/al-setseat` & Table `weby_custom`**:
+  - Created `weby_custom` MySQL table schema in `src/db/schema.js` with columns: `id` (Varchar PK), `value` (Varchar), and `updated_at` (Timestamp).
+  - Generated and safely executed migration `drizzle/0017_married_runaways.sql` using `drizzle-kit generate` and `scripts/migrate-safe.js`.
+  - Created developer-only custom command `src/commands/general/al-setseat.js` (`/al-setseat`) with non-negative integer input `amount` to store/update `id = 'al-sam'` with integer stored as a string in `weby_custom`.
+  - Registered `al-setseat` across custom command handlers (`cc.js`, `ccr.js`, `interactionCreate.js`, `deploy-commands.js`, `guildOptionsHelper.js`).
+  - Updated `fs.md` file mappings and verified zero lint/format errors.
+
+- **Developer Commands — `/al-seatcalc` (Representative Seats Calculator)**:
+  - Created developer-only custom command `src/commands/general/al-seatcalc.js` (`/al-seatcalc`).
+  - Reads `totalseats` from `weby_custom` (`id = 'al-sam'`) and target nations from `al_sam` table.
+  - Queries active nation populations from Towny data (`cache:towny` / `arcadiaApi.getTowny()`).
+  - Computes `totalPopulation` and seat multiplier `x = totalseats / totalPopulation`.
+  - Calculates representative seat allocations (Mukhtarun) `x * (nation population)` for each nation and displays detailed breakdown in a cyber-styled Discord embed.
+  - Registered `al-seatcalc` across custom command handlers (`cc.js`, `ccr.js`, `interactionCreate.js`, `deploy-commands.js`, `guildOptionsHelper.js`).
+  - Updated `fs.md` file mappings and verified codebase formatting (`npm run format`) and linting (`npm run lint`).
+
+- **Role Lock Authorization (`weby_custom: al-rolelock`) for Al-* Commands**:
+  - Created `src/utils/alAuthHelper.js` with `isAlAuthorized(interaction)` and `getAlAuthorizedRoles()` functions.
+  - Reads role IDs from `weby_custom` table under `id = 'al-rolelock'` (supporting comma-separated role IDs, configured for role IDs `1545866847344267404` and `1506494346885730335`).
+  - Grants command execution access to configured roles while keeping developer bypass (`DEV_ID`) active.
+  - Updated `/al-nadd`, `/al-nrm`, `/al-setseat`, and `/al-seatcalc` commands to enforce role-lock authorization and removed `(Developer Only)` label from command descriptions.
+  - Updated `fs.md` file mappings and verified clean linting and formatting.

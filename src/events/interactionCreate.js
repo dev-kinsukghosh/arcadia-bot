@@ -58,7 +58,7 @@ module.exports = {
     const isDev = devIds.includes(interaction.user.id);
 
     // Enforce server-specific command options for custom commands (disabled by default, enabled by dev)
-    const CC_COMMANDS = ['pemoji'];
+    const CC_COMMANDS = ['pemoji', 'al-nadd', 'al-nrm', 'al-setseat', 'al-seatcalc'];
     if (interaction.guildId && CC_COMMANDS.includes(command.data.name)) {
       const { isOptionEnabled } = require('../utils/guildOptionsHelper.js');
       if (!isOptionEnabled(interaction.guildId, command.data.name)) {

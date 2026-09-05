@@ -137,6 +137,18 @@ const guildOptions = mysqlTable(
   (table) => [primaryKey({ columns: [table.guildId, table.optionId] })]
 );
 
+const alSam = mysqlTable('al_sam', {
+  id: int('id').primaryKey().autoincrement(),
+  nationName: varchar('nation_name', { length: 255 }).notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+const webyCustom = mysqlTable('weby_custom', {
+  id: varchar('id', { length: 100 }).primaryKey(),
+  value: varchar('value', { length: 255 }).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
 module.exports = {
   convoyItems,
   blacklist,
@@ -149,4 +161,6 @@ module.exports = {
   playerShops,
   townyHistory,
   guildOptions,
+  alSam,
+  webyCustom,
 };

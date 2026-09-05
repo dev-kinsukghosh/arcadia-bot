@@ -2,7 +2,13 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { successEmbed, errorEmbed } = require('../../utils/embedHelper.js');
 const logger = require('../../utils/logger.js');
 
-const ALL_OPTIONS = [{ name: 'Player Emoji Uploader (/pemoji)', value: 'pemoji' }];
+const ALL_OPTIONS = [
+  { name: 'Player Emoji Uploader (/pemoji)', value: 'pemoji' },
+  { name: 'Al-Sam Nation Add (/al-nadd)', value: 'al-nadd' },
+  { name: 'Al-Sam Nation Remove (/al-nrm)', value: 'al-nrm' },
+  { name: 'Al-Sam Set Seats (/al-setseat)', value: 'al-setseat' },
+  { name: 'Al-Sam Seat Calculator (/al-seatcalc)', value: 'al-seatcalc' },
+];
 
 module.exports = {
   cooldown: 2,
