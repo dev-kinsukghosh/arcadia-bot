@@ -59,21 +59,21 @@ async function main() {
   loadCommands(client);
 
   // 3. Start background sync services
-  logger.info('Starting background sync services (PAUSED / HALTED)...');
-  // const { startConvoySync } = require('./src/services/convoySync.js');
-  // startConvoySync(client);
+  logger.info('Starting background sync services');
+  const { startConvoySync } = require('./src/services/convoySync.js');
+  startConvoySync(client);
 
-  // const { startCurrencySync } = require('./src/services/currencySync.js');
-  // startCurrencySync(client);
+  const { startCurrencySync } = require('./src/services/currencySync.js');
+  startCurrencySync(client);
 
-  // const { startHeadsSync } = require('./src/services/headManager.js');
-  // startHeadsSync(client);
+  const { startHeadsSync } = require('./src/services/headManager.js');
+  startHeadsSync(client);
 
-  // const { startShopsSync } = require('./src/services/shopsSync.js');
-  // startShopsSync(client);
+  const { startShopsSync } = require('./src/services/shopsSync.js');
+  startShopsSync(client);
 
-  // const { startTownySync } = require('./src/services/townySync.js');
-  // startTownySync(client);
+  const { startTownySync } = require('./src/services/townySync.js');
+  startTownySync(client);
 
   // 4. Start Express Webserver for Dashboard API
   const isBotOnly = process.argv.includes('--bot-only');
