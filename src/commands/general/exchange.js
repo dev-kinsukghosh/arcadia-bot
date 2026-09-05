@@ -147,13 +147,9 @@ module.exports = {
       });
     };
 
-    // TODO: Remove this warning message when the API issues are fixed on the server-side
-    const warningPrefix = `⚠️ **API Outage / Maintenance Notice:** The live API is currently offline/glitched. Calculations are based on frozen rates from a 7-day backup.\n\n`;
-
     const description = includeTax
-      ? warningPrefix +
-        'Expected converted amount and exchange rate telemetry — **5% server conversion tax included**.'
-      : warningPrefix + 'Expected converted amount and exchange rate telemetry.';
+      ? 'Expected converted amount and exchange rate telemetry — **5% server conversion tax included**.'
+      : 'Expected converted amount and exchange rate telemetry.';
 
     const embed = createBaseEmbed()
       .setColor(EMBED_COLORS.CYBER)

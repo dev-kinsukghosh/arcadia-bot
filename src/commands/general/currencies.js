@@ -98,11 +98,7 @@ module.exports = {
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
         .setTitle('🪙 ArcadiaMC Currencies')
-        // TODO: Remove this warning message when the API issues are fixed on the server-side
-        .setDescription(
-          `⚠️ **API Outage / Maintenance Notice:** The live API is currently offline/glitched. The rates shown below are frozen from a 7-day backup and are currently static.\n\n` +
-            `Page ${pageIdx + 1} of ${totalPages} · Rates are relative to ARC`
-        );
+        .setDescription(`Page ${pageIdx + 1} of ${totalPages} · Rates are relative to ARC`);
 
       const listLines = chunk.map((c) => {
         const itemEmojiName = c.standardItem ? c.standardItem.substring(0, 32) : '';

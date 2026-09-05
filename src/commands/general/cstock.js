@@ -118,10 +118,8 @@ function buildPage(
   const headerIcon = getItemIcon(headerIconName);
   const rarityLabel =
     subTotal > 1 ? `${cfg.label} Items (${subPage + 1}/${subTotal})` : `${cfg.label} Items`;
-  // TODO: Remove this warning message when the API issues are fixed on the server-side
-  const warningText = `⚠️ **Outage Notice:** Data is frozen from a 7-day backup.\n`;
   const headerText = new TextDisplayBuilder().setContent(
-    `## ${cfg.emoji} ${rarityLabel}\n${warningText}-# 🚚 Convoy Shop  ·  Page ${pageIndex + 1} of ${totalPages}`
+    `## ${cfg.emoji} ${rarityLabel}\n-# 🚚 Convoy Shop  ·  Page ${pageIndex + 1} of ${totalPages}`
   );
 
   if (headerIcon) {

@@ -15,7 +15,7 @@ const EMBED_COLORS = {
  * @returns {EmbedBuilder}
  */
 function createBaseEmbed() {
-  const embed = new EmbedBuilder()
+  return new EmbedBuilder()
     .setColor(EMBED_COLORS.CYBER)
     .setTimestamp()
     .setAuthor({
@@ -24,28 +24,6 @@ function createBaseEmbed() {
     .setFooter({
       text: 'ArcadiaMC Community bot By _webdevkin · play.arcadiamc.net',
     });
-
-  // TODO: Remove this warning prefix override when API issues are resolved
-  const originalSetDescription = embed.setDescription.bind(embed);
-  embed.setDescription = (description) => {
-    const title = embed.data.title || '';
-    const isStatsEmbed = /currency|market|convoy|towny|nation|town|shop|rotating|history/i.test(
-      title
-    );
-
-    if (
-      isStatsEmbed &&
-      description &&
-      !description.startsWith('✅') &&
-      !description.startsWith('❌')
-    ) {
-      const warningPrefix = `⚠️ **API Outage / Maintenance Notice:** The live API is offline/glitched. Data shown below is frozen from a 7-day backup and is currently static.\n\n`;
-      return originalSetDescription(warningPrefix + description);
-    }
-    return originalSetDescription(description);
-  };
-
-  return embed;
 }
 
 /**

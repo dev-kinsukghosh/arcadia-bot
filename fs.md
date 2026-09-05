@@ -66,6 +66,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── exchange.js
 │   │       ├── forcesync.js
 │   │       ├── healthz.js
+│   │       ├── help.js
 │   │       ├── invite-bd.js
 │   │       ├── ncurrency.js
 │   │       ├── notifyiic.js

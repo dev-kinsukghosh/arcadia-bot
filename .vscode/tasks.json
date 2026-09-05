@@ -1,4 +1,12 @@
 {
   "version": "2.0.0",
-  "tasks": []
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "upload:emojis",
+      "problemMatcher": [],
+      "label": "npm: upload:emojis",
+      "detail": "node scripts/upload-emojis.js"
+    }
+  ]
 }

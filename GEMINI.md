@@ -788,3 +788,21 @@ The following rules MUST be followed at all times:
 - **Halt of Background Sync Workers**:
   - Paused all background synchronization tasks (Convoy, Currency, Heads, Shops, Towny scans) by commenting out their initialization in `bot.js`. The bot remains online responding to general slash commands and serving the dashboard API, but no background API scans will execute.
   - Broadcasted a global notice warning to all 7 servers regarding the API maintenance issues and temporary stats freeze.
+- **Temporary Outage Warning Notices & TODOs**:
+  - Added a global amber warning alert banner to the dashboard header (`dashboard/src/App.vue`) telling users the data is frozen.
+  - Added manual warning embeds and TODOs to convoy `/cstock`, `/cis-info`, `/currencies`, `/cstats`, and `/exchange` commands.
+  - Configured `src/utils/embedHelper.js` to dynamically intercept descriptions set on embeds and automatically prepend a warning notice to all embeds that belong to stats/data commands (e.g. Towny, Shops, Currencies, Exchange, History, and Market embeds) so they are transparent to users during the outage.
+  - Added explicit code TODOs next to each warning block to simplify their removal once the server-side API is fixed and background scans are resumed.
+
+### 05-09-2026
+
+- **Re-Enabled API Scanners & Background Synchronization**:
+  - Verified that all background synchronization services (**Convoy**, **Currency**, **Heads**, **Shops**, and **Towny**) are fully enabled and running in `bot.js`.
+  - Removed temporary outage warning prefix override from `src/utils/embedHelper.js`.
+  - Removed warning banner from dashboard header (`dashboard/src/App.vue`).
+  - Cleared temporary outage warning notices from `/cstock`, `/cis-info`, `/currencies`, `/cstats`, and `/exchange` commands.
+  - Executed codebase formatting (`npm run format`) and verified zero ESLint errors (`npm run lint`).
+- **Broadcast Tagging & Slash Command Directory (`/help`)**:
+  - Updated `src/commands/general/broadcast.js` with an optional `ping` parameter (choices: `@everyone` / `@here`) to allow developers to tag `@everyone` or `@here` when sending announcement broadcasts across servers.
+  - Created `src/commands/general/help.js` to provide a clean, categorized public slash command guide. Excludes developer-only commands and provides short summaries, usage examples, and command detail lookups with autocomplete.
+  - Updated `fs.md` with the new file mapping.

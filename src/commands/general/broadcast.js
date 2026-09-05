@@ -60,6 +60,16 @@ module.exports = {
         .setName('target_guild')
         .setDescription('Target a specific Guild ID only')
         .setRequired(false)
+    )
+    .addStringOption((option) =>
+      option
+        .setName('ping')
+        .setDescription('Optionally tag @everyone or @here with the broadcast message')
+        .setRequired(false)
+        .addChoices(
+          { name: '@everyone (Tag All)', value: 'everyone' },
+          { name: '@here (Tag Online)', value: 'here' }
+        )
     ),
 
   async execute(interaction) {
@@ -89,6 +99,13 @@ module.exports = {
     const imageUrl = interaction.options.getString('image');
     const thumbnailUrl = interaction.options.getString('thumbnail');
     const targetGuildId = interaction.options.getString('target_guild');
+    const pingChoice = interaction.options.getString('ping');
+    let pingTag = null;
+    if (pingChoice === 'everyone') {
+      pingTag = '@everyone';
+    } else if (pingChoice === 'here') {
+      pingTag = '@here';
+    }
 
     // Build the broadcast embed
     const broadcastEmbed = createBaseEmbed()
@@ -207,7 +224,11 @@ module.exports = {
       }
 
       try {
-        await channel.send({ embeds: [broadcastEmbed] });
+        const sendOptions = { embeds: [broadcastEmbed] };
+        if (pingTag) {
+          sendOptions.content = pingTag;
+        }
+        await channel.send(sendOptions);
         successCount++;
         results.push(`✅ **${guild.name}** (\`${guild.id}\`): Sent in <#${channel.id}>`);
         // Small delay to prevent hitting Discord rate limit

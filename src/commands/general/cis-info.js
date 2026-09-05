@@ -311,10 +311,8 @@ module.exports = {
       const embed = createBaseEmbed()
         .setColor(cfg.color)
         .setTitle(`${titlePrefix}${formatItemName(itemRecord.item)}`)
-        // TODO: Remove this warning message when the API issues are fixed on the server-side
         .setDescription(
-          `⚠️ **API Outage / Maintenance Notice:** Data is frozen from a 7-day backup.\n\n` +
-            `Historical telemetry and pricing stats for **${formatItemName(itemRecord.item)}**.`
+          `Historical telemetry and pricing stats for **${formatItemName(itemRecord.item)}**.`
         )
         .addFields(
           { name: '✨ Rarity Tier', value: `${cfg.emoji} **${cfg.label}**`, inline: true },
@@ -384,10 +382,8 @@ module.exports = {
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
         .setTitle('🚚 Convoy Rotation Statistics')
-        // TODO: Remove this warning message when the API issues are fixed on the server-side
         .setDescription(
-          `⚠️ **API Outage / Maintenance Notice:** Data is frozen from a 7-day backup.\n\n` +
-            `Overall summary of all **${totalItems}** unique items currently recorded in the convoy rotations database.\n` +
+          `Overall summary of all **${totalItems}** unique items currently recorded in the convoy rotations database.\n` +
             `Use \`/cis-info [item]\` to lookup detailed statistics for a specific item.`
         )
         .addFields({
@@ -504,11 +500,7 @@ module.exports = {
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
         .setTitle('📋 Convoy Rotating Items List')
-        // TODO: Remove this warning message when the API issues are fixed on the server-side
-        .setDescription(
-          `⚠️ **API Outage / Maintenance Notice:** Data is frozen from a 7-day backup.\n\n` +
-            `Page ${pageIdx + 1} of ${totalPages} · Sorted by rarity & frequency.`
-        );
+        .setDescription(`Page ${pageIdx + 1} of ${totalPages} · Sorted by rarity & frequency.`);
 
       const listLines = chunk.map((it) => {
         const cfg = RARITY_CONFIG[(it.rarity || 'COMMON').toUpperCase()] || {
