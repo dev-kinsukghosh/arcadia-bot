@@ -536,6 +536,11 @@ async function streamPendingSubmissions(client) {
               name: '🕒 Startup Time',
               value: `<t:${Math.floor(Date.now() / 1000)}:F>`,
               inline: false,
+            },
+            {
+              name: 'ENV',
+              value: `\`${process.env.MODE || 'development'}\``,
+              inline: true,
             }
           );
         await channel.send({ embeds: [onlineEmbed] }).catch(() => {});

@@ -143,36 +143,34 @@ async function syncGuildCommands(client, guildId) {
     const enabled = getEnabledOptions(guildId);
     const DYNAMIC_COMMAND_NAMES = ['pemoji', 'al-nadd', 'al-nrm', 'al-setseat', 'al-seatcalc'];
 
-    logger.debug(
-      `[Command Sync] Guild: ${guild.name} (${guildId}) | Enabled options: [${enabled.join(', ')}]`
-    );
-
-    // Fetch existing guild commands
-    const guildCommands = await guild.commands.fetch();
-
+    const targetPayloads = [];
     for (const cmdName of DYNAMIC_COMMAND_NAMES) {
-      const wantsCmd = enabled.includes(cmdName);
-      const commandObj = client.commands.get(cmdName);
-      const existingCmd = guildCommands.find((cmd) => cmd.name === cmdName);
-
-      if (wantsCmd) {
-        if (!existingCmd) {
-          if (commandObj) {
-            logger.info(
-              `[Command Sync] Registering /${cmdName} for guild: ${guild.name} (${guildId})`
-            );
-            await guild.commands.create(commandObj.data.toJSON());
-            logger.success(
-              `[Command Sync] Successfully registered /${cmdName} for guild: ${guild.name}`
-            );
-          }
-        }
-      } else {
-        if (existingCmd) {
-          logger.info(`[Command Sync] Removing /${cmdName} from guild: ${guild.name} (${guildId})`);
-          await guild.commands.delete(existingCmd.id);
+      if (enabled.includes(cmdName)) {
+        const commandObj = client.commands.get(cmdName);
+        if (commandObj && commandObj.data) {
+          targetPayloads.push(commandObj.data.toJSON());
         }
       }
+    }
+
+    // Fetch existing guild commands to check if update is needed
+    const existingGuildCommands = await guild.commands.fetch();
+
+    const existingNames = Array.from(existingGuildCommands.values())
+      .map((c) => c.name)
+      .sort();
+    const targetNames = targetPayloads.map((c) => c.name).sort();
+
+    const needsSync =
+      existingNames.length !== targetNames.length ||
+      existingNames.some((val, idx) => val !== targetNames[idx]);
+
+    if (needsSync) {
+      logger.info(
+        `[Command Sync] Updating guild-specific commands for ${guild.name} (${guildId}) -> [${targetNames.join(', ')}]`
+      );
+      await guild.commands.set(targetPayloads);
+      logger.success(`[Command Sync] Successfully updated guild commands for ${guild.name}`);
     }
   } catch (error) {
     logger.error(`Failed to sync guild-specific commands for guild ${guildId}:`, error);
