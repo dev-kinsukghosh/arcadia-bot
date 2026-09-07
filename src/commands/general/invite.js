@@ -20,7 +20,6 @@ module.exports = {
           '• 🚚 **Convoy Stock Monitors**: Real-time Convoy shop tracking, stock pings & price conversions.\n' +
           '• 🪙 **Currency Analytics**: Live nation exchange rates, 120-day health metrics & 30-day trends.\n' +
           '• 🏰 **Towny & Player Shops**: Server population stats, claim leaderboards & player shop lookup.\n' +
-          '• 🎨 **Minecraft Skins & Emojis**: 3D player skin renders programmatically uploaded as guild emojis.\n' +
           '• 🌐 **Interactive Dashboard**: Direct link to live graphs, maps, and shop directories.'
       )
       .addFields({
@@ -37,7 +36,7 @@ module.exports = {
       new ButtonBuilder()
         .setLabel('🌐 Web Dashboard')
         .setStyle(ButtonStyle.Link)
-        .setURL('https://arcadiamc.net')
+        .setURL('https://arcc.webdevkin.com/')
     );
 
     return interaction.reply({
