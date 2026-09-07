@@ -4,20 +4,8 @@ const os = require('os');
 const { connection } = require('../../utils/db.js');
 const redis = require('../../utils/redis.js');
 const { getIsOmReady } = require('../../utils/redisOm.js');
-
-function formatUptime(seconds) {
-  const d = Math.floor(seconds / (3600 * 24));
-  const h = Math.floor((seconds % (3600 * 24)) / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-
-  const parts = [];
-  if (d > 0) parts.push(`${d}d`);
-  if (h > 0) parts.push(`${h}h`);
-  if (m > 0) parts.push(`${m}m`);
-  parts.push(`${s}s`);
-  return parts.join(' ');
-}
+const prettyMs = require('pretty-ms');
+const bytes = require('bytes');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -54,24 +42,27 @@ module.exports = {
       redisStatus = `🟢 Connected (OM: ${getIsOmReady() ? 'Ready' : 'Not Active'})`;
     }
 
-    // Server memory/usage
+    // Server memory/usage with bytes utility
     const memory = process.memoryUsage();
-    const rssMB = (memory.rss / 1024 / 1024).toFixed(1);
-    const heapMB = (memory.heapUsed / 1024 / 1024).toFixed(1);
+    const rssFormatted = bytes(memory.rss);
+    const heapFormatted = bytes(memory.heapUsed);
 
-    const osFreeMem = (os.freemem() / 1024 / 1024 / 1024).toFixed(1);
-    const osTotalMem = (os.totalmem() / 1024 / 1024 / 1024).toFixed(1);
+    const osFreeMemFormatted = bytes(os.freemem());
+    const osTotalMemFormatted = bytes(os.totalmem());
+
+    // Bot uptime formatted with pretty-ms
+    const uptimeFormatted = prettyMs(process.uptime() * 1000, { compact: true });
 
     const description =
       `### 📊 System Health\n` +
-      `*   **Bot Uptime:** \`${formatUptime(process.uptime())}\`\n` +
+      `*   **Bot Uptime:** \`${uptimeFormatted}\`\n` +
       `*   **OS Platform:** \`${os.platform()} (${os.arch()})\`\n` +
       `*   **System CPU Cores:** \`${os.cpus().length}\`\n` +
       `*   **System Load (1m):** \`${os.loadavg()[0].toFixed(2)}\`\n` +
-      `*   **System Memory:** \`${osFreeMem}GB / ${osTotalMem}GB\` free\n\n` +
+      `*   **System Memory:** \`${osFreeMemFormatted} / ${osTotalMemFormatted}\` free\n\n` +
       `### 🖥️ Process Usage\n` +
-      `*   **Resident Set Size (RSS):** \`${rssMB} MB\`\n` +
-      `*   **Heap Used:** \`${heapMB} MB\`\n\n` +
+      `*   **Resident Set Size (RSS):** \`${rssFormatted}\`\n` +
+      `*   **Heap Used:** \`${heapFormatted}\`\n\n` +
       `### 🔌 Service Connections\n` +
       `*   **MySQL (Drizzle):** ${dbStatus}\n` +
       `*   **Redis Cache:** ${redisStatus}`;

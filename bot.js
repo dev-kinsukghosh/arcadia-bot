@@ -3,7 +3,7 @@ const { config, isConfigured } = require('./src/config.js');
 const logger = require('./src/utils/logger.js');
 const { loadEvents } = require('./src/handlers/eventHandler.js');
 const { loadCommands } = require('./src/handlers/commandHandler.js');
-const { initErrorHandler } = require('./src/utils/errorHandler.js');
+const { initErrorHandler, reportError } = require('./src/utils/errorHandler.js');
 const { loadBlacklist } = require('./src/utils/blacklistHelper.js');
 const pc = require('picocolors');
 
@@ -36,51 +36,109 @@ async function main() {
     process.exit(1);
   }
 
-  // Load blacklist cache from DB
-  logger.info('Loading blacklist cache...');
-  await loadBlacklist();
+  // Client WebSocket error event listeners to prevent unhandled socket crashes
+  client.on('error', (error) => {
+    logger.error('Discord Client WebSocket Connection Error:', error);
+  });
 
-  // Load guild config cache from DB
-  logger.info('Loading guild configurations cache...');
-  const { loadGuildConfigs } = require('./src/utils/guildConfigHelper.js');
-  await loadGuildConfigs();
+  client.on('shardError', (error, shardId) => {
+    logger.error(`Discord Shard [${shardId}] Connection Error:`, error);
+  });
 
-  // Load guild options cache from DB
-  logger.info('Loading guild options cache...');
-  const { loadGuildOptions } = require('./src/utils/guildOptionsHelper.js');
-  await loadGuildOptions();
+  // Load blacklist cache from DB safely
+  try {
+    logger.info('Loading blacklist cache...');
+    await loadBlacklist();
+  } catch (err) {
+    logger.warn(`Blacklist startup load warning: ${err.message}`);
+  }
 
-  // 1. Load Event handlers
-  logger.info('Initializing event handlers...');
-  loadEvents(client);
+  // Load guild config cache from DB safely
+  try {
+    logger.info('Loading guild configurations cache...');
+    const { loadGuildConfigs } = require('./src/utils/guildConfigHelper.js');
+    await loadGuildConfigs();
+  } catch (err) {
+    logger.warn(`Guild configs startup load warning: ${err.message}`);
+  }
 
-  // 2. Load Command handlers
-  logger.info('Initializing slash commands...');
-  loadCommands(client);
+  // Load guild options cache from DB safely
+  try {
+    logger.info('Loading guild options cache...');
+    const { loadGuildOptions } = require('./src/utils/guildOptionsHelper.js');
+    await loadGuildOptions();
+  } catch (err) {
+    logger.warn(`Guild options startup load warning: ${err.message}`);
+  }
 
+  // Load developer configs cache from DB safely
+  try {
+    logger.info('Loading developer configurations cache...');
+    const { loadDevConfig } = require('./src/utils/devConfigHelper.js');
+    await loadDevConfig();
+  } catch (err) {
+    logger.warn(`DevConfig startup load warning: ${err.message}`);
+  }
+
+  // 1. Load Event handlers safely
+  try {
+    logger.info('Initializing event handlers...');
+    loadEvents(client);
+  } catch (err) {
+    logger.error('Failed to load event handlers:', err);
+  }
+
+  // 2. Load Command handlers safely
+  try {
+    logger.info('Initializing slash commands...');
+    loadCommands(client);
+  } catch (err) {
+    logger.error('Failed to load slash commands:', err);
+  }
+
+  const serviceis = process.argv.includes('--noservices');
   // 3. Start background sync services
-  logger.info('Starting background sync services');
-  const { startConvoySync } = require('./src/services/convoySync.js');
-  startConvoySync(client);
+  if (!serviceis) {
+    logger.info('Starting background sync services');
+    const services = [
+      { name: 'ConvoySync', path: './src/services/convoySync.js', fnName: 'startConvoySync' },
+      { name: 'CurrencySync', path: './src/services/currencySync.js', fnName: 'startCurrencySync' },
+      { name: 'HeadsSync', path: './src/services/headManager.js', fnName: 'startHeadsSync' },
+      { name: 'ShopsSync', path: './src/services/shopsSync.js', fnName: 'startShopsSync' },
+      { name: 'TownySync', path: './src/services/townySync.js', fnName: 'startTownySync' },
+      {
+        name: 'EmptyEndpointsSync',
+        path: './src/services/emptyEndpointsSync.js',
+        fnName: 'startEmptyEndpointsSync',
+      },
+      { name: 'PlayerSync', path: './src/services/playerSync.js', fnName: 'startPlayerSync' },
+    ];
 
-  const { startCurrencySync } = require('./src/services/currencySync.js');
-  startCurrencySync(client);
-
-  const { startHeadsSync } = require('./src/services/headManager.js');
-  startHeadsSync(client);
-
-  const { startShopsSync } = require('./src/services/shopsSync.js');
-  startShopsSync(client);
-
-  const { startTownySync } = require('./src/services/townySync.js');
-  startTownySync(client);
+    for (const service of services) {
+      try {
+        const mod = require(service.path);
+        if (typeof mod[service.fnName] === 'function') {
+          mod[service.fnName](client);
+        }
+      } catch (err) {
+        logger.error(`Error starting ${service.name}:`, err);
+        reportError(err, `Service Startup: ${service.name}`);
+      }
+    }
+  } else {
+    logger.info('Background sync services are disabled no service flag triggered.');
+  }
 
   // 4. Start Express Webserver for Dashboard API
   const isBotOnly = process.argv.includes('--bot-only');
   if (!isBotOnly) {
-    logger.info('Starting dashboard webserver...');
-    const { startServer } = require('./src/server.js');
-    startServer();
+    try {
+      logger.info('Starting dashboard webserver...');
+      const { startServer } = require('./src/server.js');
+      startServer();
+    } catch (err) {
+      logger.error('Failed to start dashboard webserver:', err);
+    }
   } else {
     logger.info('Dashboard webserver start skipped (bot-only mode).');
   }

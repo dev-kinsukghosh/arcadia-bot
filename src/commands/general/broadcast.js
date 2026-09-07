@@ -40,7 +40,15 @@ module.exports = {
           { name: 'Cyber Green', value: 'SUCCESS' },
           { name: 'Cyber Blue', value: 'INFO' },
           { name: 'Amber Yellow', value: 'WARNING' },
-          { name: 'Crimson Red', value: 'ERROR' }
+          { name: 'Crimson Red', value: 'ERROR' },
+          { name: 'Electric Neon Cyan', value: 'NEON_CYAN' },
+          { name: 'Hot Neon Pink', value: 'HOT_PINK' },
+          { name: 'Bright Gold', value: 'GOLD' },
+          { name: 'Royal Blue', value: 'ROYAL_BLUE' },
+          { name: 'Emerald Green', value: 'EMERALD' },
+          { name: 'Sunset Orange', value: 'ORANGE' },
+          { name: 'Dark Obsidian', value: 'OBSIDIAN' },
+          { name: 'Pure White', value: 'WHITE' }
         )
     )
     .addStringOption((option) =>

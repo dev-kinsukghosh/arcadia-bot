@@ -27,12 +27,16 @@ module.exports = {
           { name: 'ArcadiaMC API Connection Suite', value: 'api' },
           { name: 'Database Query Suite', value: 'db' },
           { name: 'Blacklist Functionality Suite', value: 'blacklist' },
+          { name: 'DevConfig Helper & Aliases Suite', value: 'devconfig' },
+          { name: 'Al-Sam Role Authorization Suite', value: 'alauth' },
+          { name: 'Suggest & Feedback Automation Suite', value: 'suggest' },
           { name: 'Item Notifications Suite', value: 'notify' },
           { name: 'Player Heads Manager Suite', value: 'heads' },
           { name: 'Embed Helper Unit Suite', value: 'embed' },
           { name: 'Player Shops Sync & Cache Suite', value: 'shops' },
           { name: 'Towny Sync & History Suite', value: 'towny' },
-          { name: 'Trigger Mock Stock Notification', value: 'mock_notify' }
+          { name: 'Trigger Mock Stock Notification', value: 'mock_notify' },
+          { name: 'Trigger Mock Syslog Alert', value: 'mock_syslog' }
         )
     ),
 
@@ -215,6 +219,39 @@ module.exports = {
       }
     }
 
+    // Mock syslog alert test logic
+    if (testId === 'mock_syslog') {
+      try {
+        const { reportError } = require('../../utils/errorHandler.js');
+        const { getSyslogsChannel } = require('../../utils/devConfigHelper.js');
+        const syslogsChannelId = getSyslogsChannel();
+
+        const testError = new Error('Test Syslog Alert triggered via /test command');
+        await reportError(testError, 'Manual Syslog Diagnostic Test');
+
+        return interaction.editReply({
+          embeds: [
+            successEmbed(
+              'Mock Syslog Alert Dispatched',
+              `Dispatched a test error alert embed.` +
+                (syslogsChannelId
+                  ? ` Target Channel: <#${syslogsChannelId}>`
+                  : '\n⚠️ Note: No syslogs_channel or logs_channel is configured yet via /devconfig!')
+            ),
+          ],
+        });
+      } catch (err) {
+        return interaction.editReply({
+          embeds: [
+            errorEmbed(
+              'Mock Syslog Test Failed',
+              `An error occurred while running the mock syslog test:\n\`\`\`\n${err.message}\n\`\`\``
+            ),
+          ],
+        });
+      }
+    }
+
     let cmd = 'npx vitest run';
     let suiteName = 'All Test Suites';
 
@@ -230,6 +267,15 @@ module.exports = {
     } else if (testId === 'blacklist') {
       cmd = 'npx vitest run tests/blacklist.test.js';
       suiteName = 'Blacklist Functionality Suite';
+    } else if (testId === 'devconfig') {
+      cmd = 'npx vitest run tests/devConfig.test.js';
+      suiteName = 'DevConfig Helper & Aliases Suite';
+    } else if (testId === 'alauth') {
+      cmd = 'npx vitest run tests/alAuth.test.js';
+      suiteName = 'Al-Sam Role Authorization Suite';
+    } else if (testId === 'suggest') {
+      cmd = 'npx vitest run tests/suggestFeedback.test.js';
+      suiteName = 'Suggest & Feedback Automation Suite';
     } else if (testId === 'notify') {
       cmd = 'npx vitest run tests/notify.test.js';
       suiteName = 'Item Notifications Suite';

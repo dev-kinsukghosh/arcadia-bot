@@ -37,11 +37,12 @@ async function reportError(error, context = 'System Error') {
     logger.error(error);
   }
 
-  // 2. Dispatch to Discord channel if bot is logged in and ERROR_CHANNEL_ID is set
-  const errorChannelId = process.env.ERROR_CHANNEL_ID;
+  // 2. Dispatch to Discord channel if bot is logged in and syslogs/error channel is configured
+  const { getSyslogsChannel } = require('./devConfigHelper.js');
+  const errorChannelId = getSyslogsChannel();
   if (discordClient && discordClient.isReady() && errorChannelId) {
     try {
-      const channel = discordClient.channels.cache.get(errorChannelId);
+      const channel = await discordClient.channels.fetch(errorChannelId).catch(() => null);
       if (channel && channel.isTextBased()) {
         const { errorEmbed } = require('./embedHelper.js');
         const embed = errorEmbed(

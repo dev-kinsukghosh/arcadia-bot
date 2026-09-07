@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 import { useRouter, useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -26,6 +26,19 @@ const route = useRoute();
 
 // Mobile nav toggle
 const mobileNavOpen = ref(false);
+// Monitors dropdown toggle
+const isDropdownOpen = ref(false);
+const dropdownRef = ref(null);
+
+function toggleDropdown() {
+  isDropdownOpen.value = !isDropdownOpen.value;
+}
+
+function handleClickOutside(event) {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+    isDropdownOpen.value = false;
+  }
+}
 
 function smoothScrollToTop(duration = 600) {
   const start = window.scrollY || window.pageYOffset;
@@ -125,6 +138,11 @@ onMounted(() => {
   initDeviceFingerprint();
   fetchLatestStats();
   initWebSocket();
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
@@ -222,18 +240,83 @@ onMounted(() => {
             <font-awesome-icon icon="globe" />
             Towny
           </button>
-          <button
-            :class="
-              route.path === '/shops'
-                ? 'bg-slate-900 text-white shadow-md'
-                : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
-            "
-            class="hover:scale-1.03 flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-95 lg:gap-2 lg:px-3 lg:text-xs"
-            @click.prevent="navigate('/shops')"
-          >
-            <font-awesome-icon icon="shop" />
-            Shops
-          </button>
+          <!-- Monitors Dropdown Menu (Players, Shops, Events & Wars) -->
+          <div ref="dropdownRef" class="relative">
+            <button
+              :class="
+                ['/players', '/shops', '/events-wars'].includes(route.path)
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="hover:scale-1.03 flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-95 lg:gap-2 lg:px-3 lg:text-xs"
+              @click.stop="toggleDropdown"
+            >
+              <font-awesome-icon icon="layer-group" />
+              <span>Monitors</span>
+              <font-awesome-icon icon="chevron-down" class="text-[9px] opacity-75" />
+            </button>
+
+            <!-- Dropdown Menu Box -->
+            <Transition
+              enter-from-class="opacity-0 scale-95 -translate-y-1"
+              enter-active-class="transition-all duration-150 ease-out"
+              enter-to-class="opacity-100 scale-100 translate-y-0"
+              leave-from-class="opacity-100 scale-100 translate-y-0"
+              leave-active-class="transition-all duration-100 ease-in"
+              leave-to-class="opacity-0 scale-95 -translate-y-1"
+            >
+              <div
+                v-if="isDropdownOpen"
+                class="absolute top-full right-0 z-50 mt-1.5 w-48 overflow-hidden rounded-xl border border-slate-800 bg-[#0c0e17] p-1 shadow-2xl backdrop-blur-md"
+              >
+                <button
+                  :class="
+                    route.path === '/players'
+                      ? 'bg-blue-600/20 font-bold text-blue-300'
+                      : 'text-slate-300 hover:bg-slate-900/60 hover:text-white'
+                  "
+                  class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-colors"
+                  @click.prevent="
+                    navigate('/players');
+                    isDropdownOpen = false;
+                  "
+                >
+                  <font-awesome-icon icon="users" class="text-blue-400" />
+                  <span>Players</span>
+                </button>
+                <button
+                  :class="
+                    route.path === '/shops'
+                      ? 'bg-blue-600/20 font-bold text-blue-300'
+                      : 'text-slate-300 hover:bg-slate-900/60 hover:text-white'
+                  "
+                  class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-colors"
+                  @click.prevent="
+                    navigate('/shops');
+                    isDropdownOpen = false;
+                  "
+                >
+                  <font-awesome-icon icon="shop" class="text-emerald-400" />
+                  <span>Shops Market</span>
+                </button>
+                <button
+                  :class="
+                    route.path === '/events-wars'
+                      ? 'bg-blue-600/20 font-bold text-blue-300'
+                      : 'text-slate-300 hover:bg-slate-900/60 hover:text-white'
+                  "
+                  class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-colors"
+                  @click.prevent="
+                    navigate('/events-wars');
+                    isDropdownOpen = false;
+                  "
+                >
+                  <font-awesome-icon icon="flag" class="text-rose-400" />
+                  <span>Events & Wars</span>
+                </button>
+              </div>
+            </Transition>
+          </div>
         </nav>
 
         <!-- Hamburger button (mobile/sm only) -->
@@ -260,7 +343,7 @@ onMounted(() => {
           v-if="mobileNavOpen"
           class="border-t border-slate-900 bg-[#090b11] px-4 py-3 md:hidden"
         >
-          <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
             <button
               :class="
                 route.path === '/live-market' || route.path === '/monitor' || route.path === '/'
@@ -323,6 +406,18 @@ onMounted(() => {
             </button>
             <button
               :class="
+                route.path === '/players'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95"
+              @click.prevent="navigate('/players')"
+            >
+              <font-awesome-icon icon="users" />
+              Players
+            </button>
+            <button
+              :class="
                 route.path === '/shops'
                   ? 'bg-slate-900 text-white shadow-md'
                   : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
@@ -332,6 +427,18 @@ onMounted(() => {
             >
               <font-awesome-icon icon="shop" />
               Shops
+            </button>
+            <button
+              :class="
+                route.path === '/events-wars'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95"
+              @click.prevent="navigate('/events-wars')"
+            >
+              <font-awesome-icon icon="flag" />
+              Events & Wars
             </button>
           </div>
         </nav>

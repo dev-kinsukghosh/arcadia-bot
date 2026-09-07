@@ -5,6 +5,8 @@ import ExchangeCalculator from './components/ExchangeCalculator.vue';
 import ConvoyStock from './components/ConvoyStock.vue';
 import TownyMonitor from './components/TownyMonitor.vue';
 import ShopsMonitor from './components/ShopsMonitor.vue';
+import EventsWarsMonitor from './components/EventsWarsMonitor.vue';
+import PlayerMonitor from './components/PlayerMonitor.vue';
 
 const routes = [
   {
@@ -41,9 +43,19 @@ const routes = [
     component: TownyMonitor,
   },
   {
+    path: '/players',
+    name: 'players',
+    component: PlayerMonitor,
+  },
+  {
     path: '/shops',
     name: 'shops',
     component: ShopsMonitor,
+  },
+  {
+    path: '/events-wars',
+    name: 'events-wars',
+    component: EventsWarsMonitor,
   },
 ];
 

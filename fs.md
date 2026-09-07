@@ -30,13 +30,18 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── style.css
 │       ├── components/
 │       │   ├── ConvoyStock.vue
+│       │   ├── EventsWarsMonitor.vue
 │       │   ├── ExchangeCalculator.vue
 │       │   ├── HistoryChart.vue
 │       │   ├── MarketMonitor.vue
+│       │   ├── PlayerMonitor.vue
+│       │   ├── ShopsMonitor.vue
 │       │   └── TownyMonitor.vue
 │       └── stores/
 │           ├── convoyStore.js
+│           ├── eventsWarsStore.js
 │           ├── marketStore.js
+│           ├── playersStore.js
 │           ├── shopsStore.js
 │           └── townyStore.js
 ├── scripts/
@@ -66,20 +71,27 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── cstats.js
 │   │       ├── cstock.js
 │   │       ├── currencies.js
+│   │       ├── devconfig.js
 │   │       ├── dev-slist.js
+│   │       ├── events.js
 │   │       ├── exchange.js
+│   │       ├── feedback.js
 │   │       ├── forcesync.js
 │   │       ├── healthz.js
 │   │       ├── help.js
+│   │       ├── invite.js
 │   │       ├── invite-bd.js
 │   │       ├── ncurrency.js
 │   │       ├── notifyiic.js
 │   │       ├── pemoji.js
 │   │       ├── ping.js
+│   │       ├── players.js
 │   │       ├── shops.js
 │   │       ├── stats-dev.js
+│   │       ├── suggest.js
 │   │       ├── test.js
-│   │       └── towny.js
+│   │       ├── towny.js
+│   │       └── wars.js
 │   ├── heads/
 │   ├── db/
 │   │   ├── schema.js
@@ -93,7 +105,9 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── services/
 │   │   ├── convoySync.js
 │   │   ├── currencySync.js
+│   │   ├── emptyEndpointsSync.js
 │   │   ├── headManager.js
+│   │   ├── playerSync.js
 │   │   ├── shopsSync.js
 │   │   └── townySync.js
 │   └── utils/
@@ -102,6 +116,7 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── blacklistHelper.js
 │       ├── canvasGraph.js
 │       ├── db.js
+│       ├── devConfigHelper.js
 │       ├── emojiCache.js
 │       ├── embedHelper.js
 │       ├── emitter.js
@@ -222,6 +237,14 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/forcesync.js](./src/commands/general/forcesync.js): `/forcesync` — Forces manual convoy data synchronization from the API (Developer Only).
       - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Lists all guilds the bot is currently in (Developer Only).
       - [src/commands/general/healthz.js](./src/commands/general/healthz.js): `/healthz` — Displays bot status, connection states, and server resources (Developer Only).
+      - [src/commands/general/devconfig.js](./src/commands/general/devconfig.js): `/devconfig` — Configure dynamic bot features, output channels, and parameters (Developer Only).
+      - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Displays a paginated list of all joined guilds with server name and ID (Developer Only).
+      - [src/commands/general/exchange.js](./src/commands/general/exchange.js): `/exchange` — Convert amounts between any two nation currencies or base ARC.
+      - [src/commands/general/feedback.js](./src/commands/general/feedback.js): `/feedback` — Submit feedback or reviews about the bot to developers.
+      - [src/commands/general/forcesync.js](./src/commands/general/forcesync.js): `/forcesync` — Manually trigger convoy stock synchronization (Developer Only).
+      - [src/commands/general/healthz.js](./src/commands/general/healthz.js): `/healthz` — System health check showing bot uptime, RAM allocation, OS details, and connection states (Developer Only).
+      - [src/commands/general/help.js](./src/commands/general/help.js): `/help` — Categorized command directory list and detailed usage instructions.
+      - [src/commands/general/invite.js](./src/commands/general/invite.js): `/invite` — Get official Discord invite link to add bot to server.
       - [src/commands/general/invite-bd.js](./src/commands/general/invite-bd.js): `/invite-bd` — Generates a single-use invite to join a server the bot is in (Developer Only).
       - [src/commands/general/ncurrency.js](./src/commands/general/ncurrency.js): `/ncurrency` — Set this server's nation currency config (Admin Only).
       - [src/commands/general/notifyiic.js](./src/commands/general/notifyiic.js): `/notifyiic` — Subscribe to item stock notifications in a specific channel.
@@ -229,6 +252,7 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/ping.js](./src/commands/general/ping.js): Ping/latency check.
       - [src/commands/general/shops.js](./src/commands/general/shops.js): `/shops` — List player shops, view shop listings/coordinates, and search for active item offers.
       - [src/commands/general/stats-dev.js](./src/commands/general/stats-dev.js): `/stats-dev` — Displays command execution telemetry and active servers count (Developer Only).
+      - [src/commands/general/suggest.js](./src/commands/general/suggest.js): `/suggest` — Submit feature suggestions for the bot to developers.
       - [src/commands/general/test.js](./src/commands/general/test.js): `/test` — Runs Bot integration and connection test suites from Discord (Developer Only).
       - [src/commands/general/towny.js](./src/commands/general/towny.js): `/towny` — Displays Towny stats, town info, and nation info with autocomplete.
   - 📂 **src/icons/**: Cache directory containing block and item texture PNG images downloaded from mcasset.cloud.
@@ -254,6 +278,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/blacklistHelper.js](./src/utils/blacklistHelper.js): Manages blacklist checks, cache syncing, and database integrations.
   - [src/utils/canvasGraph.js](./src/utils/canvasGraph.js): Generates high-quality bar and line charts using @napi-rs/canvas.
   - [src/utils/db.js](./src/utils/db.js): Drizzle ORM database instance client.
+  - [src/utils/devConfigHelper.js](./src/utils/devConfigHelper.js): Manages memory caching and persistence for developer configurations (`webyCustom`).
   - [src/utils/emojiCache.js](./src/utils/emojiCache.js): Manages in-memory caching of application custom emojis.
   - [src/utils/embedHelper.js](./src/utils/embedHelper.js): Central helper module to build styled, uniform Discord embeds.
   - [src/utils/emitter.js](./src/utils/emitter.js): Central EventEmitter instance for cross-module real-time communications.
@@ -266,12 +291,16 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/redisOm.js](./src/utils/redisOm.js): Redis-OM client wrapper initialization.
 - 📂 **tests/**: Codebase testing suite and validation tools.
   - [tests/setup.js](./tests/setup.js): Global Vitest setup configuring log levels during execution.
+  - [tests/alAuth.test.js](./tests/alAuth.test.js): Integration tests for Al-Sam role-lock authorization and developer bypasses.
   - [tests/blacklist.test.js](./tests/blacklist.test.js): Integration tests for blacklist helper methods and caching.
+  - [tests/devConfig.test.js](./tests/devConfig.test.js): Unit and integration tests for devConfigHelper key matching, aliases, and channel getters.
   - [tests/embedHelper.test.js](./tests/embedHelper.test.js): Unit tests for central Discord embed rendering helpers.
   - [tests/env.test.js](./tests/env.test.js): Health check test for configuration, database connection pools, and Redis pings.
   - [tests/heads.test.js](./tests/heads.test.js): Integration tests for player heads downloading, caching and cron updates.
   - [tests/notify.test.js](./tests/notify.test.js): Integration tests for item stock notifications table mapping.
   - [tests/options.test.js](./tests/options.test.js): Integration tests for guild custom options toggles and memory cache synchronization.
   - [tests/shops.test.js](./tests/shops.test.js): Integration tests for player shops database query mappings, sync scheduler, and 25-minute TTL cache.
+  - [tests/suggestFeedback.test.js](./tests/suggestFeedback.test.js): Unit tests for suggestion and feedback channel getters, automation fallbacks, and payload JSON formatting.
+
   - [tests/api.test.js](./tests/api.test.js): Connection verification and response validation test for the ArcadiaMC API endpoints.
   - [tests/database.test.js](./tests/database.test.js): Direct query health validation for Drizzle ORM and MySQL tables.

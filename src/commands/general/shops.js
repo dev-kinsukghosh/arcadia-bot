@@ -14,15 +14,18 @@ const { db } = require('../../utils/db.js');
 const { playerShops } = require('../../db/schema.js');
 const { getAppEmojis } = require('../../utils/emojiCache.js');
 
-// Local cache for shops data during autocomplete to prevent excessive API requests
-let shopsCache = null;
-let lastCacheFetch = 0;
-const CACHE_TTL = 300 * 1000; // 5 minutes TTL
+const { LRUCache } = require('lru-cache');
+
+// In-memory LRU cache for shops data during autocomplete
+const shopsLruCache = new LRUCache({
+  max: 20,
+  ttl: 300 * 1000, // 5 minutes TTL
+});
 
 async function fetchShopsData() {
-  const now = Date.now();
-  if (shopsCache && now - lastCacheFetch < CACHE_TTL) {
-    return shopsCache;
+  const cachedShops = shopsLruCache.get('shops_list');
+  if (cachedShops) {
+    return cachedShops;
   }
 
   // 1. Try Redis cache
@@ -32,9 +35,8 @@ async function fetchShopsData() {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && Array.isArray(parsed.shops)) {
-          shopsCache = parsed.shops;
-          lastCacheFetch = now;
-          return shopsCache;
+          shopsLruCache.set('shops_list', parsed.shops);
+          return parsed.shops;
         }
       }
     } catch {
@@ -47,7 +49,7 @@ async function fetchShopsData() {
     try {
       const dbShops = await db.select().from(playerShops);
       if (dbShops && dbShops.length > 0) {
-        shopsCache = dbShops.map((shop) => ({
+        const mapped = dbShops.map((shop) => ({
           key: shop.key,
           name: shop.name,
           owner: shop.owner,
@@ -60,8 +62,8 @@ async function fetchShopsData() {
           sellListings: shop.sellListings ? JSON.parse(shop.sellListings) : [],
           buyListings: shop.buyListings ? JSON.parse(shop.buyListings) : [],
         }));
-        lastCacheFetch = now;
-        return shopsCache;
+        shopsLruCache.set('shops_list', mapped);
+        return mapped;
       }
     } catch {
       // ignore
@@ -72,12 +74,11 @@ async function fetchShopsData() {
   try {
     const data = await arcadiaApi.getShops();
     if (data && Array.isArray(data.shops)) {
-      shopsCache = data.shops;
-      lastCacheFetch = now;
-      return shopsCache;
+      shopsLruCache.set('shops_list', data.shops);
+      return data.shops;
     }
   } catch {
-    if (shopsCache) return shopsCache;
+    // ignore
   }
 
   return [];
@@ -444,7 +445,7 @@ module.exports = {
         .setDescription(`Detailed inventory and profile telemetry for player shop **${shopName}**.`)
         .addFields(
           {
-            name: '👑 Profile Metadata',
+            name: 'Profile Metadata',
             value: `• **Owner UUID:** \`${ownerUuid}\`\n• **Location:** \`${coords}\` in \`${worldName}\`\n• **Primary Currency:** \`${shopCurrency}\``,
             inline: false,
           },

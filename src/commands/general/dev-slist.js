@@ -6,6 +6,7 @@ const {
   MessageFlags,
 } = require('discord.js');
 const { successEmbed, errorEmbed } = require('../../utils/embedHelper.js');
+const { table, getBorderCharacters } = require('table');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -43,21 +44,35 @@ module.exports = {
 
     let currentPageIndex = 0;
 
-    // Helper function to build page content
+    // Helper function to build page content with ASCII table
     const buildEmbedPage = (pageIdx) => {
       const startIdx = pageIdx * 10;
       const pageItems = limitedGuilds.slice(startIdx, startIdx + 10);
 
-      const itemsDesc = pageItems
-        .map(
-          (guild, idx) =>
-            `**${startIdx + idx + 1}.** ${guild.name} - \`${guild.id}\` — <@${guild.ownerId}>`
-        )
-        .join('\n');
+      const tableData = [
+        ['#', 'Server Name', 'Server ID', 'Members'],
+        ...pageItems.map((g, idx) => [
+          startIdx + idx + 1,
+          g.name.length > 18 ? g.name.slice(0, 15) + '...' : g.name,
+          g.id,
+          g.memberCount || 0,
+        ]),
+      ];
+
+      let formattedTable;
+      try {
+        formattedTable = table(tableData, {
+          border: getBorderCharacters('ramac'),
+        });
+      } catch {
+        formattedTable = pageItems
+          .map((g, idx) => `${startIdx + idx + 1}. ${g.name} - ${g.id}`)
+          .join('\n');
+      }
 
       return successEmbed(
-        `Active Servers (Page ${pageIdx + 1} of ${totalPages})`,
-        itemsDesc || 'No servers on this page.'
+        `Active Servers Roster (Page ${pageIdx + 1} of ${totalPages})`,
+        `\`\`\`text\n${formattedTable}\n\`\`\``
       );
     };
 

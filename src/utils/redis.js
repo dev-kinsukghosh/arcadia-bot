@@ -1,6 +1,7 @@
 const Redis = require('ioredis');
 const { config } = require('../config.js');
 const logger = require('./logger.js');
+const { pack, unpack } = require('msgpackr');
 
 let redis = null;
 
@@ -52,12 +53,39 @@ if (process.env.REDIS_HOST) {
       try {
         await redis.ping();
       } catch {
-        // Ignored, the error handler or redis error listener will catch it
+        // Ignored
       }
     }
   }, 120000); // 2 minutes
 } else {
   logger.warn('Redis host not configured in .env. Redis helper will not be active.');
+}
+
+/**
+ * High-performance MessagePack serialization helpers
+ */
+function packData(data) {
+  try {
+    return pack(data);
+  } catch {
+    return Buffer.from(JSON.stringify(data));
+  }
+}
+
+function unpackData(bufferOrString) {
+  try {
+    if (Buffer.isBuffer(bufferOrString)) {
+      return unpack(bufferOrString);
+    }
+    return JSON.parse(bufferOrString);
+  } catch {
+    return null;
+  }
+}
+
+if (redis) {
+  redis.packData = packData;
+  redis.unpackData = unpackData;
 }
 
 module.exports = redis;

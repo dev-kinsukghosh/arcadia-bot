@@ -76,10 +76,10 @@ const currencyHistory = mysqlTable(
   (table) => [primaryKey({ columns: [table.currencyId, table.date] })]
 );
 
-// Generic internal key-value store for bot state (scan counters, flags, etc.)
+// Generic internal key-value store for bot state (scan counters, flags, snapshots, etc.)
 const internal = mysqlTable('internal', {
   id: varchar('id', { length: 100 }).primaryKey(),
-  value: varchar('value', { length: 500 }).notNull(),
+  value: text('value').notNull(),
 });
 
 const mediumBlob = customType({
@@ -149,6 +149,41 @@ const webyCustom = mysqlTable('weby_custom', {
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
 
+const eventsHistory = mysqlTable('events_history', {
+  id: int('id').primaryKey().autoincrement(),
+  eventData: text('event_data').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+const warsHistory = mysqlTable('wars_history', {
+  id: int('id').primaryKey().autoincrement(),
+  warTime: boolean('war_time').default(false).notNull(),
+  activeWarsCount: int('active_wars_count').default(0).notNull(),
+  warData: text('war_data').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+const playerProfiles = mysqlTable('player_profiles', {
+  uuid: varchar('uuid', { length: 36 }).primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  displayName: varchar('display_name', { length: 255 }),
+  rank: varchar('rank', { length: 100 }),
+  townId: varchar('town_id', { length: 255 }),
+  townName: varchar('town_name', { length: 255 }),
+  nationId: varchar('nation_id', { length: 255 }),
+  nationName: varchar('nation_name', { length: 255 }),
+  empire: varchar('empire', { length: 255 }),
+  firstSeen: timestamp('first_seen').defaultNow().notNull(),
+  lastSeen: timestamp('last_seen').defaultNow().onUpdateNow().notNull(),
+});
+
+// Dedicated API endpoint snapshots store
+const apiSnapshots = mysqlTable('api_snapshots', {
+  endpoint: varchar('endpoint', { length: 100 }).primaryKey(),
+  data: text('data').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
 module.exports = {
   convoyItems,
   blacklist,
@@ -163,4 +198,8 @@ module.exports = {
   guildOptions,
   alSam,
   webyCustom,
+  eventsHistory,
+  warsHistory,
+  playerProfiles,
+  apiSnapshots,
 };

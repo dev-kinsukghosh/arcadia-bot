@@ -279,9 +279,15 @@ function formatCurrency(val, currency = 'ARC') {
               />
             </div>
             <div class="flex flex-col">
-              <span class="text-xs font-semibold text-slate-300">{{
-                shop.ownerName || 'Shop Owner'
-              }}</span>
+              <span class="text-xs font-semibold text-slate-300">
+                {{ shop.ownerName || 'Shop Owner' }}
+                <span
+                  v-if="shop.ownerDisplayName && shop.ownerDisplayName !== shop.ownerName"
+                  class="text-[10px] font-normal text-slate-400"
+                >
+                  ({{ shop.ownerDisplayName }})
+                </span>
+              </span>
               <span class="font-mono text-[9px] text-slate-500">
                 UUID: {{ shop.owner ? shop.owner.substring(0, 8) + '...' : 'Unknown' }}
               </span>

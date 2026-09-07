@@ -478,6 +478,111 @@ apiRouter.get('/towny/history', async (req, res) => {
   }
 });
 
+// 5. Get cached events
+const handleEventsRequest = async (req, res) => {
+  const { getEventsCache } = require('./services/emptyEndpointsSync.js');
+  try {
+    const data = await getEventsCache();
+    res.json(data || { updatedAt: Date.now(), events: [] });
+  } catch (err) {
+    logger.error(`API Error fetching events: ${err.message}`);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+apiRouter.get('/events', handleEventsRequest);
+apiRouter.get('/api/events', handleEventsRequest);
+
+// 6. Get cached wars status
+const handleWarsRequest = async (req, res) => {
+  const { getWarsCache } = require('./services/emptyEndpointsSync.js');
+  try {
+    const data = await getWarsCache();
+    res.json(
+      data || {
+        updatedAt: Date.now(),
+        enabled: false,
+        warTime: false,
+        activeWars: [],
+        recentEvents: [],
+      }
+    );
+  } catch (err) {
+    logger.error(`API Error fetching wars: ${err.message}`);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+apiRouter.get('/wars', handleWarsRequest);
+apiRouter.get('/api/wars', handleWarsRequest);
+
+// 7. Get cached online players
+const handlePlayersRequest = async (req, res) => {
+  const { getPlayersCache } = require('./services/playerSync.js');
+  try {
+    const data = (await getPlayersCache()) || {
+      updatedAt: Date.now(),
+      onlineCount: 0,
+      players: [],
+    };
+    let profiles = [];
+    if (db) {
+      try {
+        const { playerProfiles } = require('./db/schema.js');
+        profiles = await db.select().from(playerProfiles);
+      } catch (err) {
+        logger.warn(`Failed to fetch database player profiles: ${err.message}`);
+      }
+    }
+    res.json({
+      ...data,
+      profiles,
+    });
+  } catch (err) {
+    logger.error(`API Error fetching players: ${err.message}`);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+apiRouter.get('/players', handlePlayersRequest);
+apiRouter.get('/api/players', handlePlayersRequest);
+
+apiRouter.get('/players/profile/:name', async (req, res) => {
+  const query = req.params.name?.trim().toLowerCase();
+  if (!query) {
+    return res.status(400).json({ error: 'Missing player name' });
+  }
+
+  if (!db) {
+    return res.status(503).json({ error: 'Database connection unavailable' });
+  }
+
+  try {
+    const { playerProfiles } = require('./db/schema.js');
+    const { or, eq } = require('drizzle-orm');
+
+    const records = await db
+      .select()
+      .from(playerProfiles)
+      .where(
+        or(
+          eq(playerProfiles.name, query),
+          eq(playerProfiles.displayName, query),
+          eq(playerProfiles.uuid, query)
+        )
+      );
+
+    if (records.length === 0) {
+      return res.status(404).json({ error: 'Player profile not found in database' });
+    }
+
+    res.json(records[0]);
+  } catch (err) {
+    logger.error(`API Error fetching player profile: ${err.message}`);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
 // Local cache for Mojang username resolutions to minimize external API hits
 const resolvedUsernames = new Map();
 
@@ -755,6 +860,13 @@ function startServer() {
         ws.send(msg);
       }
     }
+  });
+
+  // 7. Global Express error handler middleware (prevents webserver endpoints from crashing process)
+  app.use((err, req, res, _next) => {
+    logger.error(`[API Server Error] ${req.method} ${req.path}:`, err);
+    if (res.headersSent) return;
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
   });
 
   return server;

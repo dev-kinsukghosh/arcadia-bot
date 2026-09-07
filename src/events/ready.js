@@ -45,5 +45,11 @@ module.exports = {
     syncAllGuildsCommands(client).catch((err) => {
       logger.error('Failed to sync guild-specific commands on startup:', err);
     });
+
+    // Auto-stream pending historical suggestions, feedback, and error logs stored in DB
+    const { streamPendingSubmissions } = require('../utils/devConfigHelper.js');
+    streamPendingSubmissions(client).catch((err) => {
+      logger.error('Failed to stream pending submissions on startup:', err);
+    });
   },
 };

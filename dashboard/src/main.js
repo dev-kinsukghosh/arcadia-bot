@@ -36,6 +36,15 @@ import {
   faShop,
   faMinus,
   faBars,
+  faCalendarAlt,
+  faShieldAlt,
+  faCrosshairs,
+  faScroll,
+  faCalendarCheck,
+  faExclamationCircle,
+  faSyncAlt,
+  faUsers,
+  faLayerGroup,
 } from '@fortawesome/free-solid-svg-icons';
 
 // Add icons to library
@@ -67,7 +76,16 @@ library.add(
   faCube,
   faShop,
   faMinus,
-  faBars
+  faBars,
+  faCalendarAlt,
+  faShieldAlt,
+  faCrosshairs,
+  faScroll,
+  faCalendarCheck,
+  faExclamationCircle,
+  faSyncAlt,
+  faUsers,
+  faLayerGroup
 );
 
 export function createSSRApplication() {

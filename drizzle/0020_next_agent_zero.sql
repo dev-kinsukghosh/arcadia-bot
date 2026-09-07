@@ -1,0 +1,1 @@
+ALTER TABLE `internal` MODIFY COLUMN `value` text NOT NULL;

@@ -8,6 +8,14 @@ const EMBED_COLORS = {
   WARNING: 0xf1c40f, // Amber Yellow
   ERROR: 0xe74c3c, // Crimson Red
   CYBER: 0x4f1f7d, // Neon Purple
+  GOLD: 0xf1c40f, // Bright Gold
+  NEON_CYAN: 0x00f3ff, // Electric Cyan
+  HOT_PINK: 0xff007f, // Neon Pink
+  ROYAL_BLUE: 0x4169e1, // Royal Blue
+  EMERALD: 0x50c878, // Emerald Green
+  ORANGE: 0xe67e22, // Sunset Orange
+  OBSIDIAN: 0x111111, // Dark Obsidian
+  WHITE: 0xffffff, // Pure White
 };
 
 /**

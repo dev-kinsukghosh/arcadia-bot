@@ -36,6 +36,8 @@ The following rules MUST be followed at all times:
 8. ⚠️ **Emoji URL Deprecation**: Never use `Emoji.url` (deprecated in Discord.js v14). Always utilize `Emoji.imageURL()` instead to prevent console deprecation warning logs.
 9. 🧪 **Do Not Auto-Run Integration Tests**: Never run bot integration tests (`npm test` or specific suites) automatically on your own. Only execute tests when the user explicitly instructs you to do so.
 10. 🧩 **ESLint Tailwind Whitelist**: When using custom CSS class names (e.g., `custom-scrollbar`, `animate-pulse-glow`, `hover:scale-1.03`) in dashboard Vue components, always add them to the `whitelist` array inside the `tailwindcss/no-custom-classname` rule in `eslint.config.js`. Include the full modifier-prefixed form (e.g., `hover:scale-1.02`, `group-hover:animate-shine`) to suppress `no-custom-classname` warnings.
+11. 🔒 **Custom CC Commands Visibility in `/help`**: Custom CC commands (e.g., `/pemoji`, `/al-nadd`, `/al-nrm`, `/al-setseat`, `/al-seatcalc`) MUST NOT be displayed in `/help` listings, detailed command lookups, or `/help` option autocompletes unless explicitly enabled for that guild (`isOptionEnabled(guildId, commandName)`).
+12. 📏 **Concise Summaries in `/help` Autocomplete**: Keep command `summary` strings in `/help` short and concise (under ~45 characters) so that autocomplete option choices (`/${cmd.name} - ${cmd.summary}`) fit within Discord's 100-character limit cleanly without mid-word truncation or cut-offs.
 
 ---
 
@@ -831,9 +833,89 @@ The following rules MUST be followed at all times:
   - Registered `al-seatcalc` across custom command handlers (`cc.js`, `ccr.js`, `interactionCreate.js`, `deploy-commands.js`, `guildOptionsHelper.js`).
   - Updated `fs.md` file mappings and verified codebase formatting (`npm run format`) and linting (`npm run lint`).
 
-- **Role Lock Authorization (`weby_custom: al-rolelock`) for Al-* Commands**:
+- _*Role Lock Authorization (`weby_custom: al-rolelock`) for Al-* Commands_*:
   - Created `src/utils/alAuthHelper.js` with `isAlAuthorized(interaction)` and `getAlAuthorizedRoles()` functions.
   - Reads role IDs from `weby_custom` table under `id = 'al-rolelock'` (supporting comma-separated role IDs, configured for role IDs `1545866847344267404` and `1506494346885730335`).
   - Grants command execution access to configured roles while keeping developer bypass (`DEV_ID`) active.
   - Updated `/al-nadd`, `/al-nrm`, `/al-setseat`, and `/al-seatcalc` commands to enforce role-lock authorization and removed `(Developer Only)` label from command descriptions.
   - Updated `fs.md` file mappings and verified clean linting and formatting.
+
+- **Dynamic Custom CC Commands Filtering in `/help`**:
+  - Updated `src/commands/general/help.js` to dynamically filter custom CC commands (`pemoji`, `al-nadd`, `al-nrm`, `al-setseat`, `al-seatcalc`).
+  - Ensures custom CC commands are hidden from `/help` listings, specific command lookups, and command option autocompletes unless explicitly enabled for the guild via `isOptionEnabled(guildId, commandName)`.
+  - Added Custom Developer Rule #11 to `GEMINI.md` and Rule #15 to `.agents/AGENTS.md`.
+
+- **User & Developer Commands (`/suggest`, `/feedback`, `/invite`, `/devconfig`) & Expanded `/broadcast` Colors**:
+  - Added expanded color options to `EMBED_COLORS` in `src/utils/embedHelper.js` (`NEON_CYAN`, `HOT_PINK`, `GOLD`, `ROYAL_BLUE`, `EMERALD`, `ORANGE`, `OBSIDIAN`, `WHITE`) and choice selections in `src/commands/general/broadcast.js`.
+  - Created `src/utils/devConfigHelper.js` to manage persistent developer configurations stored in `webyCustom` database table with memory caching.
+  - Created `/suggest` command (`src/commands/general/suggest.js`) for users to submit feature suggestions. Stores payload in `internal` table and dispatches rich embed with user tag, ID, avatar PFP, and guild info to the configured output channel.
+  - Created `/feedback` command (`src/commands/general/feedback.js`) for users to submit feedback and reviews. Stores payload in `internal` table and dispatches rich embed to the configured output channel.
+  - Created `/invite` command (`src/commands/general/invite.js`) returning Discord OAuth2 bot invite link and web dashboard buttons.
+  - Created developer-only `/devconfig` command (`src/commands/general/devconfig.js`) to set dynamic features, channel outputs, and parameters (`suggest_channel`, `feedback_channel`, `output_channel`, etc.) stored persistently in `webyCustom` without restarting or redeploying.
+  - Restricted `/devconfig` autocomplete and execution strictly to `DEV_ID` developers.
+  - Registered `/suggest`, `/feedback`, and `/invite` in `PUBLIC_COMMANDS` in `/help`.
+  - Updated `fs.md` file mappings and verified zero lint and format warnings.
+
+- **DevConfig Feature Aliases & Channel Routing Resolution**:
+  - Added comprehensive `ALIAS_MAP` in `src/utils/devConfigHelper.js` to automatically map intuitive feature names (`suggestions`, `feedback`, `syslogs`, `fallback`, `error_channel`, `logs_channel`) to primary configuration keys.
+  - Created `getSuggestChannel()`, `getFeedbackChannel()`, and `getSyslogsChannel()` helper functions with multi-level fallback chains.
+  - Updated `reportError` in `src/utils/errorHandler.js` to route system crash alerts to the `syslogs` / `error_channel` configured via `/devconfig`.
+  - Updated `/devconfig` autocomplete and response embeds to display clear predefined choices and usage mapping alerts.
+  - Re-ran formatting and verified clean ESLint execution.
+
+### 07-09-2026
+
+- **DevConfig, Suggestions/Feedback Output & Stream Recovery**:
+  - Fixed MySQL `onDuplicateKeyUpdate()` Drizzle ORM syntax in `src/utils/devConfigHelper.js` by omitting `{ target: ... }` (PostgreSQL parameter), enabling proper upserts for canonical keys (`devconfig:suggest_channel:channel_id`, `devconfig:syslogs_channel:channel_id`).
+  - Added `streamPendingSubmissions(client)` function to auto-stream historical/un-sent suggestions and feedback from `internal` table when channel targets are set or bot restarts.
+  - Rendered target user PFP avatar icons in suggestion and feedback embeds (both live dispatch and streamed recovery).
+  - Purged dummy test channel IDs from `webyCustom` database table, restoring live output channels (`logs_channel`: `1546426865047314512`, `output_channel`: `1546414697052639272`).
+- **Comprehensive Bot & Server Failsafes**:
+  - Added WebSocket `error` and `shardError` listeners in `bot.js`.
+  - Wrapped startup cache loaders (`loadBlacklist()`, `loadDevConfig()`) and background services (`syncConvoy()`, `syncCurrencies()`) in `try/catch` safety blocks.
+  - Integrated global error handling middleware (`app.use((err, req, res, _next) => ...)` in `src/server.js` to catch unhandled HTTP and API route errors.
+- **Empty Endpoints Background Scanner & Syslog Alert System**:
+  - Created `src/services/emptyEndpointsSync.js` to automatically poll empty/dynamic endpoints (`/api/events` and `/api/wars`) every 2.5 minutes (150,000ms).
+  - Configured state caching in Redis (`cache:events`, `cache:wars`) and internal MySQL key-value store (`endpoint:events`, `endpoint:wars`).
+  - Added `eventsHistory` and `warsHistory` tables in `src/db/schema.js` and ran safe Drizzle database migrations (`0018_happy_praxagora.sql`) to store full historical snapshots of server events and war status in MySQL.
+  - Configured automatic system log channel dispatch (`getSyslogsChannel()`) with rich embeds whenever server events appear or active war status/war time changes.
+  - Linked `startEmptyEndpointsSync(client)` into `bot.js` startup lifecycle.
+- **Player Profiles Persistence & Offline Lookups**:
+  - Added `playerProfiles` table in `src/db/schema.js` and ran safe Drizzle database migration (`0019_graceful_white_tiger.sql`) to store static and rarely-changing player metadata (`uuid`, `name`, `displayName`, `rank`, `townId`, `townName`, `nationId`, `nationName`, `empire`, `firstSeen`, `lastSeen`).
+  - Updated `src/services/playerSync.js` to upsert active player metadata into `player_profiles` on every 1-minute sync iteration.
+  - Enhanced `/players info [name]` command (`src/commands/general/players.js`) to support querying both live online players (showing coordinates & chat channels) and offline database profiles (showing rank, town, nation, empire, first seen, and last seen timestamps).
+  - Added GET `/players/profile/:name` endpoint to `src/server.js` allowing the web dashboard to look up recorded player profiles.
+- **Performance & Security Package Implementations**:
+  - Integrated `dotenv-expand` and `envalid` in `src/config.js` for environment variable expansion and schema validation.
+  - Integrated `pretty-ms` and `bytes` in `src/commands/general/healthz.js` for formatting uptime and RAM allocations.
+  - Integrated `lru-cache` in `src/commands/general/shops.js` for high-speed in-memory autocomplete caching.
+  - Integrated `msgpackr` in `src/utils/redis.js` for fast binary Redis serialization (`packData`/`unpackData`).
+  - Integrated `croner` in `src/services/emptyEndpointsSync.js` for zero-drift cron scheduling.
+  - Integrated `table` in `src/commands/general/dev-slist.js` for formatted ASCII server list rendering.
+  - Integrated `opossum` (CircuitBreaker) and `zod` (Schema validation) in `src/utils/apiClient.js` to protect against external API downtime.
+- **Dedicated Endpoint Snapshots Table (`api_snapshots`)**:
+  - Defined `api_snapshots` table in `src/db/schema.js` (`endpoint` primaryKey, `data` TEXT) to store full raw API JSON snapshots.
+  - Generated and safely executed MySQL database migrations (`0020_next_agent_zero.sql` and `0021_jazzy_colossus.sql`).
+  - Updated `src/services/playerSync.js` (`getPlayersCache`, `savePlayersData`) and `src/services/emptyEndpointsSync.js` (`getEventsCache`, `getWarsCache`, `saveEndpointData`) to store/query endpoint snapshots in `api_snapshots` instead of overcrowding `internal`.
+  - Re-ran formatting and linter checks with zero warnings or errors.
+
+- **Syntax Resolution & Verification**:
+  - Resolved redundant closing catch block and cleaned leftover undefined cache variables in `src/commands/general/shops.js`.
+  - Fixed variable initialization (`no-useless-assignment`) in `src/commands/general/dev-slist.js`.
+  - Removed unused variables (`SYNC_INTERVAL`, `syncTimer`) in `src/services/emptyEndpointsSync.js`.
+  - Fixed invalid Cron pattern (`*/2.5`) in `src/services/emptyEndpointsSync.js` by using valid Croner interval configuration (`new Cron('* * * * *', { interval: 150 })`).
+  - Isolated background service startups in `bot.js` into modular `try/catch` loops and connected `reportError` to dispatch any startup or background scanning errors directly to the Discord `syslogs_channel`.
+- **Towny & Player Cross-Linking Integration**:
+  - Enhanced `/players info` (`src/commands/general/players.js`) to display Town, Mayor status, Nation, and Empire. Added an interactive **`🏘️ View <TownName> Town`** button for 1-click navigation to town profile.
+  - Enhanced `/towny town` (`src/commands/general/towny.js`) with an interactive **`👥 View Residents`** button and pagination collector (`◀ Prev`, `Page X/Y`, `Next ▶`, `🏠 Town Overview`). Merges recorded `player_profiles` DB records with live `/api/players` cache to display mayors (`👑`), ranks (`[DONOR]`), online statuses (`🟢`/`⚪`), coordinates, and relative last-seen timelines (`<t:ts:R>`).
+  - Added interactive **`🏳️ View <NationName> Nation`** button navigation on town profiles.
+  - Re-ran formatting (`npm run format`) and linting (`npm run lint`) with 0 errors and 0 warnings.
+- **Username vs Nickname Clarification**:
+  - Updated `/players` command (`src/commands/general/players.js`), autocomplete suggestions, and `/towny town` resident rosters (`src/commands/general/towny.js`) to explicitly distinguish `name` as the Minecraft Account Username and `displayName` as the in-game Nickname/Current Display Name.
+- **Web Dashboard Expansion — Players Monitor & Header Navigation Restructure**:
+  - Created a dedicated **Players Monitor** section in the web dashboard (`dashboard/src/components/PlayerMonitor.vue`, `dashboard/src/stores/playersStore.js`, route `/players`).
+  - Restructured top navigation bar in `dashboard/src/App.vue`: moved **Events & Wars**, **Shops**, and **Players** into a **Monitors** dropdown menu with persistent click-outside backdrop state handling (`handleClickOutside`, `dropdownRef`).
+  - Updated `/api/players` endpoint (`handlePlayersRequest` in `src/server.js`) to query the `playerProfiles` MySQL database table and expose offline database profiles alongside online active players.
+  - Combined online players and offline database profiles in the Players Monitor: sorted and displayed **Online Players at the top** (sorted A-Z by account username `name`) and **Offline Database Profiles at the bottom** (sorted A-Z by account username `name`).
+  - Added player search filtering, status filtering (`All Statuses`, `Online Only`, `Offline Only`), rank filtering, 1-click coordinate copy button, relative last-seen timeline formatting, and glassmorphic detail modal popups.
+  - Updated directory mapping in `fs.md`.

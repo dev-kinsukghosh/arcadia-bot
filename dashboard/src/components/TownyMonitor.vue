@@ -502,6 +502,12 @@ function closeModals() {
                   </h4>
                   <p class="mt-0.5 truncate text-[9px] text-slate-500">
                     Mayor: {{ town.mayor?.name }}
+                    <span
+                      v-if="town.mayor?.displayName && town.mayor?.displayName !== town.mayor?.name"
+                      class="text-slate-400"
+                    >
+                      ({{ town.mayor?.displayName }})
+                    </span>
                   </p>
                 </div>
               </div>
@@ -711,9 +717,15 @@ function closeModals() {
                   >
                     {{ cleanName(town.name) }}
                   </h3>
-                  <span class="mt-0.5 inline-block text-[10px] text-slate-500"
-                    >Mayor: {{ town.mayor?.name }}</span
-                  >
+                  <span class="mt-0.5 inline-block text-[10px] text-slate-500">
+                    Mayor: {{ town.mayor?.name }}
+                    <span
+                      v-if="town.mayor?.displayName && town.mayor?.displayName !== town.mayor?.name"
+                      class="text-slate-400"
+                    >
+                      ({{ town.mayor?.displayName }})
+                    </span>
+                  </span>
                 </div>
                 <div
                   v-if="town.nation"
@@ -901,6 +913,15 @@ function closeModals() {
                   </div>
                   <div class="truncate text-xs font-bold text-slate-100">
                     {{ selectedTown.mayor?.name || 'Unknown' }}
+                  </div>
+                  <div
+                    v-if="
+                      selectedTown.mayor?.displayName &&
+                      selectedTown.mayor?.displayName !== selectedTown.mayor?.name
+                    "
+                    class="truncate font-mono text-[9px] text-slate-400"
+                  >
+                    Nick: {{ selectedTown.mayor?.displayName }}
                   </div>
                 </div>
               </div>
@@ -1095,6 +1116,15 @@ function closeModals() {
                   </div>
                   <div class="truncate text-xs font-bold text-slate-100">
                     {{ selectedNation.king?.name || 'Unknown' }}
+                  </div>
+                  <div
+                    v-if="
+                      selectedNation.king?.displayName &&
+                      selectedNation.king?.displayName !== selectedNation.king?.name
+                    "
+                    class="truncate font-mono text-[9px] text-slate-400"
+                  >
+                    Nick: {{ selectedNation.king?.displayName }}
                   </div>
                 </div>
               </div>

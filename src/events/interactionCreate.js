@@ -112,18 +112,29 @@ module.exports = {
       logger.info(`[COMMAND RUN] User ${interaction.user.tag} invoked /${interaction.commandName}`);
       await command.execute(interaction);
     } catch (error) {
-      const { reportError } = require('../utils/errorHandler.js');
-      await reportError(error, `Slash Command Execution (/${interaction.commandName})`);
+      try {
+        const { reportError } = require('../utils/errorHandler.js');
+        await reportError(error, `Slash Command Execution (/${interaction.commandName})`);
+      } catch (logErr) {
+        logger.error(`Failed to report command error: ${logErr.message}`);
+      }
 
-      const errorMessage = {
-        content: 'There was an error while executing this command!',
-        flags: MessageFlags.Ephemeral,
-      };
+      try {
+        const errorMessage = {
+          content:
+            '⚠️ An unexpected error occurred while executing this command. The developers have been notified.',
+          flags: MessageFlags.Ephemeral,
+        };
 
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(errorMessage);
-      } else {
-        await interaction.reply(errorMessage);
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp(errorMessage).catch(() => {
+            return interaction.editReply(errorMessage).catch(() => {});
+          });
+        } else {
+          await interaction.reply(errorMessage).catch(() => {});
+        }
+      } catch {
+        // Silently ignore secondary interaction response failures
       }
     }
   },
