@@ -18,13 +18,12 @@ module.exports = [
       },
     },
     rules: {
-      // Custom rules suitable for Node.js backend (bots and APIs)
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      'no-console': 'off', // Often useful in CLI bots/APIs
+      'no-console': 'off',
     },
   },
   {
-    files: ['dashboard/**/*.js', 'dashboard/**/*.vue', 'dashboard/vite.config.mjs'],
+    files: ['dashboard/**/*.js', 'dashboard/**/*.vue', 'dashboard/**/*.mjs'],
     languageOptions: {
       sourceType: 'module',
       globals: {
@@ -57,6 +56,12 @@ module.exports = [
             'hover:scale-1.03',
             'scale-1.02',
             'hover:scale-1.02',
+            'hover:scale-105',
+            'group-hover:scale-105',
+            'hover:-translate-y-0.5',
+            'card-pop',
+            'card-switch',
+            'event-list',
           ],
         },
       ],
@@ -91,6 +96,9 @@ module.exports = [
       'node_modules/',
       'dist/',
       'dashboard/dist/',
+      'dashboard/dist-ssr/',
+      'logs/',
+      'scratch/',
       '.env*',
       'drizzle/',
       'fs.md',

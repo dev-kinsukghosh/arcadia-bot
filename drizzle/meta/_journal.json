@@ -155,6 +155,20 @@
       "when": 1788772247733,
       "tag": "0021_jazzy_colossus",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1788949346291,
+      "tag": "0022_acoustic_expediter",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1788952938344,
+      "tag": "0023_fine_tarot",
+      "breakpoints": true
     }
   ]
 }

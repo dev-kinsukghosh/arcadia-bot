@@ -7,7 +7,7 @@
   "author": "",
   "main": "bot.js",
   "scripts": {
-    "dashboard:build": "node dashboard/prerender.js",
+    "dashboard:build": "node dashboard/prerender.mjs",
     "dashboard:check": "npm-run-all lint",
     "dashboard:dev": "vite dashboard --config dashboard/vite.config.mjs",
     "dashboard:preview": "vite preview dashboard --config dashboard/vite.config.mjs",
@@ -61,6 +61,7 @@
     "axios-retry": "^4.5.0",
     "bytes": "^3.1.2",
     "chart.js": "^4.5.1",
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
     "croner": "^10.0.1",
     "dayjs": "^1.11.21",

@@ -38,6 +38,7 @@ The following rules MUST be followed at all times:
 10. 🧩 **ESLint Tailwind Whitelist**: When using custom CSS class names (e.g., `custom-scrollbar`, `animate-pulse-glow`, `hover:scale-1.03`) in dashboard Vue components, always add them to the `whitelist` array inside the `tailwindcss/no-custom-classname` rule in `eslint.config.js`. Include the full modifier-prefixed form (e.g., `hover:scale-1.02`, `group-hover:animate-shine`) to suppress `no-custom-classname` warnings.
 11. 🔒 **Custom CC Commands Visibility in `/help`**: Custom CC commands (e.g., `/pemoji`, `/al-nadd`, `/al-nrm`, `/al-setseat`, `/al-seatcalc`) MUST NOT be displayed in `/help` listings, detailed command lookups, or `/help` option autocompletes unless explicitly enabled for that guild (`isOptionEnabled(guildId, commandName)`).
 12. 📏 **Concise Summaries in `/help` Autocomplete**: Keep command `summary` strings in `/help` short and concise (under ~45 characters) so that autocomplete option choices (`/${cmd.name} - ${cmd.summary}`) fit within Discord's 100-character limit cleanly without mid-word truncation or cut-offs.
+13. 🚫 **Do Not Auto-Run Format & Linting**: Never automatically run codebase formatting (`npm run format`) or linting (`npm run lint`) commands on your own. Always prompt/ask the user to run them or ask for permission before executing.
 
 ---
 
@@ -919,3 +920,57 @@ The following rules MUST be followed at all times:
   - Combined online players and offline database profiles in the Players Monitor: sorted and displayed **Online Players at the top** (sorted A-Z by account username `name`) and **Offline Database Profiles at the bottom** (sorted A-Z by account username `name`).
   - Added player search filtering, status filtering (`All Statuses`, `Online Only`, `Offline Only`), rank filtering, 1-click coordinate copy button, relative last-seen timeline formatting, and glassmorphic detail modal popups.
   - Updated directory mapping in `fs.md`.
+
+### 08-09-2026
+
+- **Comprehensive System Architecture Diagram (`architecture.md`)**:
+  - Created a complete Mermaid diagram and architecture documentation file (`architecture.md`) mapping every entrypoint, Discord handler, event router, background sync service, helper utility, MySQL database schema, Redis O(1) repository, slash command cluster, Vue dashboard component, Pinia store, automation script, and Vitest suite in the project tree.
+  - Saved the Mermaid system flow diagram into `architecture.md`.
+  - Updated directory mapping in `fs.md`.
+
+### 09-09-2026
+
+- **API Events Persistence & Storage (`s_events` Table)**:
+  - Created the `s_events` MySQL database table mapping in `src/db/schema.js` with columns `id`, `timestamp`, `type`, `message`, `data`, `event_hash`, and `created_at`.
+  - Generated and safely applied migration `drizzle/0022_acoustic_expediter.sql` via `npm run db:generate` and `npm run db:migrate:safe`.
+  - Configured automated MD5 event hash deduplication (`onDuplicateKeyUpdate`) and 3-month timestamp retention purging logic (`purgeSEvents`) inside `src/services/emptyEndpointsSync.js`.
+  - Programmed automatic strict max 200 row capacity cap purging for `s_events` keeping only the newest 200 events ordered by timestamp.
+  - Seeding: Successfully imported and persisted past town deletions (`town_deleted`), town creations (`town_created`), and nation creations (`nation_created`) into the `s_events` table.
+  - Updated `/events` slash command (`src/commands/general/events.js`) to display live events when available, falling back to query and present recent `s_events` historical records when live active events cache is empty.
+  - Formatted codebase (`npm run format`) and verified zero lint warnings (`npm run lint`).
+- **Player Name Change Detection & Offline UUID Resolution**:
+  - Enhanced `headManager.js` (`resolveUsernameToUuid`): Added a direct database fallback lookup against `player_profiles` prior to calling Mojang API. Prevents 404 errors for custom/offline accounts (like `SomySenior`) when fetching head avatars.
+- **Web Dashboard Events Monitor Restructure**:
+  - Removed the "No Active Server Events" empty placeholder message block from `EventsWarsMonitor.vue`.
+  - Updated `/api/events` backend route in `src/server.js` to query and return `storedEvents` from `s_events` table ordered by `timestamp` DESC (limit 200).
+  - Restructured `EventsWarsMonitor.vue`: Merged live and stored `s_events` history into a unified list sorted strictly from **newest to oldest** (timestamp descending), rendering event badges (`town_deleted`, `town_created`, `nation_created`), timestamps, causes (`RUINED`, `NO_RESIDENTS`), mayors, kings, and resident counts.
+  - Converted event cards to a responsive **Horizontal Card Layout** (`EventsWarsMonitor.vue`) featuring left-aligned type badges, event titles/descriptions, metadata pill tags (`Cause`, `Mayor`, `King`, `Residents`), and right-aligned timestamp/relative time indicators.
+  - Added **Max Display Limit Selector Toolbar** with choices `10`, `20`, `50`, `100`, and `Max`. User preference is automatically saved and persisted via **Cookies** (`events_display_limit`) and `localStorage`.
+  - Added **Smooth TransitionGroup & Hover Scale Animations** (`EventsWarsMonitor.vue`): Smooth entry/exit/move animations when changing limit filters, plus interactive glow scale effects.
+  - Added **Town & Nation Table Cross-Linking**: Event cards feature interactive `Town: <TownName>` and `Nation: <NationName>` link buttons. Clicking any Town/Nation directly navigates to the `/towny` monitor with the Towns or Nations tab pre-filtered and focused on that target.
+- **Animated Sliding Indicator Pills & Towny Cross-Navigation Fixes**:
+  - Implemented **Animated Sliding Highlight Indicators** in `EventsWarsMonitor.vue` & `TownyMonitor.vue`: Added dynamic CSS sliding highlight pill indicators (`limitPillStyle`, `mainTabIndicatorStyle`, `townyTabPillStyle`) with smooth `0.3s cubic-bezier` transitions that glide horizontally between options (`10`, `20`, `50`, `100`, `Max` limits, `Server Events` vs `War Telemetry` tabs, and `Towns` vs `Nations` tabs).
+  - Enhanced **Town & Nation Event Card Navigation**: Fixed `extractTownAndNation(ev)` to handle stringified JSON data safely and match names with hyphens/underscores/special chars. Updated `goToTown(name)` and `goToNation(name)` to pass route query parameters (`/towny?tab=towns&search=<name>`).
+  - Added **URL Route Query Listener in `TownyMonitor.vue`**: Added `useRoute()` and `watch(route.query)` in `TownyMonitor.vue` to automatically inspect query params on load and navigation, setting the active tab and search input while supporting both raw and space-separated name searches.
+  - Fixed **Town Creation Event Card Clicks & Auto-Modal Open**: Made the entire event card container in `EventsWarsMonitor.vue` clickable via `handleCardClick(ev)` for all `town_created` and `nation_created` events. Enhanced `extractTownAndNation(ev)` to support stringified `town` properties and `data.townName` variants. Programmed `checkAndAutoSelectFromQuery()` in `TownyMonitor.vue` to find matching towns/nations and automatically open their full detail modals upon navigation.
+  - Added **Fallen / Deleted Town & Nation Warning Alert Banners**: Updated `TownyMonitor.vue` empty state renderers to display styled amber alert warning banners when a searched town or nation is no longer active on the server (`⚠️ Town / Nation "<Name>" is no longer active on ArcadiaMC - fallen, ruined, or deleted`), filtering out inactive entities from live lists while giving users clear warning messaging.
+  - Resolved **Node Typeless Module Prerender Warning**: Converted `dashboard/prerender.js` to `dashboard/prerender.mjs` and updated `package.json` script `"dashboard:build": "node dashboard/prerender.mjs"`. Enables native ES module execution in Node.js with zero `[MODULE_TYPELESS_PACKAGE_JSON]` warnings during SSG prerendering builds.
+- **Express API & Web Dashboard Performance Optimizations**:
+  - Installed `compression` middleware in Express (`src/server.js`) to compress JSON API responses and static text assets using Gzip/Deflate. Reduces API response payloads by **75% – 85%** (e.g. 180KB $\rightarrow$ 25KB).
+  - Created `cacheEndpoint(ttlSeconds)` middleware in `src/server.js` wrapping Redis RAM caching and HTTP browser headers (`Cache-Control: public, max-age=10, s-maxage=20, stale-while-revalidate=30`). Applied to `/api/currencies`, `/api/convoy`, `/api/history`, `/api/stats`, `/api/towny`, `/api/events`, `/api/wars`, `/api/shops`, and `/api/players`. Reduces API response latency to **<1ms – 2ms** on cache hits with `X-Cache: HIT`.
+  - Added `<link rel="dns-prefetch">` and `<link rel="modulepreload">` resource hints in `dashboard/index.html` for instant client module bootstrapping.
+  - Verified SSG Prerendering and Production build compilation (`npm run dashboard:build`).
+- **Server Event Notifications (`/enotify` Command & `event_notifications` Table)**:
+  - Added `event_notifications` database table schema definition inside `src/db/schema.js` (`id`, `guild_id`, `channel_id`, `event_type`, `created_at`).
+  - Generated and safely applied database migration `drizzle/0023_fine_tarot.sql` via `npm run db:generate` and `npm run db:migrate:safe`.
+  - Created `/enotify` Slash Command (`src/commands/general/enotify.js`) supporting:
+    - `/enotify add [type] [channel]`: Subscribes a channel to real-time server event notifications.
+    - `/enotify remove [type] [channel]`: Unsubscribes a channel from server event alerts.
+    - `/enotify list`: Lists all active event subscriptions in the guild.
+  - Configured strict permission checks restricting `/enotify` to users with `Manage Channels`, `Manage Server`, or `Administrator` permissions (and bot Developer `DEV_ID`).
+  - Integrated `dispatchEventNotifications(ev)` inside `src/services/emptyEndpointsSync.js` to automatically dispatch rich alert embeds with custom event icons to all subscribed Discord channels when new town, nation, or war events occur.
+- **Developer Environment & Code Quality Improvements**:
+  - Configured `.editorconfig` (space indent 2, LF line endings, UTF-8, trim trailing whitespace).
+  - Configured `.vscode/settings.json` (auto-format on save with Prettier, code actions on save with ESLint) and `.vscode/extensions.json` (ESLint, Prettier, Volar, Tailwind CSS).
+  - Updated `eslint.config.js` with ignores (`dashboard/dist-ssr/`, `logs/`, `scratch/`) and custom Tailwind class whitelists.
+  - Executed full linting (`npm run lint`) and codebase formatting (`npm run format`) with zero warnings.

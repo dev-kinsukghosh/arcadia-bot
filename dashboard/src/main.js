@@ -45,6 +45,11 @@ import {
   faSyncAlt,
   faUsers,
   faLayerGroup,
+  faClock,
+  faList,
+  faCrown,
+  faPlusCircle,
+  faTrashAlt,
 } from '@fortawesome/free-solid-svg-icons';
 
 // Add icons to library
@@ -85,7 +90,12 @@ library.add(
   faExclamationCircle,
   faSyncAlt,
   faUsers,
-  faLayerGroup
+  faLayerGroup,
+  faClock,
+  faList,
+  faCrown,
+  faPlusCircle,
+  faTrashAlt
 );
 
 export function createSSRApplication() {

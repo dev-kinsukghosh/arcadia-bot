@@ -14,6 +14,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   └── gitlab-sync.yml
 ├── dashboard/
 │   ├── index.html
+│   ├── prerender.mjs
 │   ├── vite.config.mjs
 │   ├── .env
 │   ├── .env.example
@@ -73,6 +74,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── currencies.js
 │   │       ├── devconfig.js
 │   │       ├── dev-slist.js
+│   │       ├── enotify.js
 │   │       ├── events.js
 │   │       ├── exchange.js
 │   │       ├── feedback.js
@@ -145,9 +147,11 @@ This file serves as a reference guide for the directory structure and file respo
 ├── Dockerfile
 ├── drizzle.config.js
 ├── eslint.config.js
-├── .prettierrc
-├── package.json
-├── vitest.config.js
+├── architecture.md
+├── Api.enpoints.md
+├── fs.md
+├── GEMINI.md
+├── .agents/AGENTS.md
 └── wiki_table.md
 ```
 
@@ -156,6 +160,7 @@ This file serves as a reference guide for the directory structure and file respo
 ### 📂 Root Directory
 
 - [bot.js](./bot.js): Main application entry point. Loads configuration, starts the logger, initializes DB/Redis clients, and boots up the Discord client.
+- [architecture.md](./architecture.md): Complete Mermaid system architecture diagram and component overview.
 - [drizzle.config.js](./drizzle.config.js): Database configurations mapping Drizzle schema generation to the MySQL server environment.
 - [eslint.config.js](./eslint.config.js): ESLint static analysis configuration provided by the user.
 - [vitest.config.js](./vitest.config.js): Vitest compiler and runner configuration options for executing sequentially.
@@ -269,6 +274,7 @@ This file serves as a reference guide for the directory structure and file respo
 - 📂 **src/services/**: Background synchronization services.
   - [src/services/convoySync.js](./src/services/convoySync.js): Synchronization worker to fetch and track convoy shop items.
   - [src/services/currencySync.js](./src/services/currencySync.js): Synchronization worker to fetch, track, and cache currencies.
+  - [src/services/emptyEndpointsSync.js](./src/services/emptyEndpointsSync.js): Synchronization worker scanning `/api/events` and `/api/wars`, persisting event logs to `s_events` table (max 200 items, 3-month retention), and dispatching syslog notifications.
   - [src/services/headManager.js](./src/services/headManager.js): Backend manager controlling local serving, cache downloads, and 7-day batch sync checks of player head images.
   - [src/services/shopsSync.js](./src/services/shopsSync.js): Synchronization worker to fetch, resolve, and cache player shops in MySQL and Redis.
   - [src/services/townySync.js](./src/services/townySync.js): Synchronization worker to fetch, cache, and record daily historical snapshots of town/nation residents & claims.

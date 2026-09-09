@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import axios from 'axios';
 import { Line } from 'vue-chartjs';
@@ -34,6 +35,7 @@ const props = defineProps({
   },
 });
 
+const route = useRoute();
 const townyStore = useTownyStore();
 const {
   townyData,
@@ -46,9 +48,79 @@ const {
   selectedNation,
 } = storeToRefs(townyStore);
 
+const townsTabRef = ref(null);
+const nationsTabRef = ref(null);
+
+const townyTabPillStyle = computed(() => {
+  if (activeTab.value === 'towns') {
+    return {
+      left: '4px',
+      width: townsTabRef.value ? `${townsTabRef.value.offsetWidth}px` : '120px',
+    };
+  } else {
+    const leftOffset = townsTabRef.value ? townsTabRef.value.offsetWidth + 8 : 130;
+    return {
+      left: `${leftOffset}px`,
+      width: nationsTabRef.value ? `${nationsTabRef.value.offsetWidth}px` : '120px',
+    };
+  }
+});
+
+function checkAndAutoSelectFromQuery() {
+  if (!route.query.search || !townyData.value) return;
+  const q = String(route.query.search).toLowerCase().trim();
+  const qClean = q.replace(/_/g, ' ');
+
+  if (activeTab.value === 'towns' && Array.isArray(townyData.value.towns)) {
+    const match = townyData.value.towns.find(
+      (t) =>
+        (t.name || '').toLowerCase() === q ||
+        (t.name || '').replace(/_/g, ' ').toLowerCase() === qClean
+    );
+    if (match) {
+      selectedTown.value = match;
+    }
+  } else if (activeTab.value === 'nations' && Array.isArray(townyData.value.nations)) {
+    const match = townyData.value.nations.find(
+      (n) =>
+        (n.name || '').toLowerCase() === q ||
+        (n.name || '').replace(/_/g, ' ').toLowerCase() === qClean
+    );
+    if (match) {
+      selectedNation.value = match;
+    }
+  }
+}
+
+function applyRouteQuery() {
+  if (route.query.tab) {
+    activeTab.value = route.query.tab;
+  }
+  if (route.query.search !== undefined) {
+    searchQuery.value = route.query.search;
+  }
+  checkAndAutoSelectFromQuery();
+}
+
 onMounted(() => {
+  applyRouteQuery();
   if (!townyData.value) {
     townyStore.fetchTownyData();
+  } else {
+    checkAndAutoSelectFromQuery();
+  }
+});
+
+watch(
+  () => route.query,
+  () => {
+    applyRouteQuery();
+  }
+);
+
+watch(townyData, (newData) => {
+  if (newData) {
+    checkAndAutoSelectFromQuery();
   }
 });
 
@@ -78,10 +150,12 @@ const processedTowns = computed(() => {
 
   // Search filter
   const query = searchQuery.value.toLowerCase().trim();
+  const queryClean = query.replace(/_/g, ' ');
   if (query) {
     result = result.filter(
       (t) =>
         (t.name || '').toLowerCase().includes(query) ||
+        (t.name || '').replace(/_/g, ' ').toLowerCase().includes(queryClean) ||
         (t.mayor?.name || '').toLowerCase().includes(query) ||
         (t.nation?.name || '').toLowerCase().includes(query)
     );
@@ -120,10 +194,12 @@ const processedNations = computed(() => {
 
   // Search filter
   const query = searchQuery.value.toLowerCase().trim();
+  const queryClean = query.replace(/_/g, ' ');
   if (query) {
     result = result.filter(
       (n) =>
         (n.name || '').toLowerCase().includes(query) ||
+        (n.name || '').replace(/_/g, ' ').toLowerCase().includes(queryClean) ||
         (n.king?.name || '').toLowerCase().includes(query) ||
         (n.capital?.name || '').toLowerCase().includes(query)
     );
@@ -594,38 +670,43 @@ function closeModals() {
     <div
       class="flex flex-col justify-between gap-4 border-b border-slate-900 bg-[#090b11]/40 py-4 sm:flex-row sm:items-center"
     >
-      <!-- Tabs segmented control -->
+      <!-- Tabs segmented control with Animated Sliding Pill -->
       <div
-        class="flex items-center gap-1 self-start rounded-xl border border-slate-900 bg-slate-950/80 p-1"
+        class="relative flex items-center gap-1 self-start rounded-xl border border-slate-900 bg-slate-950/80 p-1"
       >
+        <!-- Dynamic Animated Sliding Highlight Pill -->
+        <div
+          class="absolute top-1 bottom-1 rounded-lg bg-slate-800/90 shadow-sm transition-all duration-300 ease-out"
+          :style="townyTabPillStyle"
+        ></div>
+
         <button
+          ref="townsTabRef"
           :class="
-            activeTab === 'towns'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
+            activeTab === 'towns' ? 'font-bold text-white' : 'text-slate-400 hover:text-slate-200'
           "
-          class="flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold transition-all duration-200"
+          class="relative z-10 flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold transition-colors duration-200"
           @click="
             activeTab = 'towns';
             sortBy = 'residents_desc';
           "
         >
-          <font-awesome-icon icon="globe" />
+          <font-awesome-icon icon="globe" class="text-blue-400" />
           Towns ({{ townyData?.towns?.length || 0 }})
         </button>
+
         <button
+          ref="nationsTabRef"
           :class="
-            activeTab === 'nations'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
+            activeTab === 'nations' ? 'font-bold text-white' : 'text-slate-400 hover:text-slate-200'
           "
-          class="flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold transition-all duration-200"
+          class="relative z-10 flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold transition-colors duration-200"
           @click="
             activeTab = 'nations';
             sortBy = 'residents_desc';
           "
         >
-          <font-awesome-icon icon="flag" />
+          <font-awesome-icon icon="flag" class="text-indigo-400" />
           Nations ({{ townyData?.nations?.length || 0 }})
         </button>
       </div>
@@ -694,8 +775,39 @@ function closeModals() {
       <Transition name="card-switch" mode="out-in" appear>
         <!-- TOWNS TAB LIST -->
         <div v-if="activeTab === 'towns'" key="towns">
-          <div v-if="processedTowns.length === 0" class="py-12 text-center text-xs text-slate-500">
-            No towns match your search filters.
+          <!-- Empty state / Fallen town warning banner -->
+          <div
+            v-if="processedTowns.length === 0"
+            class="my-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center shadow-lg"
+          >
+            <div class="flex flex-col items-center justify-center gap-2.5">
+              <div
+                class="flex size-10 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/20 text-amber-400"
+              >
+                <font-awesome-icon icon="triangle-exclamation" class="text-base" />
+              </div>
+              <h4 class="text-sm font-bold text-amber-200 sm:text-base">
+                <span v-if="searchQuery">
+                  Town "<span class="font-mono text-amber-300">{{ searchQuery }}</span
+                  >" is no longer active
+                </span>
+                <span v-else>No towns found</span>
+              </h4>
+              <p class="max-w-md text-xs text-amber-300/80">
+                <span v-if="searchQuery">
+                  This town is not present in active server records. It has fallen, been ruined, or
+                  deleted.
+                </span>
+                <span v-else>No active towns match your current search filters.</span>
+              </p>
+              <button
+                v-if="searchQuery"
+                class="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-300 transition-colors hover:bg-amber-500/30 hover:text-white"
+                @click="searchQuery = ''"
+              >
+                Clear Search Filter
+              </button>
+            </div>
           </div>
           <TransitionGroup
             tag="div"
@@ -783,11 +895,38 @@ function closeModals() {
 
         <!-- NATIONS TAB LIST -->
         <div v-else-if="activeTab === 'nations'" key="nations">
+          <!-- Empty state / Fallen nation warning banner -->
           <div
             v-if="processedNations.length === 0"
-            class="py-12 text-center text-xs text-slate-500"
+            class="my-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center shadow-lg"
           >
-            No nations match your search filters.
+            <div class="flex flex-col items-center justify-center gap-2.5">
+              <div
+                class="flex size-10 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/20 text-amber-400"
+              >
+                <font-awesome-icon icon="triangle-exclamation" class="text-base" />
+              </div>
+              <h4 class="text-sm font-bold text-amber-200 sm:text-base">
+                <span v-if="searchQuery">
+                  Nation "<span class="font-mono text-amber-300">{{ searchQuery }}</span
+                  >" is no longer active
+                </span>
+                <span v-else>No nations found</span>
+              </h4>
+              <p class="max-w-md text-xs text-amber-300/80">
+                <span v-if="searchQuery">
+                  This nation is not present in active server records. It has fallen or disbanded.
+                </span>
+                <span v-else>No active nations match your current search filters.</span>
+              </p>
+              <button
+                v-if="searchQuery"
+                class="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-300 transition-colors hover:bg-amber-500/30 hover:text-white"
+                @click="searchQuery = ''"
+              >
+                Clear Search Filter
+              </button>
+            </div>
           </div>
           <TransitionGroup
             tag="div"

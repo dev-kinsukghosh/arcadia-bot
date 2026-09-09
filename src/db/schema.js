@@ -10,6 +10,7 @@ const {
   customType,
   text,
   index,
+  bigint,
 } = require('drizzle-orm/mysql-core');
 
 const convoyItems = mysqlTable('convoy_items', {
@@ -184,6 +185,34 @@ const apiSnapshots = mysqlTable('api_snapshots', {
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
 
+// Dedicated API /api/events store (max 200 events, 3 months retention)
+const sEvents = mysqlTable(
+  's_events',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
+    type: varchar('type', { length: 100 }).notNull(),
+    message: text('message'),
+    data: text('data'),
+    eventHash: varchar('event_hash', { length: 64 }).notNull().unique(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [index('timestamp_idx').on(table.timestamp), index('type_idx').on(table.type)]
+);
+
+// Event Notification Subscriptions Table
+const eventNotifications = mysqlTable(
+  'event_notifications',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    guildId: varchar('guild_id', { length: 255 }).notNull(),
+    channelId: varchar('channel_id', { length: 255 }).notNull(),
+    eventType: varchar('event_type', { length: 100 }).default('all').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [index('guild_channel_idx').on(table.guildId, table.channelId)]
+);
+
 module.exports = {
   convoyItems,
   blacklist,
@@ -202,4 +231,6 @@ module.exports = {
   warsHistory,
   playerProfiles,
   apiSnapshots,
+  sEvents,
+  eventNotifications,
 };

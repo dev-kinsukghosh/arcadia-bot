@@ -1,12 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const path = require('path');
 const { rateLimit } = require('express-rate-limit');
 const { slowDown } = require('express-slow-down');
 const { config } = require('./config.js');
 const logger = require('./utils/logger.js');
 const { db } = require('./utils/db.js');
+const redisClient = require('./utils/redis.js');
 const { currencies, currencyHistory, convoyItems, townyHistory } = require('./db/schema.js');
 const { and, eq, gte, asc } = require('drizzle-orm');
 const pc = require('picocolors');
@@ -14,6 +16,14 @@ const { WebSocketServer } = require('ws');
 
 const app = express();
 app.set('trust proxy', 1);
+
+// 0. HTTP Gzip/Deflate Response Compression Middleware
+app.use(
+  compression({
+    level: 6,
+    threshold: 512, // Compress responses larger than 512 bytes
+  })
+);
 
 // 1. Helmet to secure headers
 app.use(
@@ -37,6 +47,49 @@ app.use(
     credentials: true,
   })
 );
+
+// Helper: Redis In-Memory API Cache & HTTP Cache-Control Middleware
+function cacheEndpoint(ttlSeconds = 10) {
+  return async (req, res, next) => {
+    if (req.method !== 'GET') return next();
+
+    // Attach Cache-Control header for client/CDN browser caching
+    res.setHeader(
+      'Cache-Control',
+      `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds * 2}, stale-while-revalidate=30`
+    );
+
+    const cacheKey = `api_cache:${req.originalUrl || req.url}`;
+    if (redisClient && redisClient.status === 'ready') {
+      try {
+        const cachedResponse = await redisClient.get(cacheKey);
+        if (cachedResponse) {
+          res.setHeader('X-Cache', 'HIT');
+          res.setHeader('Content-Type', 'application/json');
+          return res.send(cachedResponse);
+        }
+      } catch {
+        // Fallback to live route handling
+      }
+    }
+
+    res.setHeader('X-Cache', 'MISS');
+    const originalSend = res.send.bind(res);
+    res.send = (body) => {
+      if (
+        res.statusCode === 200 &&
+        redisClient &&
+        redisClient.status === 'ready' &&
+        typeof body === 'string'
+      ) {
+        redisClient.setex(cacheKey, ttlSeconds, body).catch(() => {});
+      }
+      return originalSend(body);
+    };
+
+    next();
+  };
+}
 
 // 3. Body payload limits to prevent buffer overflow/exhaustion attacks
 app.use(express.json({ limit: '10kb' }));
@@ -129,7 +182,7 @@ apiRouter.get('/status', (req, res) => {
 });
 
 // 2. Get list of latest currencies
-apiRouter.get('/currencies', async (req, res) => {
+apiRouter.get('/currencies', cacheEndpoint(10), async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -160,7 +213,7 @@ apiRouter.get('/currencies', async (req, res) => {
 });
 
 // 2b. Get latest active convoy items
-apiRouter.get('/currencies/convoy', async (req, res) => {
+apiRouter.get('/currencies/convoy', cacheEndpoint(10), async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -175,7 +228,7 @@ apiRouter.get('/currencies/convoy', async (req, res) => {
 });
 
 // 2c. Get all convoy items tracked historically
-apiRouter.get('/currencies/convoy/all', async (req, res) => {
+apiRouter.get('/currencies/convoy/all', cacheEndpoint(10), async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -190,7 +243,7 @@ apiRouter.get('/currencies/convoy/all', async (req, res) => {
 });
 
 // 3. Get historical rates for a currency
-apiRouter.get('/currencies/history', async (req, res) => {
+apiRouter.get('/currencies/history', cacheEndpoint(30), async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -225,7 +278,7 @@ apiRouter.get('/currencies/history', async (req, res) => {
 });
 
 // 4. Get stability indices & performance metrics
-apiRouter.get('/currencies/stats', async (req, res) => {
+apiRouter.get('/currencies/stats', cacheEndpoint(15), async (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database connection not available.' });
   }
@@ -442,10 +495,10 @@ const handleTownyRequest = async (req, res) => {
   }
 };
 
-apiRouter.get('/towny', handleTownyRequest);
-apiRouter.get('/api/towny', handleTownyRequest);
+apiRouter.get('/towny', cacheEndpoint(10), handleTownyRequest);
+apiRouter.get('/api/towny', cacheEndpoint(10), handleTownyRequest);
 
-apiRouter.get('/towny/history', async (req, res) => {
+apiRouter.get('/towny/history', cacheEndpoint(30), async (req, res) => {
   const name = req.query.name?.trim().toLowerCase();
   const type = req.query.type || 'town'; // 'town' or 'nation'
   const days = parseInt(req.query.days) || 30;
@@ -478,20 +531,54 @@ apiRouter.get('/towny/history', async (req, res) => {
   }
 });
 
-// 5. Get cached events
+// 5. Get cached events and stored historical events
 const handleEventsRequest = async (req, res) => {
   const { getEventsCache } = require('./services/emptyEndpointsSync.js');
   try {
     const data = await getEventsCache();
-    res.json(data || { updatedAt: Date.now(), events: [] });
+    let storedEvents = [];
+    if (db) {
+      try {
+        const { sEvents } = require('./db/schema.js');
+        const { desc } = require('drizzle-orm');
+        const rows = await db.select().from(sEvents).orderBy(desc(sEvents.timestamp)).limit(200);
+        storedEvents = rows.map((r) => {
+          let parsedData = null;
+          if (r.data) {
+            try {
+              parsedData = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+            } catch {
+              parsedData = r.data;
+            }
+          }
+          return {
+            id: r.id,
+            timestamp: r.timestamp,
+            type: r.type,
+            message: r.message,
+            data: parsedData,
+            createdAt: r.createdAt,
+          };
+        });
+      } catch (err) {
+        logger.warn(`Failed to fetch s_events for API: ${err.message}`);
+      }
+    }
+    const liveEvents = Array.isArray(data?.events) ? data.events : Array.isArray(data) ? data : [];
+    res.json({
+      ...(data && typeof data === 'object' && !Array.isArray(data) ? data : {}),
+      updatedAt: Date.now(),
+      events: liveEvents,
+      storedEvents,
+    });
   } catch (err) {
     logger.error(`API Error fetching events: ${err.message}`);
     res.status(500).json({ error: 'Internal server error.' });
   }
 };
 
-apiRouter.get('/events', handleEventsRequest);
-apiRouter.get('/api/events', handleEventsRequest);
+apiRouter.get('/events', cacheEndpoint(10), handleEventsRequest);
+apiRouter.get('/api/events', cacheEndpoint(10), handleEventsRequest);
 
 // 6. Get cached wars status
 const handleWarsRequest = async (req, res) => {
@@ -513,8 +600,8 @@ const handleWarsRequest = async (req, res) => {
   }
 };
 
-apiRouter.get('/wars', handleWarsRequest);
-apiRouter.get('/api/wars', handleWarsRequest);
+apiRouter.get('/wars', cacheEndpoint(10), handleWarsRequest);
+apiRouter.get('/api/wars', cacheEndpoint(10), handleWarsRequest);
 
 // 7. Get cached online players
 const handlePlayersRequest = async (req, res) => {
@@ -544,8 +631,8 @@ const handlePlayersRequest = async (req, res) => {
   }
 };
 
-apiRouter.get('/players', handlePlayersRequest);
-apiRouter.get('/api/players', handlePlayersRequest);
+apiRouter.get('/players', cacheEndpoint(5), handlePlayersRequest);
+apiRouter.get('/api/players', cacheEndpoint(5), handlePlayersRequest);
 
 apiRouter.get('/players/profile/:name', async (req, res) => {
   const query = req.params.name?.trim().toLowerCase();
@@ -745,8 +832,8 @@ const handleShopsRequest = async (req, res) => {
   }
 };
 
-apiRouter.get('/shops', handleShopsRequest);
-apiRouter.get('/api/shops', handleShopsRequest);
+apiRouter.get('/shops', cacheEndpoint(15), handleShopsRequest);
+apiRouter.get('/api/shops', cacheEndpoint(15), handleShopsRequest);
 
 // Local player heads cache serving and downloader proxy
 apiRouter.get('/heads/:username.png', async (req, res) => {

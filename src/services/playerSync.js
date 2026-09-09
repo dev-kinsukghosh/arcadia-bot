@@ -1,7 +1,7 @@
 const { arcadiaApi } = require('../utils/apiClient.js');
 const redisClient = require('../utils/redis.js');
 const { db } = require('../utils/db.js');
-const { apiSnapshots, playerProfiles } = require('../db/schema.js');
+const { apiSnapshots, playerProfiles, playerHeads } = require('../db/schema.js');
 const { eq } = require('drizzle-orm');
 const logger = require('../utils/logger.js');
 const { ActivityType } = require('discord.js');
@@ -70,6 +70,47 @@ async function savePlayersData(payload) {
       for (const p of payload.players) {
         if (!p.uuid || !p.name) continue;
         try {
+          // Check existing profile by UUID to detect account name / display name changes
+          const existing = await db
+            .select()
+            .from(playerProfiles)
+            .where(eq(playerProfiles.uuid, p.uuid));
+
+          if (existing.length > 0) {
+            const prev = existing[0];
+            if (prev.name !== p.name) {
+              logger.info(
+                pc.bold(
+                  pc.yellow(
+                    `🔄 [PLAYER NAME CHANGE DETECTED] ${prev.name} ➔ ${p.name} (UUID: ${p.uuid})`
+                  )
+                )
+              );
+
+              // Update player_heads table username for this UUID
+              try {
+                await db
+                  .update(playerHeads)
+                  .set({ username: p.name })
+                  .where(eq(playerHeads.uuid, p.uuid));
+              } catch {
+                // ignore
+              }
+
+              // Evict old Redis cache keys for previous username
+              if (redisClient && redisClient.status === 'ready') {
+                try {
+                  const oldLower = prev.name.toLowerCase();
+                  await redisClient.del(`cache:head:username:${oldLower}`);
+                  await redisClient.del(`uuid:by-name:${oldLower}`);
+                  await redisClient.del(`name:by-lower:${oldLower}`);
+                } catch {
+                  // ignore
+                }
+              }
+            }
+          }
+
           await db
             .insert(playerProfiles)
             .values({

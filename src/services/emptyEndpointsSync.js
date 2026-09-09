@@ -1,8 +1,9 @@
+const crypto = require('crypto');
 const { arcadiaApi } = require('../utils/apiClient.js');
 const redisClient = require('../utils/redis.js');
 const { db } = require('../utils/db.js');
-const { apiSnapshots, eventsHistory, warsHistory } = require('../db/schema.js');
-const { eq } = require('drizzle-orm');
+const { apiSnapshots, eventsHistory, warsHistory, sEvents } = require('../db/schema.js');
+const { eq, lt, desc, notInArray, sql } = require('drizzle-orm');
 const logger = require('../utils/logger.js');
 const { getSyslogsChannel } = require('../utils/devConfigHelper.js');
 const { createBaseEmbed, EMBED_COLORS } = require('../utils/embedHelper.js');
@@ -112,6 +113,75 @@ async function sendSyslogNotification(embed) {
 }
 
 /**
+ * Purge s_events table:
+ * 1. Purge events older than 3 months (90 days).
+ * 2. If total events count > 200, purge oldest events keeping only newest 200.
+ */
+async function purgeSEvents() {
+  if (!db) return;
+  try {
+    const threeMonthsAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+
+    // 1. Delete events older than 3 months
+    await db.delete(sEvents).where(lt(sEvents.timestamp, threeMonthsAgo));
+
+    // 2. Keep max 200 events (delete oldest exceeding 200)
+    const newestEvents = await db
+      .select({ id: sEvents.id })
+      .from(sEvents)
+      .orderBy(desc(sEvents.timestamp), desc(sEvents.id))
+      .limit(200);
+
+    if (newestEvents.length === 200) {
+      const keepIds = newestEvents.map((e) => e.id);
+      await db.delete(sEvents).where(notInArray(sEvents.id, keepIds));
+    }
+  } catch (err) {
+    logger.warn(`Failed to purge s_events: ${err.message}`);
+  }
+}
+
+/**
+ * Persist an array of event objects into the s_events database table
+ */
+async function saveEventsToSEvents(eventsList) {
+  if (!db || !Array.isArray(eventsList) || eventsList.length === 0) {
+    if (db) await purgeSEvents();
+    return;
+  }
+
+  const threeMonthsAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  for (const ev of eventsList) {
+    if (!ev || !ev.timestamp || !ev.type) continue;
+    const ts = Number(ev.timestamp);
+    if (isNaN(ts) || ts < threeMonthsAgo) continue;
+
+    const dataStr = typeof ev.data === 'object' ? JSON.stringify(ev.data) : ev.data || '';
+    const hashInput = `${ts}_${ev.type}_${ev.message || ''}_${dataStr}`;
+    const eventHash = crypto.createHash('md5').update(hashInput).digest('hex');
+
+    try {
+      await db
+        .insert(sEvents)
+        .values({
+          timestamp: ts,
+          type: String(ev.type),
+          message: ev.message ? String(ev.message) : null,
+          data: dataStr,
+          eventHash,
+        })
+        .onDuplicateKeyUpdate({
+          set: { id: sql`id` },
+        });
+    } catch (err) {
+      logger.warn(`Failed to record event in s_events: ${err.message}`);
+    }
+  }
+
+  await purgeSEvents();
+}
+
+/**
  * Main routine to scan /api/events and /api/wars every 2.5 minutes
  */
 async function scanEmptyEndpoints() {
@@ -121,14 +191,23 @@ async function scanEmptyEndpoints() {
   try {
     const eventsData = await arcadiaApi.getEvents();
     if (eventsData) {
-      const eventsList = Array.isArray(eventsData.events) ? eventsData.events : [];
+      const eventsList = Array.isArray(eventsData)
+        ? eventsData
+        : Array.isArray(eventsData.events)
+          ? eventsData.events
+          : [];
       const hasEvents = eventsList.length > 0;
 
-      // Always save data
+      // Always save snapshot data
       await saveEndpointData('events', eventsData);
 
+      // Persist individual events to s_events table & enforce max 200 / 3-month retention
+      await saveEventsToSEvents(eventsList);
+
       // Detect state transition (when new events appear)
-      const prevCount = lastEventsState?.events?.length || 0;
+      const prevCount =
+        lastEventsState?.events?.length ||
+        (Array.isArray(lastEventsState) ? lastEventsState.length : 0);
       if (hasEvents) {
         // Save historical record to DB
         if (db) {
@@ -162,6 +241,9 @@ async function scanEmptyEndpoints() {
         }
       }
       lastEventsState = eventsData;
+    } else {
+      // Run purge routine even if API returned empty
+      await purgeSEvents();
     }
   } catch (err) {
     logger.warn(`Empty endpoint sync error (/api/events): ${err.message}`);
@@ -273,4 +355,6 @@ module.exports = {
   scanEmptyEndpoints,
   getEventsCache,
   getWarsCache,
+  saveEventsToSEvents,
+  purgeSEvents,
 };

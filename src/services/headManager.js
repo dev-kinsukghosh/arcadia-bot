@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const redisClient = require('../utils/redis.js');
 const logger = require('../utils/logger.js');
 const { db } = require('../utils/db.js');
-const { playerHeads } = require('../db/schema.js');
+const { playerHeads, playerProfiles } = require('../db/schema.js');
 const { eq, sql } = require('drizzle-orm');
 
 // In-flight deduplication map to prevent multiple upstream API calls for the same username
@@ -77,7 +77,7 @@ async function resolveUsernameToUuid(username) {
     }
   }
 
-  // 3. Try MySQL lookup
+  // 3. Try MySQL lookup (check player_heads table first, then player_profiles table)
   if (db) {
     try {
       const records = await db
@@ -87,6 +87,23 @@ async function resolveUsernameToUuid(username) {
       if (records.length > 0) {
         const dbUuid = records[0].uuid;
         const dbUsername = records[0].username;
+        uuidCache.set(lowerName, dbUuid);
+        nameCasingCache.set(lowerName, dbUsername);
+        if (redisClient && redisClient.status === 'ready') {
+          await redisClient.setex(redisKey, 7 * 24 * 60 * 60, dbUuid);
+          await redisClient.setex(`name:by-lower:${lowerName}`, 7 * 24 * 60 * 60, dbUsername);
+        }
+        return dbUuid;
+      }
+
+      // Fallback check in player_profiles table (for active/offline players fetched from /api/players)
+      const profiles = await db
+        .select()
+        .from(playerProfiles)
+        .where(sql`LOWER(${playerProfiles.name}) = ${lowerName}`);
+      if (profiles.length > 0) {
+        const dbUuid = profiles[0].uuid;
+        const dbUsername = profiles[0].name;
         uuidCache.set(lowerName, dbUuid);
         nameCasingCache.set(lowerName, dbUsername);
         if (redisClient && redisClient.status === 'ready') {
