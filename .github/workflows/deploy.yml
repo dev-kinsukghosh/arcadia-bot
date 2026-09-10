@@ -104,7 +104,7 @@ jobs:
               -e PORT="${{ vars.PORT }}" \
               -e DB_CONNECTION_LIMIT=30 \
               -e MODE=PROD \
-              -e DASHBOARD_URL=https://arcc.webdevkin.com
+              -e DASHBOARD_URL=https://arcc.webdevkin.com \
               ${{ env.IMAGE_NAME }}:latest
 
             # ── Cleanup: remove old dangling images to free disk ──
