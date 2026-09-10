@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 
-const emit = defineEmits(['refresh-stats']);
+const emit = defineEmits(['refresh-stats', 'navigate']);
 
 const props = defineProps({
   currencies: {
@@ -1052,22 +1052,47 @@ onMounted(() => {
                   </td>
 
                   <td class="px-3 py-2.5">
-                    <div
-                      class="font-bold text-slate-200 transition-colors duration-150 group-hover:text-blue-400"
+                    <button
+                      class="text-left font-bold text-slate-200 transition-colors duration-150 hover:text-blue-400 hover:underline"
+                      @click="$emit('navigate', '/currency-history?currency=' + curr.id)"
                     >
                       {{ curr.name }}
-                    </div>
+                    </button>
                     <div
                       class="mt-0.5 font-mono text-[10px] tracking-wide text-slate-500 uppercase"
                     >
-                      Backed by: {{ (curr.standardItem || '').replace(/_/g, ' ') }}
+                      Backed by:
+                      <button
+                        v-if="curr.standardItem"
+                        class="cursor-pointer text-slate-400 hover:text-amber-400 hover:underline"
+                        @click.stop="
+                          $emit(
+                            'navigate',
+                            '/convoy?search=' +
+                              encodeURIComponent(curr.standardItem.replace(/_/g, ' '))
+                          )
+                        "
+                      >
+                        {{ curr.standardItem.replace(/_/g, ' ') }}
+                      </button>
+                      <span v-else>None</span>
                     </div>
                   </td>
 
                   <td class="px-3 py-2.5">
-                    <div class="text-xs font-semibold text-slate-300">
-                      {{ (curr.nation || '').replace(/_/g, ' ') }}
-                    </div>
+                    <button
+                      v-if="curr.nation"
+                      class="text-left text-xs font-semibold text-slate-300 transition-colors duration-150 hover:text-indigo-400 hover:underline"
+                      @click="
+                        $emit(
+                          'navigate',
+                          '/towny?tab=nations&search=' + encodeURIComponent(curr.nation)
+                        )
+                      "
+                    >
+                      {{ curr.nation.replace(/_/g, ' ') }}
+                    </button>
+                    <div v-else class="text-xs font-semibold text-slate-500">None</div>
                     <div class="mt-0.5 font-mono text-[9px] text-slate-500">
                       UUID: {{ (curr.creatorUuid || '').substring(0, 8) }}...
                     </div>

@@ -2,10 +2,6 @@ const {
   SlashCommandBuilder,
   ApplicationIntegrationType,
   InteractionContextType,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  MessageFlags,
 } = require('discord.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { getPlayersCache } = require('../../services/playerSync.js');
@@ -285,108 +281,20 @@ module.exports = {
       }
 
       const rawTownName = onlinePlayer?.town?.name || dbProfile?.townName;
-      const row = new ActionRowBuilder();
-      if (rawTownName && rawTownName !== 'None') {
-        row.addComponents(
-          new ButtonBuilder()
-            .setCustomId(`player_view_town_${rawTownName}`)
-            .setLabel(`View ${rawTownName.replace(/_/g, ' ')} Town`)
-            .setEmoji('🏘️')
-            .setStyle(ButtonStyle.Primary)
-        );
-      }
+      const rawNationName = onlinePlayer?.nation?.name || dbProfile?.nationName;
 
-      const response = await interaction.editReply({
+      const { createPlayerNavRow } = require('../../utils/discordNavHelper.js');
+      const navRow = createPlayerNavRow(
+        name,
+        rawTownName && rawTownName !== 'None' ? rawTownName : null,
+        rawNationName && rawNationName !== 'None' ? rawNationName : null,
+        true
+      );
+
+      return interaction.editReply({
         embeds: [embed],
-        components: row.components.length > 0 ? [row] : [],
+        components: navRow ? [navRow] : [],
       });
-
-      if (row.components.length > 0 && response) {
-        const collector = response.createMessageComponentCollector({ time: 180000 });
-        collector.on('collect', async (i) => {
-          if (i.user.id !== interaction.user.id) {
-            return i.reply({
-              content: 'Only the command user can interact with these buttons.',
-              flags: MessageFlags.Ephemeral,
-            });
-          }
-          await i.deferUpdate();
-          if (i.customId.startsWith('player_view_town_')) {
-            const tName = i.customId.replace('player_view_town_', '');
-            const { arcadiaApi } = require('../../utils/apiClient.js');
-            try {
-              const townyData = await arcadiaApi.getTowny();
-              const towns = Array.isArray(townyData?.towns) ? townyData.towns : [];
-              const targetTown = towns.find(
-                (t) =>
-                  t?.name?.toLowerCase() === tName.toLowerCase() ||
-                  t?.slug?.toLowerCase() === tName.toLowerCase()
-              );
-
-              if (targetTown) {
-                const flags = targetTown.flags || {};
-                const claims = targetTown.claims || {};
-                const spawn = targetTown.spawn || {};
-                const mayor = targetTown.mayor || {};
-                const nation = targetTown.nation || null;
-
-                const fmtTownName = targetTown.name ? targetTown.name.replace(/_/g, ' ') : tName;
-                const mName = mayor.name || 'Unknown';
-                const nName = nation?.name ? nation.name.replace(/_/g, ' ') : 'None (Neutral)';
-
-                const flagsStr = [
-                  `${flags.pvp ? '🟢' : '🔴'} PVP`,
-                  `${flags.mobs ? '🟢' : '🔴'} Mobs`,
-                  `${flags.fire ? '🟢' : '🔴'} Fire`,
-                  `${flags.explosion ? '🟢' : '🔴'} Explosions`,
-                  `${flags.open ? '🟢' : '🔴'} Open`,
-                  `${flags.public ? '🟢' : '🔴'} Public`,
-                ].join('  ·  ');
-
-                const spawnLoc = spawn.world
-                  ? `\`${spawn.world}\` (X: ${Math.round(spawn.x ?? 0)}, Y: ${Math.round(spawn.y ?? 0)}, Z: ${Math.round(spawn.z ?? 0)})`
-                  : 'N/A';
-
-                const townEmbed = createBaseEmbed()
-                  .setColor(EMBED_COLORS.CYBER)
-                  .setTitle(`🏘️ Town Profile: ${fmtTownName}`)
-                  .setDescription(`Detailed profile telemetry for town **${fmtTownName}**.`)
-                  .addFields(
-                    {
-                      name: '👑 Leadership & Nation',
-                      value: `• **Mayor:** \`${mName}\`\n• **Nation:** \`${nName}\``,
-                      inline: true,
-                    },
-                    {
-                      name: '👥 Population',
-                      value: `• **Online:** \`${targetTown.onlineResidents ?? 0}\`\n• **Total Residents:** \`${targetTown.residents ?? 0}\``,
-                      inline: true,
-                    },
-                    {
-                      name: '🚩 Town Flags',
-                      value: flagsStr,
-                      inline: false,
-                    },
-                    {
-                      name: '📦 Chunks Territory',
-                      value: `• **Claimed:** \`${Number(claims.claimedChunks ?? 0).toLocaleString()}\` chunks\n• **Bonus:** \`${Number(claims.bonusChunks ?? 0).toLocaleString()}\` chunks`,
-                      inline: false,
-                    },
-                    {
-                      name: '📍 Spawn Location',
-                      value: spawnLoc,
-                      inline: false,
-                    }
-                  );
-
-                await interaction.editReply({ embeds: [townEmbed], components: [] });
-              }
-            } catch {
-              // ignore
-            }
-          }
-        });
-      }
     }
   },
 };

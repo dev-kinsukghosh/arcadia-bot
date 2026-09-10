@@ -122,7 +122,7 @@ async function main() {
         }
       } catch (err) {
         logger.error(`Error starting ${service.name}:`, err);
-        reportError(err, `Service Startup: ${service.name}`);
+        reportError(err, `Service Startup: ${service.name} failed to start.`);
       }
     }
   } else {

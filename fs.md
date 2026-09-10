@@ -50,6 +50,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── migrate-safe.js
 │   ├── export-wiki-table.js
 │   ├── upload-emojis.js
+│   ├── scan-endpoints-fast.js
 │   └── sync-missing-shop-icons.js
 ├── src/
 │   ├── server.js
@@ -72,6 +73,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── cstats.js
 │   │       ├── cstock.js
 │   │       ├── currencies.js
+│   │       ├── dealfinder.js
 │   │       ├── devconfig.js
 │   │       ├── dev-slist.js
 │   │       ├── enotify.js
@@ -108,6 +110,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │   ├── convoySync.js
 │   │   ├── currencySync.js
 │   │   ├── emptyEndpointsSync.js
+│   │   ├── endpointScanner.js
 │   │   ├── headManager.js
 │   │   ├── playerSync.js
 │   │   ├── shopsSync.js
@@ -119,6 +122,8 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── canvasGraph.js
 │       ├── db.js
 │       ├── devConfigHelper.js
+│       ├── discordNavHelper.js
+│       ├── discordNavRouter.js
 │       ├── emojiCache.js
 │       ├── embedHelper.js
 │       ├── emitter.js
@@ -127,12 +132,14 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── guildOptionsHelper.js
 │       ├── iconDownloader.js
 │       ├── logger.js
+│       ├── minecraftWordlist.js
 │       ├── redis.js
 │       └── redisOm.js
 ├── tests/
 │   ├── setup.js
 │   ├── blacklist.test.js
 │   ├── embedHelper.test.js
+│   ├── endpointScanner.test.js
 │   ├── env.test.js
 │   ├── heads.test.js
 │   ├── api.test.js
@@ -186,6 +193,7 @@ This file serves as a reference guide for the directory structure and file respo
 - [scripts/migrate-safe.js](./scripts/migrate-safe.js): Programmatic schema migrator for Drizzle ORM.
 - [scripts/export-wiki-table.js](./scripts/export-wiki-table.js): Utility script to fetch and export all convoy items to a MediaWiki-formatted table in a markdown file.
 - [scripts/upload-emojis.js](./scripts/upload-emojis.js): Utility script to upload cached item icon PNGs to Discord Application Emojis.
+- [scripts/scan-endpoints-fast.js](./scripts/scan-endpoints-fast.js): Fast standalone scanner script probing 5,000 candidate API endpoints concurrently over ~5 minutes.
 - [scripts/sync-missing-shop-icons.js](./scripts/sync-missing-shop-icons.js): Script to dynamically identify active player shop trade items, download any missing textures from Mojang/mcasset APIs, and upload them to Discord.
 
 ### 📂 dashboard/
@@ -238,6 +246,7 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/cstats.js](./src/commands/general/cstats.js): `/cstats` — View currency market health metrics and performers ranking.
       - [src/commands/general/cstock.js](./src/commands/general/cstock.js): `/cstock` — Displays current Convoy shop stock grouped by rarity.
       - [src/commands/general/currencies.js](./src/commands/general/currencies.js): `/currencies` — Displays active list of nation currencies and their rates.
+      - [src/commands/general/dealfinder.js](./src/commands/general/dealfinder.js): `/dealfinder` — Calculates instant arbitrage profit deals between Player Shops and Convoy Shop.
       - [src/commands/general/exchange.js](./src/commands/general/exchange.js): `/exchange` — Calculates conversions and exchange rates between nation currencies.
       - [src/commands/general/forcesync.js](./src/commands/general/forcesync.js): `/forcesync` — Forces manual convoy data synchronization from the API (Developer Only).
       - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Lists all guilds the bot is currently in (Developer Only).
@@ -275,6 +284,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/services/convoySync.js](./src/services/convoySync.js): Synchronization worker to fetch and track convoy shop items.
   - [src/services/currencySync.js](./src/services/currencySync.js): Synchronization worker to fetch, track, and cache currencies.
   - [src/services/emptyEndpointsSync.js](./src/services/emptyEndpointsSync.js): Synchronization worker scanning `/api/events` and `/api/wars`, persisting event logs to `s_events` table (max 200 items, 3-month retention), and dispatching syslog notifications.
+  - [src/services/endpointScanner.js](./src/services/endpointScanner.js): Background worker executing a slow 32-hour scan of 10,000 candidate endpoints every 3 days, saving discovered endpoints to `api_endpoints` table.
   - [src/services/headManager.js](./src/services/headManager.js): Backend manager controlling local serving, cache downloads, and 7-day batch sync checks of player head images.
   - [src/services/shopsSync.js](./src/services/shopsSync.js): Synchronization worker to fetch, resolve, and cache player shops in MySQL and Redis.
   - [src/services/townySync.js](./src/services/townySync.js): Synchronization worker to fetch, cache, and record daily historical snapshots of town/nation residents & claims.
@@ -285,6 +295,8 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/canvasGraph.js](./src/utils/canvasGraph.js): Generates high-quality bar and line charts using @napi-rs/canvas.
   - [src/utils/db.js](./src/utils/db.js): Drizzle ORM database instance client.
   - [src/utils/devConfigHelper.js](./src/utils/devConfigHelper.js): Manages memory caching and persistence for developer configurations (`webyCustom`).
+  - [src/utils/discordNavHelper.js](./src/utils/discordNavHelper.js): Helper module constructing Discord ActionRow navigation button rows with web dashboard deep links.
+  - [src/utils/discordNavRouter.js](./src/utils/discordNavRouter.js): Navigation router module fetching telemetry and rendering interactive embeds for Town, Nation, Player, and Shop navigation buttons.
   - [src/utils/emojiCache.js](./src/utils/emojiCache.js): Manages in-memory caching of application custom emojis.
   - [src/utils/embedHelper.js](./src/utils/embedHelper.js): Central helper module to build styled, uniform Discord embeds.
   - [src/utils/emitter.js](./src/utils/emitter.js): Central EventEmitter instance for cross-module real-time communications.
@@ -293,6 +305,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/guildOptionsHelper.js](./src/utils/guildOptionsHelper.js): Manages memory caching and DB state of guild custom command/event configurations.
   - [src/utils/iconDownloader.js](./src/utils/iconDownloader.js): Downloads missing block and item icons from assets.mcasset.cloud.
   - [src/utils/logger.js](./src/utils/logger.js): Winston/Picocolors logger.
+  - [src/utils/minecraftWordlist.js](./src/utils/minecraftWordlist.js): Generates ~10,000 Minecraft and server-related endpoint candidate paths.
   - [src/utils/redis.js](./src/utils/redis.js): Connection client for Redis cache operations.
   - [src/utils/redisOm.js](./src/utils/redisOm.js): Redis-OM client wrapper initialization.
 - 📂 **tests/**: Codebase testing suite and validation tools.

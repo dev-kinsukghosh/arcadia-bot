@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { usePlayersStore } from '../stores/playersStore.js';
 
@@ -10,21 +11,33 @@ const props = defineProps({
   },
 });
 
+const route = useRoute();
 const playersStore = usePlayersStore();
 const { playersData, isLoading, fetchError, searchQuery, rankFilter, selectedPlayer, isModalOpen } =
   storeToRefs(playersStore);
+
+const emit = defineEmits(['navigate']);
+
+function handleNavigateToTown(townName) {
+  if (!townName) return;
+  const target = String(townName).trim();
+  playersStore.closeModal();
+  emit('navigate', `/towny?tab=towns&search=${encodeURIComponent(target)}`);
+}
+
+function handleNavigateToNation(nationName) {
+  if (!nationName) return;
+  const target = String(nationName).trim();
+  playersStore.closeModal();
+  emit('navigate', `/towny?tab=nations&search=${encodeURIComponent(target)}`);
+}
 
 // Navigation sub-views: 'roster' (Combined Roster), 'analytics' (Rank & Town Analytics)
 const activeSubTab = ref('roster');
 // Status filter: 'all', 'online', 'offline'
 const statusFilter = ref('all');
 
-onMounted(() => {
-  if (!playersData.value) {
-    playersStore.fetchPlayersData();
-  }
-});
-
+const lastPlayerQuery = ref('');
 const failedAvatars = ref({});
 function handleAvatarError(key) {
   failedAvatars.value[key] = true;
@@ -113,28 +126,31 @@ const processedRoster = computed(() => {
     uuid: p.uuid,
     rank: p.rank || 'PLAYER',
     isOnline: true,
-    town: p.town,
-    nation: p.nation,
+    town: typeof p.town === 'string' ? { name: p.town } : p.town,
+    nation: typeof p.nation === 'string' ? { name: p.nation } : p.nation,
     empire: p.empire,
     location: p.location,
     chatChannel: p.chatChannel,
   }));
 
   // Sort Online A-Z by account username
-  onlineMapped.sort((a, b) => a.name.localeCompare(b.name));
+  onlineMapped.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   // 2. Map Offline Players (excluding currently online)
   const offlineMapped = [];
   dbProfiles.forEach((prof) => {
     if (prof.name && !onlineNames.has(prof.name.toLowerCase())) {
+      const tName = prof.townName || (typeof prof.town === 'string' ? prof.town : prof.town?.name);
+      const nName =
+        prof.nationName || (typeof prof.nation === 'string' ? prof.nation : prof.nation?.name);
       offlineMapped.push({
         name: prof.name,
         displayName: prof.displayName || prof.name,
         uuid: prof.uuid,
         rank: prof.rank || 'PLAYER',
         isOnline: false,
-        town: prof.townName ? { name: prof.townName } : null,
-        nation: prof.nationName ? { name: prof.nationName } : null,
+        town: tName ? { name: tName } : null,
+        nation: nName ? { name: nName } : null,
         empire: prof.empire,
         firstSeen: prof.firstSeen,
         lastSeen: prof.lastSeen,
@@ -143,7 +159,7 @@ const processedRoster = computed(() => {
   });
 
   // Sort Offline A-Z by account username
-  offlineMapped.sort((a, b) => a.name.localeCompare(b.name));
+  offlineMapped.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   // Combine: Online at TOP (A-Z), Offline at BOTTOM (A-Z)
   let combined = [...onlineMapped, ...offlineMapped];
@@ -165,16 +181,21 @@ const processedRoster = computed(() => {
   // Apply Search Filter
   const query = searchQuery.value.toLowerCase().trim();
   if (query) {
+    const qClean = query.replace(/_/g, ' ');
     combined = combined.filter((p) => {
       const name = (p.name || '').toLowerCase();
       const disp = (p.displayName || '').toLowerCase();
-      const town = (p.town?.name || '').toLowerCase();
-      const nation = (p.nation?.name || '').toLowerCase();
+      const town = (typeof p.town === 'string' ? p.town : p.town?.name || '').toLowerCase();
+      const nation = (typeof p.nation === 'string' ? p.nation : p.nation?.name || '').toLowerCase();
       return (
         name.includes(query) ||
+        name.includes(qClean) ||
         disp.includes(query) ||
+        disp.includes(qClean) ||
         town.includes(query) ||
-        nation.includes(query)
+        town.includes(qClean) ||
+        nation.includes(query) ||
+        nation.includes(qClean)
       );
     });
   }
@@ -209,8 +230,9 @@ const topTownsByOnline = computed(() => {
   const townCounts = {};
 
   playersData.value.players.forEach((p) => {
-    if (p.town?.name) {
-      const name = cleanName(p.town.name);
+    const townName = typeof p.town === 'string' ? p.town : p.town?.name;
+    if (townName) {
+      const name = cleanName(townName);
       townCounts[name] = (townCounts[name] || 0) + 1;
     }
   });
@@ -220,6 +242,71 @@ const topTownsByOnline = computed(() => {
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
 });
+
+function checkQueryParams() {
+  const param =
+    route?.query?.player ||
+    route?.query?.p ||
+    route?.query?.search ||
+    route?.query?.town ||
+    route?.query?.nation;
+
+  if (param) {
+    const rawStr = String(param).trim();
+    lastPlayerQuery.value = rawStr;
+    searchQuery.value = rawStr;
+
+    const q = rawStr.toLowerCase();
+    const qClean = q.replace(/_/g, ' ');
+    if (processedRoster.value && processedRoster.value.length > 0) {
+      const match = processedRoster.value.find(
+        (p) =>
+          p.name?.toLowerCase() === q ||
+          p.name?.toLowerCase().replace(/_/g, ' ') === qClean ||
+          p.displayName?.toLowerCase() === q ||
+          p.displayName?.toLowerCase().replace(/_/g, ' ') === qClean
+      );
+      if (match) {
+        playersStore.openPlayerModal(match);
+      }
+    }
+  }
+}
+
+onMounted(() => {
+  checkQueryParams();
+  if (!playersData.value) {
+    playersStore.fetchPlayersData();
+  }
+});
+
+watch(
+  () => [
+    route?.query?.player,
+    route?.query?.p,
+    route?.query?.search,
+    route?.query?.town,
+    route?.query?.nation,
+  ],
+  () => {
+    checkQueryParams();
+  }
+);
+
+watch(
+  () => processedRoster.value.length,
+  (len) => {
+    if (len > 0 && lastPlayerQuery.value) {
+      const q = lastPlayerQuery.value.toLowerCase();
+      const match = processedRoster.value.find(
+        (p) => p.name?.toLowerCase() === q || p.displayName?.toLowerCase() === q
+      );
+      if (match && !isModalOpen.value) {
+        playersStore.openPlayerModal(match);
+      }
+    }
+  }
+);
 </script>
 
 <template>
@@ -367,8 +454,8 @@ const topTownsByOnline = computed(() => {
           class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           <div
-            v-for="player in processedRoster"
-            :key="player.uuid || player.name"
+            v-for="(player, idx) in processedRoster"
+            :key="player.uuid || player.name || 'p-' + idx"
             :class="
               player.isOnline
                 ? 'border-slate-900 bg-slate-950/60 hover:border-emerald-500/30 hover:bg-slate-900/40 hover:shadow-emerald-500/5'
@@ -443,15 +530,35 @@ const topTownsByOnline = computed(() => {
             <div class="mt-4 space-y-1.5 border-t border-slate-900/60 pt-3 text-[10px]">
               <div class="flex items-center justify-between text-slate-400">
                 <span>Town:</span>
-                <span class="max-w-[120px] truncate font-bold text-slate-200">
-                  {{ player.town?.name ? cleanName(player.town.name) : 'None' }}
-                </span>
+                <button
+                  v-if="player.town?.name"
+                  class="max-w-[120px] truncate font-bold text-slate-200 hover:text-blue-400 hover:underline"
+                  @click.stop="
+                    $emit(
+                      'navigate',
+                      '/towny?tab=towns&search=' + encodeURIComponent(player.town.name)
+                    )
+                  "
+                >
+                  {{ cleanName(player.town.name) }}
+                </button>
+                <span v-else class="max-w-[120px] truncate font-bold text-slate-500">None</span>
               </div>
               <div class="flex items-center justify-between text-slate-400">
                 <span>Nation:</span>
-                <span class="max-w-[120px] truncate font-bold text-indigo-400">
-                  {{ player.nation?.name ? cleanName(player.nation.name) : 'None' }}
-                </span>
+                <button
+                  v-if="player.nation?.name"
+                  class="max-w-[120px] truncate font-bold text-indigo-400 hover:text-indigo-300 hover:underline"
+                  @click.stop="
+                    $emit(
+                      'navigate',
+                      '/towny?tab=nations&search=' + encodeURIComponent(player.nation.name)
+                    )
+                  "
+                >
+                  {{ cleanName(player.nation.name) }}
+                </button>
+                <span v-else class="max-w-[120px] truncate font-bold text-slate-500">None</span>
               </div>
 
               <!-- Online: Coordinates -->
@@ -664,15 +771,25 @@ const topTownsByOnline = computed(() => {
               </h4>
               <div class="flex justify-between text-slate-300">
                 <span>Town:</span>
-                <strong class="text-slate-100">{{
-                  selectedPlayer.town?.name ? cleanName(selectedPlayer.town.name) : 'None'
-                }}</strong>
+                <button
+                  v-if="selectedPlayer.town?.name"
+                  class="cursor-pointer font-bold text-slate-100 hover:text-blue-400 hover:underline"
+                  @click="handleNavigateToTown(selectedPlayer.town.name)"
+                >
+                  {{ cleanName(selectedPlayer.town.name) }}
+                </button>
+                <span v-else class="font-bold text-slate-500">None</span>
               </div>
               <div class="flex justify-between text-slate-300">
                 <span>Nation:</span>
-                <strong class="text-indigo-400">{{
-                  selectedPlayer.nation?.name ? cleanName(selectedPlayer.nation.name) : 'None'
-                }}</strong>
+                <button
+                  v-if="selectedPlayer.nation?.name"
+                  class="cursor-pointer font-bold text-indigo-400 hover:text-indigo-300 hover:underline"
+                  @click="handleNavigateToNation(selectedPlayer.nation.name)"
+                >
+                  {{ cleanName(selectedPlayer.nation.name) }}
+                </button>
+                <span v-else class="font-bold text-slate-500">None</span>
               </div>
               <div class="flex justify-between text-slate-300">
                 <span>Empire:</span>

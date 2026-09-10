@@ -36,7 +36,12 @@ const props = defineProps({
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const savedSelected = localStorage.getItem('history:selected');
-const selectedCurrencies = ref(savedSelected ? JSON.parse(savedSelected) : []);
+const userSelectedCurrencies = ref(savedSelected ? JSON.parse(savedSelected) : []);
+const queryCurrencies = ref([]);
+
+const effectiveSelectedCurrencies = computed(() => {
+  return [...new Set([...userSelectedCurrencies.value, ...queryCurrencies.value])];
+});
 
 const savedDays = localStorage.getItem('history:days');
 const daysLimit = ref(savedDays ? parseInt(savedDays, 10) : 30);
@@ -56,27 +61,69 @@ const filteredCurrencies = computed(() => {
   );
 });
 
-onMounted(() => {
-  if (selectedCurrencies.value.length === 0 && props.currencies && props.currencies.length > 0) {
-    selectedCurrencies.value = props.currencies.slice(0, 2).map((c) => c.id);
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+
+function checkQueryCurrency() {
+  const param = route?.query?.currency || route?.query?.c || route?.query?.search;
+  if (param && Array.isArray(props.currencies) && props.currencies.length > 0) {
+    const rawItems = Array.isArray(param) ? param : String(param).split(',');
+    const matched = [];
+    for (const item of rawItems) {
+      const q = String(item).toLowerCase().trim();
+      if (!q) continue;
+      const match = props.currencies.find(
+        (c) =>
+          c.id?.toLowerCase() === q ||
+          c.id?.toLowerCase().includes(q) ||
+          c.name?.toLowerCase().includes(q)
+      );
+      if (match && !matched.includes(match.id)) {
+        matched.push(match.id);
+      }
+    }
+    queryCurrencies.value = matched;
+  } else {
+    queryCurrencies.value = [];
   }
+}
+
+onMounted(() => {
+  if (
+    userSelectedCurrencies.value.length === 0 &&
+    props.currencies &&
+    props.currencies.length > 0
+  ) {
+    userSelectedCurrencies.value = props.currencies.slice(0, 2).map((c) => c.id);
+    localStorage.setItem('history:selected', JSON.stringify(userSelectedCurrencies.value));
+  }
+  checkQueryCurrency();
   fetchHistory();
 });
 
+watch(
+  () => [route?.query?.currency, route?.query?.c, route?.query?.search, props.currencies],
+  () => {
+    checkQueryCurrency();
+  },
+  { deep: true }
+);
+
 async function fetchHistory() {
-  if (selectedCurrencies.value.length === 0) {
+  if (effectiveSelectedCurrencies.value.length === 0) {
     rawHistoryData.value = [];
     return;
   }
 
   isLoading.value = true;
   try {
-    const promises = selectedCurrencies.value.map((id) =>
+    const promises = effectiveSelectedCurrencies.value.map((id) =>
       axios.get(`${API_BASE}/currencies/history?currencyId=${id}&days=${daysLimit.value}`)
     );
     const responses = await Promise.all(promises);
     const data = responses.map((res, index) => ({
-      currencyId: selectedCurrencies.value[index],
+      currencyId: effectiveSelectedCurrencies.value[index],
       records: res.data,
     }));
     rawHistoryData.value = data;
@@ -88,11 +135,11 @@ async function fetchHistory() {
 }
 
 function toggleSelection(id) {
-  const index = selectedCurrencies.value.indexOf(id);
-  if (index > -1) {
-    selectedCurrencies.value = selectedCurrencies.value.filter((x) => x !== id);
+  if (effectiveSelectedCurrencies.value.includes(id)) {
+    userSelectedCurrencies.value = userSelectedCurrencies.value.filter((x) => x !== id);
+    queryCurrencies.value = queryCurrencies.value.filter((x) => x !== id);
   } else {
-    selectedCurrencies.value = [...selectedCurrencies.value, id];
+    userSelectedCurrencies.value = [...userSelectedCurrencies.value, id];
   }
 
   nextTick(() => {
@@ -104,11 +151,25 @@ function toggleSelection(id) {
 }
 
 watch(
-  [selectedCurrencies, daysLimit, chartMode],
-  ([newSelected, newDays, newMode]) => {
+  userSelectedCurrencies,
+  (newSelected) => {
     localStorage.setItem('history:selected', JSON.stringify(newSelected));
+  },
+  { deep: true }
+);
+
+watch(
+  [daysLimit, chartMode],
+  ([newDays, newMode]) => {
     localStorage.setItem('history:days', String(newDays));
     localStorage.setItem('history:mode', newMode);
+  },
+  { deep: true }
+);
+
+watch(
+  [effectiveSelectedCurrencies, daysLimit],
+  () => {
     fetchHistory();
   },
   { deep: true }
@@ -446,7 +507,7 @@ const chartOptions = computed(() => ({
               :id="'check-' + curr.id"
               type="checkbox"
               :value="curr.id"
-              :checked="selectedCurrencies.includes(curr.id)"
+              :checked="effectiveSelectedCurrencies.includes(curr.id)"
               class="size-3.5 shrink-0 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900 lg:size-4"
               @change.stop
             />
@@ -469,7 +530,7 @@ const chartOptions = computed(() => ({
         </div>
 
         <div
-          v-if="selectedCurrencies.length === 0"
+          v-if="effectiveSelectedCurrencies.length === 0"
           class="flex h-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-800 p-6 text-center"
         >
           <font-awesome-icon icon="sliders" class="mb-3 text-4xl text-slate-600" />

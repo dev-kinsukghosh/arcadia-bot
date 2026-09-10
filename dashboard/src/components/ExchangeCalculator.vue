@@ -15,9 +15,37 @@ const taxEnabled = ref(localStorage.getItem('exchange:tax_enabled') === 'true');
 const fromCurrencyId = ref(localStorage.getItem('exchange:from') || 'arc');
 const toCurrencyId = ref(localStorage.getItem('exchange:to') || '');
 
-if (!toCurrencyId.value && props.currencies && props.currencies.length > 0) {
-  toCurrencyId.value = props.currencies[0].id;
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+
+function checkQueryParams() {
+  if (route?.query?.from) {
+    const qFrom = String(route.query.from).toLowerCase().trim();
+    if (qFrom === 'arc' || props.currencies.some((c) => c.id?.toLowerCase() === qFrom)) {
+      fromCurrencyId.value = qFrom;
+    }
+  }
+  if (route?.query?.to) {
+    const qTo = String(route.query.to).toLowerCase().trim();
+    if (qTo === 'arc' || props.currencies.some((c) => c.id?.toLowerCase() === qTo)) {
+      toCurrencyId.value = qTo;
+    }
+  }
+  if (route?.query?.amount) {
+    amountInput.value = String(route.query.amount);
+  }
 }
+
+checkQueryParams();
+
+watch(
+  () => [route?.query?.from, route?.query?.to, props.currencies],
+  () => {
+    checkQueryParams();
+  },
+  { deep: true }
+);
 
 watch(
   [amountInput, taxEnabled, fromCurrencyId, toCurrencyId],

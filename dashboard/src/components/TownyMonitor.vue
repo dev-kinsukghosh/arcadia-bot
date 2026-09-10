@@ -71,24 +71,35 @@ function checkAndAutoSelectFromQuery() {
   const q = String(route.query.search).toLowerCase().trim();
   const qClean = q.replace(/_/g, ' ');
 
-  if (activeTab.value === 'towns' && Array.isArray(townyData.value.towns)) {
-    const match = townyData.value.towns.find(
-      (t) =>
-        (t.name || '').toLowerCase() === q ||
-        (t.name || '').replace(/_/g, ' ').toLowerCase() === qClean
-    );
-    if (match) {
-      selectedTown.value = match;
-    }
-  } else if (activeTab.value === 'nations' && Array.isArray(townyData.value.nations)) {
-    const match = townyData.value.nations.find(
-      (n) =>
-        (n.name || '').toLowerCase() === q ||
-        (n.name || '').replace(/_/g, ' ').toLowerCase() === qClean
-    );
-    if (match) {
-      selectedNation.value = match;
-    }
+  const towns = Array.isArray(townyData.value.towns) ? townyData.value.towns : [];
+  const nations = Array.isArray(townyData.value.nations) ? townyData.value.nations : [];
+
+  // Check towns first
+  const townMatch = towns.find(
+    (t) =>
+      (t.name || '').toLowerCase() === q ||
+      (t.name || '').replace(/_/g, ' ').toLowerCase() === qClean
+  );
+
+  if (townMatch) {
+    activeTab.value = 'towns';
+    selectedTown.value = townMatch;
+    selectedNation.value = null;
+    return;
+  }
+
+  // Check nations
+  const nationMatch = nations.find(
+    (n) =>
+      (n.name || '').toLowerCase() === q ||
+      (n.name || '').replace(/_/g, ' ').toLowerCase() === qClean
+  );
+
+  if (nationMatch) {
+    activeTab.value = 'nations';
+    selectedNation.value = nationMatch;
+    selectedTown.value = null;
+    return;
   }
 }
 
@@ -112,7 +123,7 @@ onMounted(() => {
 });
 
 watch(
-  () => route.query,
+  () => [route.query.tab, route.query.search],
   () => {
     applyRouteQuery();
   }
@@ -434,6 +445,29 @@ watch(selectedNation, async (newNation) => {
   }
 });
 
+const emit = defineEmits(['navigate']);
+
+function handleNavigateToPlayer(name) {
+  if (!name) return;
+  const target = String(name).trim();
+  closeModals();
+  emit('navigate', `/players?search=${encodeURIComponent(target)}`);
+}
+
+function handleNavigateToPlayersTown(townName) {
+  if (!townName) return;
+  const target = String(townName).trim();
+  closeModals();
+  emit('navigate', `/players?town=${encodeURIComponent(target)}`);
+}
+
+function handleNavigateToPlayersNation(nationName) {
+  if (!nationName) return;
+  const target = String(nationName).trim();
+  closeModals();
+  emit('navigate', `/players?nation=${encodeURIComponent(target)}`);
+}
+
 function openTownDetails(town) {
   selectedTown.value = town;
 }
@@ -591,7 +625,12 @@ function closeModals() {
               <div
                 class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 font-mono text-[10px] text-slate-400"
               >
-                <span>👥 {{ town.residents || 0 }} residents</span>
+                <button
+                  class="cursor-pointer transition-colors hover:text-blue-400 hover:underline"
+                  @click.stop="$emit('navigate', '/players?town=' + encodeURIComponent(town.name))"
+                >
+                  👥 {{ town.residents || 0 }} residents
+                </button>
                 <span>📦 {{ town.claims?.claimedChunks || 0 }} chunks</span>
               </div>
             </div>
@@ -657,7 +696,14 @@ function closeModals() {
               <div
                 class="mt-3 flex items-center justify-between border-t border-slate-900/60 pt-2 font-mono text-[10px] text-slate-400"
               >
-                <span>👥 {{ nation.residents || 0 }} residents</span>
+                <button
+                  class="cursor-pointer transition-colors hover:text-indigo-400 hover:underline"
+                  @click.stop="
+                    $emit('navigate', '/players?nation=' + encodeURIComponent(nation.name))
+                  "
+                >
+                  👥 {{ nation.residents || 0 }} residents
+                </button>
                 <span>🏘️ {{ nation.towns || 0 }} towns</span>
               </div>
             </div>
@@ -1050,9 +1096,14 @@ function closeModals() {
                   <div class="text-[8px] font-bold tracking-wider text-slate-500 uppercase">
                     Town Mayor
                   </div>
-                  <div class="truncate text-xs font-bold text-slate-100">
-                    {{ selectedTown.mayor?.name || 'Unknown' }}
-                  </div>
+                  <button
+                    v-if="selectedTown.mayor?.name"
+                    class="cursor-pointer truncate text-left text-xs font-bold text-slate-100 hover:text-blue-400 hover:underline"
+                    @click="handleNavigateToPlayer(selectedTown.mayor.name)"
+                  >
+                    {{ selectedTown.mayor.name }}
+                  </button>
+                  <div v-else class="truncate text-xs font-bold text-slate-500">Unknown</div>
                   <div
                     v-if="
                       selectedTown.mayor?.displayName &&
@@ -1067,9 +1118,17 @@ function closeModals() {
 
               <!-- Telemetry -->
               <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
-                <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
-                  Resident Telemetry
-                </h4>
+                <div class="flex items-center justify-between">
+                  <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
+                    Resident Telemetry
+                  </h4>
+                  <button
+                    class="flex cursor-pointer items-center gap-1 rounded border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-bold text-blue-400 hover:bg-blue-500/20 hover:underline"
+                    @click="handleNavigateToPlayersTown(selectedTown.name)"
+                  >
+                    View Players →
+                  </button>
+                </div>
                 <div class="mt-1.5 font-mono text-xs text-slate-300">
                   • Total: <strong class="text-slate-100">{{ selectedTown.residents }}</strong
                   ><br />
@@ -1084,79 +1143,80 @@ function closeModals() {
               <!-- Claims -->
               <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
                 <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
-                  Land & Claims
+                  Land Claims
                 </h4>
-                <div class="mt-1 space-y-0.5 font-mono text-xs text-slate-300">
-                  <div>
-                    • Claimed:
-                    <strong class="text-slate-100">{{ selectedTown.claims?.claimedChunks }}</strong>
-                  </div>
-                  <div>
-                    • Bonus:
-                    <strong class="text-slate-100">{{ selectedTown.claims?.bonusChunks }}</strong>
-                  </div>
-                  <div>
-                    • Outposts:
-                    <strong class="text-slate-100">{{
-                      selectedTown.claims?.outpostChunks || 0
-                    }}</strong>
-                  </div>
+                <div class="mt-1.5 font-mono text-xs text-slate-300">
+                  • Claimed Chunks:
+                  <strong class="text-slate-100">{{ selectedTown.claimedChunks }}</strong
+                  ><br />
+                  • Max Chunks:
+                  <strong class="text-slate-100">{{ selectedTown.maxChunks }}</strong>
                 </div>
               </div>
 
-              <!-- Coordinates -->
+              <!-- Spawn Coordinates -->
               <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
                 <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
-                  Telemetry Positions
+                  Town Spawn Point
                 </h4>
-                <div class="mt-1 space-y-0.5 font-mono text-[10px] text-slate-300">
-                  <div class="truncate">
-                    • Spawn:
-                    <strong class="text-slate-100"
-                      >{{ selectedTown.spawn?.world }} ({{
-                        Math.round(selectedTown.spawn?.x ?? 0)
-                      }}, {{ Math.round(selectedTown.spawn?.z ?? 0) }})</strong
-                    >
+                <div
+                  v-if="selectedTown.spawn"
+                  class="mt-1.5 flex items-center justify-between font-mono text-xs text-slate-300"
+                >
+                  <div>
+                    {{ selectedTown.spawn.world }}: {{ Math.round(selectedTown.spawn.x) }},
+                    {{ Math.round(selectedTown.spawn.z) }}
                   </div>
-                  <div class="truncate">
-                    • Homeblock:
-                    <strong class="text-slate-100"
-                      >{{ selectedTown.homeblock?.world }} ({{ selectedTown.homeblock?.x }},
-                      {{ selectedTown.homeblock?.z }})</strong
-                    >
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Column 3: Flags (col-span-4) -->
-            <div class="md:col-span-4">
-              <!-- Flags -->
-              <div class="h-full rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
-                <h4 class="mb-3 text-[9px] font-bold tracking-wider text-slate-500 uppercase">
-                  Town Flags
-                </h4>
-                <div class="grid grid-cols-3 gap-2">
-                  <div
-                    v-for="(val, flag) in selectedTown.flags"
-                    :key="flag"
-                    :class="
-                      val
-                        ? 'border-emerald-500/10 bg-emerald-500/5 text-emerald-400'
-                        : 'border-slate-800 bg-slate-900/10 text-slate-400'
+                  <button
+                    class="cursor-pointer rounded bg-slate-900 px-1.5 py-0.5 text-[9px] font-bold text-slate-400 hover:text-blue-400"
+                    @click="
+                      copyCoordinates(
+                        selectedTown.spawn.world,
+                        selectedTown.spawn.x,
+                        selectedTown.spawn.y,
+                        selectedTown.spawn.z
+                      )
                     "
-                    class="flex flex-col items-center justify-center rounded-lg border p-2 text-center"
                   >
-                    <span class="text-[10px] font-bold capitalize">{{ flag }}</span>
-                    <span class="mt-1 font-mono text-[9px] font-bold uppercase">{{
-                      val ? 'ON' : 'OFF'
-                    }}</span>
-                  </div>
+                    {{
+                      copiedText ===
+                      `${selectedTown.spawn.world}: ${Math.round(selectedTown.spawn.x)}, ${Math.round(selectedTown.spawn.y)}, ${Math.round(selectedTown.spawn.z)}`
+                        ? '✓'
+                        : 'Copy'
+                    }}
+                  </button>
+                </div>
+                <div v-else class="mt-1.5 font-mono text-xs text-slate-500">No spawn set</div>
+              </div>
+            </div>
+
+            <!-- Column 3: Affiliation & Economy (col-span-4) -->
+            <div class="space-y-3 md:col-span-4">
+              <!-- Nation Affiliation -->
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
+                <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
+                  Nation Membership
+                </h4>
+                <div class="mt-1.5 font-mono text-xs">
+                  <span v-if="selectedTown.nation?.name" class="font-bold text-indigo-400">
+                    {{ selectedTown.nation.name }}
+                  </span>
+                  <span v-else class="text-slate-500">No Nation (Independent)</span>
+                </div>
+              </div>
+
+              <!-- Treasury Balance -->
+              <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
+                <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
+                  Town Bank Treasury
+                </h4>
+                <div class="mt-1.5 font-mono text-sm font-black text-amber-400">
+                  ₳{{ (selectedTown.bank || 0).toLocaleString() }}
                 </div>
               </div>
             </div>
 
-            <!-- Bottom Side: Graph (col-span-12) -->
+            <!-- Full-Width Historical Population Chart (col-span-12) -->
             <div class="mt-2 flex flex-col md:col-span-12">
               <div class="rounded-xl border border-slate-900 bg-slate-950/20 p-4">
                 <h4 class="mb-3 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
@@ -1212,7 +1272,7 @@ function closeModals() {
             <div class="flex items-center gap-2">
               <font-awesome-icon icon="flag" class="text-indigo-400" />
               <h2 class="text-sm font-bold text-slate-100">
-                {{ cleanName(selectedNation.name) }} Details
+                {{ cleanName(selectedNation.name) }} Federation
               </h2>
             </div>
             <button
@@ -1225,11 +1285,11 @@ function closeModals() {
 
           <!-- Modal Body -->
           <div
-            class="flex max-h-[85vh] flex-col overflow-y-auto p-5 md:grid md:grid-cols-12 md:gap-5"
+            class="flex max-h-[85vh] flex-col overflow-y-auto p-5 md:grid md:grid-cols-12 md:gap-4"
           >
-            <!-- Column 1: King & Federation (col-span-4) -->
+            <!-- Column 1: King & Leader telemetry (col-span-4) -->
             <div class="space-y-3 md:col-span-4">
-              <!-- King details & avatar -->
+              <!-- King Details -->
               <div
                 class="flex items-center gap-3 rounded-xl border border-slate-900 bg-slate-950/60 p-2.5"
               >
@@ -1253,9 +1313,14 @@ function closeModals() {
                   <div class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
                     Nation King
                   </div>
-                  <div class="truncate text-xs font-bold text-slate-100">
-                    {{ selectedNation.king?.name || 'Unknown' }}
-                  </div>
+                  <button
+                    v-if="selectedNation.king?.name"
+                    class="cursor-pointer truncate text-left text-xs font-bold text-slate-100 hover:text-blue-400 hover:underline"
+                    @click="handleNavigateToPlayer(selectedNation.king.name)"
+                  >
+                    {{ selectedNation.king.name }}
+                  </button>
+                  <div v-else class="truncate text-xs font-bold text-slate-500">Unknown</div>
                   <div
                     v-if="
                       selectedNation.king?.displayName &&
@@ -1270,9 +1335,17 @@ function closeModals() {
 
               <!-- Federation Counts -->
               <div class="rounded-xl border border-slate-900/60 bg-slate-950/20 p-3">
-                <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
-                  Federation Counts
-                </h4>
+                <div class="flex items-center justify-between">
+                  <h4 class="text-[9px] font-bold tracking-wider text-slate-500 uppercase">
+                    Federation Counts
+                  </h4>
+                  <button
+                    class="flex cursor-pointer items-center gap-1 rounded border border-indigo-500/20 bg-indigo-500/10 px-1.5 py-0.5 text-[9px] font-bold text-indigo-400 hover:bg-indigo-500/20 hover:underline"
+                    @click="handleNavigateToPlayersNation(selectedNation.name)"
+                  >
+                    View Players →
+                  </button>
+                </div>
                 <div class="mt-1 space-y-0.5 font-mono text-xs text-slate-300">
                   <div>
                     • Capital:

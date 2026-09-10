@@ -488,6 +488,7 @@ onUnmounted(() => {
               :currencies="currenciesStats"
               :api-base="API_BASE"
               @refresh-stats="fetchLatestStats"
+              @navigate="navigate"
             />
           </router-view>
         </div>

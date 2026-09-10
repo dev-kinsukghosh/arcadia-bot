@@ -213,6 +213,14 @@ const eventNotifications = mysqlTable(
   (table) => [index('guild_channel_idx').on(table.guildId, table.channelId)]
 );
 
+// Discovered API Endpoints Table
+const apiEndpoints = mysqlTable('api_endpoints', {
+  endpoint: varchar('endpoint', { length: 255 }).primaryKey(),
+  statusCode: int('status_code').notNull(),
+  sampleResponse: text('sample_response'),
+  discoveredAt: timestamp('discovered_at').defaultNow().notNull(),
+});
+
 module.exports = {
   convoyItems,
   blacklist,
@@ -233,4 +241,5 @@ module.exports = {
   apiSnapshots,
   sEvents,
   eventNotifications,
+  apiEndpoints,
 };

@@ -466,7 +466,13 @@ module.exports = {
           }
         );
 
-      return interaction.editReply({ embeds: [embed] });
+      const { createShopNavRow } = require('../../utils/discordNavHelper.js');
+      const navRow = createShopNavRow(shop.ownerName || shop.owner, shop.townName);
+
+      return interaction.editReply({
+        embeds: [embed],
+        components: navRow ? [navRow] : [],
+      });
     }
 
     // ── Subcommand: Search ────────────────────────────────────────────

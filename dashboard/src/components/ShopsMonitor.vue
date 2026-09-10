@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useShopsStore } from '../stores/shopsStore.js';
 
@@ -22,11 +23,32 @@ const {
   isModalOpen,
 } = storeToRefs(shopsStore);
 
+const emit = defineEmits(['navigate']);
+
+function handleNavigateToOwner(ownerName) {
+  if (!ownerName) return;
+  const target = String(ownerName).trim();
+  closeModal();
+  emit('navigate', `/players?search=${encodeURIComponent(target)}`);
+}
+
+const route = useRoute();
+
+function checkQueryParams() {
+  const param = route?.query?.search || route?.query?.owner || route?.query?.item;
+  if (param) {
+    searchQuery.value = String(param);
+  }
+}
+
 onMounted(() => {
+  checkQueryParams();
   if (shops.value.length === 0) {
     shopsStore.fetchShops(props.apiBase);
   }
 });
+
+watch(() => route?.query, checkQueryParams, { deep: true });
 
 function openShopDetails(shop) {
   selectedShop.value = shop;
@@ -279,7 +301,15 @@ function formatCurrency(val, currency = 'ARC') {
               />
             </div>
             <div class="flex flex-col">
-              <span class="text-xs font-semibold text-slate-300">
+              <button
+                class="cursor-pointer text-left text-xs font-semibold text-slate-300 transition-colors hover:text-blue-400 hover:underline"
+                @click.stop="
+                  $emit(
+                    'navigate',
+                    '/players?search=' + encodeURIComponent(shop.ownerName || shop.owner)
+                  )
+                "
+              >
                 {{ shop.ownerName || 'Shop Owner' }}
                 <span
                   v-if="shop.ownerDisplayName && shop.ownerDisplayName !== shop.ownerName"
@@ -287,7 +317,7 @@ function formatCurrency(val, currency = 'ARC') {
                 >
                   ({{ shop.ownerDisplayName }})
                 </span>
-              </span>
+              </button>
               <span class="font-mono text-[9px] text-slate-500">
                 UUID: {{ shop.owner ? shop.owner.substring(0, 8) + '...' : 'Unknown' }}
               </span>
@@ -388,9 +418,12 @@ function formatCurrency(val, currency = 'ARC') {
                 </h3>
                 <p class="text-[10px] font-medium text-slate-400">
                   Owner:
-                  <span class="font-bold text-slate-300">{{
-                    selectedShop.ownerName || 'Shop Owner'
-                  }}</span>
+                  <button
+                    class="cursor-pointer font-bold text-slate-300 hover:text-blue-400 hover:underline"
+                    @click="handleNavigateToOwner(selectedShop.ownerName || selectedShop.owner)"
+                  >
+                    {{ selectedShop.ownerName || 'Shop Owner' }}
+                  </button>
                   ·
                   <span class="font-mono text-slate-500"
                     >UUID: {{ selectedShop.owner || 'Unknown' }}</span

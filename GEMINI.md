@@ -974,3 +974,55 @@ The following rules MUST be followed at all times:
   - Configured `.vscode/settings.json` (auto-format on save with Prettier, code actions on save with ESLint) and `.vscode/extensions.json` (ESLint, Prettier, Volar, Tailwind CSS).
   - Updated `eslint.config.js` with ignores (`dashboard/dist-ssr/`, `logs/`, `scratch/`) and custom Tailwind class whitelists.
   - Executed full linting (`npm run lint`) and codebase formatting (`npm run format`) with zero warnings.
+
+### 10-09-2026
+
+- **API Endpoints Inventory Update (`Api.enpoints.md`)**:
+  - Audited codebase and service endpoints (`src/services/`, `src/utils/apiClient.js`).
+  - Documented all 8 active ArcadiaMC API endpoints (`/api/shops`, `/api/currencies`, `/api/convoy`, `/api/towny`, `/api/events`, `/api/wars`, `/api/players`, `/api/chat`) in `Api.enpoints.md`.
+- **Database Schema — `api_endpoints` Table**:
+  - Added `api_endpoints` table definition to `src/db/schema.js` (`endpoint`, `status_code`, `sample_response`, `discovered_at`).
+  - Generated migration `drizzle/0024_volatile_sersi.sql` via `npm run db:generate` and executed safe database migration via `npm run db:migrate:safe`.
+- **Minecraft API Wordlist Generator (`src/utils/minecraftWordlist.js`)**:
+  - Expanded `src/utils/minecraftWordlist.js` utility to generate **10,000** curated endpoint path candidate variations combining Minecraft/Towny/Economy/Server domain terms, alternative API prefixes (`api/v1/`, `api/v2/`, `api/v3/`, `v1/`, `v2/`, `v3/`, `public/`, `rest/`, `internal/`, `admin/`, `bot/`, `web/`, `app/`, `services/`, `mc/`, `minecraft/`), and subpaths (`top`, `info`, `search`, `detail`, `history`, `log`, `raw`, `active`, `recent`, etc.).
+- **Background Endpoint Discovery Scanner (`src/services/endpointScanner.js`)**:
+  - Built `src/services/endpointScanner.js` background worker.
+  - Configured a slow, rate-limited probe scan (~11.52s delay per request) stretching **10,000** candidate requests across a **32-hour** window, repeating on a 3-day cycle.
+  - Automatically verifies HTTP status 200/201 JSON responses, inserts discovered endpoints into `api_endpoints` table, logs discovery via cyber logger, and excludes discovered endpoints and wildcard subpath aliases from future scan lists.
+  - Manages persistent state in `internal` table (`endpoint_scan_state`), enabling smooth resumes upon bot restarts without losing progress.
+  - Registered worker initialization in `bot.js` startup lifecycle.
+- **Testing & Documentation**:
+  - Created `tests/endpointScanner.test.js` unit test suite for wordlist generation.
+  - Updated directory tree mapping in `fs.md`.
+- **Slash Commands — `/dealfinder`**:
+  - Created `src/commands/general/dealfinder.js` slash command.
+  - Cross-references live Convoy Shop buy prices (`/api/convoy`) against Player Shop listings (`/api/shops`), converting custom nation currency rates dynamically.
+  - Identifies arbitrage deals where buying an item from a player shop and selling it to Convoy generates net ₳ profit.
+  - Implemented rich paginated embeds featuring Minecraft App Emojis, shop location coordinates (`/tp <world> <plotX> <plotZ>`), profit per unit, total potential profit across available stock, and direct quick-navigation buttons to `/cstock` and `/shops`.
+- **Cross-Command & Dashboard Inter-Tab Navigation**:
+  - Enhanced `/players` slash command: Added interactive `View <NationName> Nation` button alongside `View <TownName> Town` button, allowing users to inspect nation leadership, residents, and capital data directly within the command response.
+  - Enhanced Web Dashboard Inter-Tab Links (`PlayerMonitor.vue`, `MarketMonitor.vue`, `ShopsMonitor.vue`, `TownyMonitor.vue`): Made Town, Nation, Currency, Backing Item, Mayor, and King tags interactive clickable links that navigate dynamically across tabs (`/towny`, `/currency-history`, `/players`, `/convoy`).
+- **Blacklist Guild Join Protection & Invite Checks**:
+  - Updated `guildCreate` listener (`src/events/serverjoinlog.js`) with audit log inspection (`AuditLogEvent.BotAdd`) to check if the inviter user is blacklisted (`isBlacklisted(inviter.id)`). If invited by a blacklisted user, logs the blocked attempt and automatically causes the bot to leave the server (`await guild.leave()`).
+  - Added blacklist check inside `/invite` command to block blacklisted users from generating or receiving bot invite links.
+- **Web Dashboard URL Query & Deep-Link Navigation**:
+  - Wired `@navigate` event handling on the main router view `<component>` inside `dashboard/src/App.vue`.
+  - Added `useRoute` query parameter handling and watchers across all dashboard components (`HistoryChart.vue`, `ExchangeCalculator.vue`, `ShopsMonitor.vue`, `ConvoyStock.vue`, `PlayerMonitor.vue`, `MarketMonitor.vue`, `TownyMonitor.vue`) supporting parameters (`currency`, `search`, `owner`, `item`, `from`, `to`, `amount`, `tab`, `town`, `nation`, `player`).
+  - Fixed player filtering & roster mapping in `PlayerMonitor.vue`: Normalized `town` and `nation` properties across string and object formats (`p.town?.name || p.town` and `p.nation?.name || p.nation`), enabling accurate search filtering when navigating to `/players?town=` or `/players?search=`.
+  - Fixed modal popup navigation in `TownyMonitor.vue`: Replaced invalid `closeModal()` / `closeNationModal()` calls with `closeModals()`, resolving JS runtime ReferenceErrors during modal button navigation.
+  - Enhanced `PlayerMonitor.vue` & `TownyMonitor.vue` query param handlers with deduplicated query tracking (`lastPlayerQuery` & `lastTownyQuery`). Prevents reactive watcher loops from locking search input fields or continuously re-triggering modal popups on route state changes.
+  - Enhanced `ShopsMonitor.vue`: Made shop owner links in shop cards and detail inspection modal clickable, navigating directly to `/players?search=` + owner name and auto-opening the player's detail popup.
+  - Separated state in `HistoryChart.vue` between `userSelectedCurrencies` (persisted in `localStorage` under `history:selected`) and `queryCurrencies` (transient reactive state populated from URL parameters like `?currency=cheese`). The combined `effectiveSelectedCurrencies` is watched reactively to trigger `fetchHistory()` live whenever checkboxes are clicked or URL query parameters change, ensuring instant chart re-renders without polluting `localStorage`.
+  - Updated `ConvoyStock.vue` query param handler (`checkQueryParams()`): When searching via URL query parameter (e.g. `?search=EMERALD` or `?item=EMERALD`), automatically switches `activeSubView` to `'all'` ("All Items" catalog view). Added a watcher on `activeSubView` that automatically resets `searchQuery` back to empty when switching back to "Convoy Live", ensuring the live view displays all active shop rotation items clearly.
+  - Made Nation King in `TownyMonitor.vue` nation modal clickable to navigate directly to `/players?search=` + King Name.
+  - Made Backing Item in `MarketMonitor.vue` live market table clickable to navigate directly to `/convoy?search=` + Item Name.
+  - Resolved `PlayerMonitor.vue` analytics & list keying edge cases: Handled string-formatted `p.town` values (`typeof p.town === 'string' ? p.town : p.town?.name`) in `topTownsByOnline`, and added fallback index keys to `<TransitionGroup>` items to prevent rendering warnings.
+  - Fixed Uncaught `ReferenceError: route is not defined` in `PlayerMonitor.vue`: Added missing `const route = useRoute();` declaration in setup script. Previously, inspecting `route.query` in `checkQueryParams` threw an uncaught `ReferenceError` on component mount, which crashed Vue router transitions and broke client-side navigation to other tabs without a full browser refresh.
+  - Resolved Temporal Dead Zone Initialization Error in `PlayerMonitor.vue`: Reordered `<script setup>` declarations so `processedRoster` and all computed properties are defined before `checkQueryParams()`, `onMounted()`, and `watch(() => processedRoster.value.length)`. Prevents `Uncaught ReferenceError: Cannot access 'processedRoster' before initialization` during component setup.
+  - Resolved Cross-Modal Popup Navigation Vanishing Bug (`TownyMonitor.vue` & `PlayerMonitor.vue` & `ShopsMonitor.vue`): Created dedicated `<script setup>` navigation helper functions (`handleNavigateToPlayer`, `handleNavigateToPlayersTown`, `handleNavigateToPlayersNation`, `handleNavigateToOwner`) backed by `defineEmits(['navigate'])`. Replaced inline template `const` declarations with clean function calls, preventing Vue template compilation scope errors (`undefined` parameters) while ensuring modals close and target detail popups auto-open cleanly across tabs.
+- **Discord Cross-Command Interactive Navigation & Deep Linking**:
+  - Created `src/utils/discordNavHelper.js`: Helper module generating styled Discord ActionRow button components (`createTownNavRow`, `createNationNavRow`, `createPlayerNavRow`, `createShopNavRow`) equipped with interactive button action IDs (`nav_town:`, `nav_nation:`, `nav_player:`, `nav_shop:`) and Web Dashboard deep link buttons (`http://localhost:5173/...`).
+  - Created `src/utils/discordNavRouter.js`: Navigation router module fetching telemetry and rendering rich embeds with dynamic button rows for Town, Nation, Player, and Shop views.
+  - Integrated Non-Expiring Interaction Routing (`src/events/interactionCreate.js`): Programmed button interaction routing for `nav_` and `player_view_` custom IDs directly inside the global `interactionCreate` event listener. Allows users to click navigation buttons across `/towny`, `/players`, `/shops`, `/events`, and `/wars` indefinitely without relying on short-lived message collectors.
+  - Attached ActionRow Navigation Buttons across Discord Commands (`src/commands/general/towny.js`, `src/commands/general/players.js`, `src/commands/general/shops.js`): Appended interactive navigation action rows to slash command responses, enabling instant seamless cross-referencing between Towns, Nations, Players, and Player Shops directly in Discord.
+  - Resolved `InteractionCollector` Double-Deferral Conflict (`src/commands/general/towny.js`): Fixed `DiscordAPIError[40060]: Interaction has already been acknowledged` and `DiscordAPIError[10062]: Unknown interaction` exceptions. Added custom ID filtering (`!i.customId.startsWith('towny_btn_')`) and `if (!i.deferred && !i.replied)` checks in `towny.js` collector, allowing `interactionCreate.js` to process global `nav_` buttons cleanly without double-deferral conflicts or unhandled promise rejections.

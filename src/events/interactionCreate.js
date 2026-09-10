@@ -44,6 +44,65 @@ module.exports = {
       return;
     }
 
+    // Handle button navigation interactions
+    if (interaction.isButton() && interaction.customId) {
+      const customId = interaction.customId;
+      if (
+        customId.startsWith('nav_') ||
+        customId.startsWith('player_view_') ||
+        customId.startsWith('towny_view_')
+      ) {
+        try {
+          await interaction.deferUpdate().catch(() => {});
+
+          const {
+            renderTownView,
+            renderNationView,
+            renderPlayerView,
+          } = require('../utils/discordNavRouter.js');
+
+          let result = null;
+
+          if (customId.startsWith('nav_player:') || customId.startsWith('player_view_profile_')) {
+            const name = customId.includes(':')
+              ? customId.split(':')[1]
+              : customId.replace('player_view_profile_', '');
+            result = await renderPlayerView(name);
+          } else if (
+            customId.startsWith('nav_town:') ||
+            customId.startsWith('nav_ptown:') ||
+            customId.startsWith('player_view_town_') ||
+            customId.startsWith('towny_view_town_')
+          ) {
+            const name = customId.includes(':')
+              ? customId.split(':')[1]
+              : customId.replace(/^(player_view_town_|towny_view_town_)/, '');
+            result = await renderTownView(name);
+          } else if (
+            customId.startsWith('nav_nation:') ||
+            customId.startsWith('nav_pnation:') ||
+            customId.startsWith('player_view_nation_') ||
+            customId.startsWith('towny_view_nation_')
+          ) {
+            const name = customId.includes(':')
+              ? customId.split(':')[1]
+              : customId.replace(/^(player_view_nation_|towny_view_nation_)/, '');
+            result = await renderNationView(name);
+          }
+
+          if (result) {
+            await interaction.editReply({
+              embeds: result.embeds,
+              components: result.components,
+            });
+          }
+        } catch (err) {
+          logger.error(`Button navigation error (${customId}): ${err.message}`);
+        }
+        return;
+      }
+    }
+
     if (!interaction.isChatInputCommand()) return;
 
     const command = interaction.client.commands.get(interaction.commandName);

@@ -1,6 +1,6 @@
 {
   "name": "arc-community-bot",
-  "version": "3.0.0-beta",
+  "version": "3.0.1-beta",
   "description": "",
   "keywords": [],
   "license": "ISC",
@@ -24,6 +24,7 @@
     "format": "prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "scan:endpoints": "node scripts/scan-endpoints-fast.js",
     "setup": "node scripts/setup.js",
     "start": "node src/deploy-commands.js --global && node bot.js",
     "start:bot": "node src/deploy-commands.js --global && node bot.js --bot-only",

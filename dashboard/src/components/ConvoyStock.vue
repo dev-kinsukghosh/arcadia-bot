@@ -14,9 +14,31 @@ const convoyStore = useConvoyStore();
 const { convoyItems, isLoading, fetchError, searchQuery, activeRarityFilter, activeSubView } =
   storeToRefs(convoyStore);
 
+import { useRoute } from 'vue-router';
+import { watch } from 'vue';
+
+const route = useRoute();
+
+function checkQueryParams() {
+  const param = route?.query?.search || route?.query?.item;
+  if (param) {
+    searchQuery.value = String(param);
+    activeSubView.value = 'all';
+  }
+}
+
 onMounted(() => {
+  checkQueryParams();
   if (convoyItems.value.length === 0) {
     convoyStore.fetchConvoyData();
+  }
+});
+
+watch(() => route?.query, checkQueryParams, { deep: true });
+
+watch(activeSubView, (newView) => {
+  if (newView === 'live') {
+    searchQuery.value = '';
   }
 });
 

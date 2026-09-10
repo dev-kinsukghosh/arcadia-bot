@@ -10,6 +10,7 @@ const {
 } = require('discord.js');
 const { arcadiaApi } = require('../../utils/apiClient.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
+const logger = require('../../utils/logger.js');
 const {
   drawTopChart,
   drawCompareChart,
@@ -505,28 +506,17 @@ module.exports = {
         }
       }
 
-      const townRow = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`towny_btn_residents_${town.id || town.slug || town.name}`)
-          .setLabel(`View Residents (${town.residents ?? 0})`)
-          .setEmoji('👥')
-          .setStyle(ButtonStyle.Primary)
+      const { createTownNavRow } = require('../../utils/discordNavHelper.js');
+      const navRow = createTownNavRow(
+        town.name,
+        mayorName !== 'Unknown' ? mayorName : null,
+        nation?.name || null
       );
-
-      if (nation?.name) {
-        townRow.addComponents(
-          new ButtonBuilder()
-            .setCustomId(`towny_btn_nation_${nation.slug || nation.name}`)
-            .setLabel(`View ${nation.name.replace(/_/g, ' ')} Nation`)
-            .setEmoji('🏳️')
-            .setStyle(ButtonStyle.Secondary)
-        );
-      }
 
       const initialResponse = await interaction.editReply({
         embeds: [embed],
         files: chartFile ? [chartFile] : [],
-        components: [townRow],
+        components: navRow ? [navRow] : [],
       });
 
       if (initialResponse) {
@@ -534,225 +524,237 @@ module.exports = {
         let residentPage = 0;
 
         collector.on('collect', async (i) => {
+          // Ignore global navigation buttons (nav_player, nav_town, nav_nation) handled by interactionCreate.js
+          if (!i.customId.startsWith('towny_btn_') && !i.customId.startsWith('towny_res_page_')) {
+            return;
+          }
+
           if (i.user.id !== interaction.user.id) {
             return i.reply({
               content: 'Only the command user can interact with these buttons.',
               flags: MessageFlags.Ephemeral,
             });
           }
-          await i.deferUpdate();
 
-          // ── Action: Back to Town Main Info ───────────────────────────
-          if (i.customId === 'towny_btn_town_info') {
-            return interaction.editReply({
-              embeds: [embed],
-              files: chartFile ? [chartFile] : [],
-              components: [townRow],
-            });
-          }
-
-          // ── Action: View Residents List ──────────────────────────────
-          if (
-            i.customId.startsWith('towny_btn_residents_') ||
-            i.customId.startsWith('towny_res_page_')
-          ) {
-            if (i.customId.startsWith('towny_res_page_prev')) residentPage--;
-            if (i.customId.startsWith('towny_res_page_next')) residentPage++;
-
-            const residentsMap = new Map();
-
-            // 1. Query DB player_profiles for residents recorded in this town
-            if (db) {
-              try {
-                const dbRes = await db
-                  .select()
-                  .from(playerProfiles)
-                  .where(
-                    or(eq(playerProfiles.townId, town.id), eq(playerProfiles.townName, town.name))
-                  );
-                for (const r of dbRes) {
-                  residentsMap.set(r.name.toLowerCase(), {
-                    name: r.name,
-                    displayName: r.displayName || r.name,
-                    rank: r.rank || 'PLAYER',
-                    isOnline: false,
-                    lastSeen: r.lastSeen,
-                    isMayor:
-                      r.name?.toLowerCase() === mayorName.toLowerCase() ||
-                      r.uuid?.toLowerCase() === mayorUuid.toLowerCase(),
-                  });
-                }
-              } catch {
-                // ignore DB query error
-              }
+          try {
+            if (!i.deferred && !i.replied) {
+              await i.deferUpdate().catch(() => {});
             }
 
-            // 2. Query Live Online Players Cache
-            const playersCache = await getPlayersCache();
-            const onlineList = Array.isArray(playersCache?.players) ? playersCache.players : [];
-            for (const p of onlineList) {
-              if (
-                p.town?.id === town.id ||
-                p.town?.name?.toLowerCase() === town.name.toLowerCase()
-              ) {
-                const existing = residentsMap.get(p.name.toLowerCase()) || {};
-                residentsMap.set(p.name.toLowerCase(), {
-                  ...existing,
-                  name: p.name,
-                  displayName: p.displayName || p.name,
-                  rank: p.rank || 'PLAYER',
-                  isOnline: true,
-                  location: p.location,
-                  chatChannel: p.chatChannel,
-                  isMayor:
-                    p.name?.toLowerCase() === mayorName.toLowerCase() ||
-                    p.uuid?.toLowerCase() === mayorUuid.toLowerCase(),
-                });
-              }
-            }
-
-            // 3. Include Mayor if not in map yet
-            if (
-              mayorName &&
-              mayorName !== 'Unknown' &&
-              !residentsMap.has(mayorName.toLowerCase())
-            ) {
-              residentsMap.set(mayorName.toLowerCase(), {
-                name: mayorName,
-                displayName: mayorName,
-                rank: 'MAYOR',
-                isOnline: false,
-                isMayor: true,
+            // ── Action: Back to Town Main Info ───────────────────────────
+            if (i.customId === 'towny_btn_town_info') {
+              return interaction.editReply({
+                embeds: [embed],
+                files: chartFile ? [chartFile] : [],
+                components: navRow ? [navRow] : [],
               });
             }
 
-            const allResidents = Array.from(residentsMap.values());
-            // Sort: Mayor first, then online, then offline
-            allResidents.sort((a, b) => {
-              if (a.isMayor) return -1;
-              if (b.isMayor) return 1;
-              if (a.isOnline && !b.isOnline) return -1;
-              if (!a.isOnline && b.isOnline) return 1;
-              return a.name.localeCompare(b.name);
-            });
+            // ── Action: View Residents List ──────────────────────────────
+            if (
+              i.customId.startsWith('towny_btn_residents_') ||
+              i.customId.startsWith('towny_res_page_')
+            ) {
+              if (i.customId.startsWith('towny_res_page_prev')) residentPage--;
+              if (i.customId.startsWith('towny_res_page_next')) residentPage++;
 
-            const pageSize = 8;
-            const totalResPages = Math.ceil(allResidents.length / pageSize) || 1;
-            if (residentPage < 0) residentPage = 0;
-            if (residentPage >= totalResPages) residentPage = totalResPages - 1;
+              const residentsMap = new Map();
 
-            const pageItems = allResidents.slice(
-              residentPage * pageSize,
-              (residentPage + 1) * pageSize
-            );
-
-            const residentLines = pageItems.map((r, idx) => {
-              const num = residentPage * pageSize + idx + 1;
-              const mayorBadge = r.isMayor ? ' 👑 **[MAYOR]**' : '';
-              const rankTag = r.rank ? ` \`[${r.rank}]\`` : '';
-              const dispStr =
-                r.displayName && r.displayName !== r.name ? ` (*${r.displayName}*)` : '';
-
-              if (r.isOnline) {
-                const locStr = r.location?.world
-                  ? ` — 📍 \`${r.location.world}\` (${Math.round(r.location.x ?? 0)}, ${Math.round(r.location.y ?? 0)}, ${Math.round(r.location.z ?? 0)})`
-                  : '';
-                return `**${num}.** 🟢 **\`${r.name}\`**${dispStr}${mayorBadge}${rankTag}${locStr}`;
+              // 1. Query DB player_profiles for residents recorded in this town
+              if (db) {
+                try {
+                  const dbRes = await db
+                    .select()
+                    .from(playerProfiles)
+                    .where(
+                      or(eq(playerProfiles.townId, town.id), eq(playerProfiles.townName, town.name))
+                    );
+                  for (const r of dbRes) {
+                    residentsMap.set(r.name.toLowerCase(), {
+                      name: r.name,
+                      displayName: r.displayName || r.name,
+                      rank: r.rank || 'PLAYER',
+                      isOnline: false,
+                      lastSeen: r.lastSeen,
+                      isMayor:
+                        r.name?.toLowerCase() === mayorName.toLowerCase() ||
+                        r.uuid?.toLowerCase() === mayorUuid.toLowerCase(),
+                    });
+                  }
+                } catch {
+                  // ignore DB query error
+                }
               }
 
-              const lastSeenTs = r.lastSeen
-                ? Math.floor(new Date(r.lastSeen).getTime() / 1000)
-                : null;
-              const timeStr = lastSeenTs ? ` (Last seen <t:${lastSeenTs}:R>)` : '';
-              return `**${num}.** ⚪ **\`${r.name}\`**${dispStr}${mayorBadge}${rankTag}${timeStr}`;
-            });
+              // 2. Query Live Online Players Cache
+              const playersCache = await getPlayersCache();
+              const onlineList = Array.isArray(playersCache?.players) ? playersCache.players : [];
+              for (const p of onlineList) {
+                if (
+                  p.town?.id === town.id ||
+                  p.town?.name?.toLowerCase() === town.name.toLowerCase()
+                ) {
+                  const existing = residentsMap.get(p.name.toLowerCase()) || {};
+                  residentsMap.set(p.name.toLowerCase(), {
+                    ...existing,
+                    name: p.name,
+                    displayName: p.displayName || p.name,
+                    rank: p.rank || 'PLAYER',
+                    isOnline: true,
+                    location: p.location,
+                    chatChannel: p.chatChannel,
+                    isMayor:
+                      p.name?.toLowerCase() === mayorName.toLowerCase() ||
+                      p.uuid?.toLowerCase() === mayorUuid.toLowerCase(),
+                  });
+                }
+              }
 
-            const resEmbed = createBaseEmbed()
-              .setColor(EMBED_COLORS.CYBER)
-              .setTitle(
-                `👥 Residents Directory: ${formattedName} (Page ${residentPage + 1}/${totalResPages})`
-              )
-              .setDescription(
-                `Showing **${allResidents.length}** recorded resident(s) for town **${formattedName}**.\n\n` +
-                  (residentLines.length > 0
-                    ? residentLines.join('\n')
-                    : 'No resident telemetry recorded yet.')
+              // 3. Include Mayor if not in map yet
+              if (
+                mayorName &&
+                mayorName !== 'Unknown' &&
+                !residentsMap.has(mayorName.toLowerCase())
+              ) {
+                residentsMap.set(mayorName.toLowerCase(), {
+                  name: mayorName,
+                  displayName: mayorName,
+                  rank: 'MAYOR',
+                  isOnline: false,
+                  isMayor: true,
+                });
+              }
+
+              const allResidents = Array.from(residentsMap.values());
+              // Sort: Mayor first, then online, then offline
+              allResidents.sort((a, b) => {
+                if (a.isMayor) return -1;
+                if (b.isMayor) return 1;
+                if (a.isOnline && !b.isOnline) return -1;
+                if (!a.isOnline && b.isOnline) return 1;
+                return a.name.localeCompare(b.name);
+              });
+
+              const pageSize = 8;
+              const totalResPages = Math.ceil(allResidents.length / pageSize) || 1;
+              if (residentPage < 0) residentPage = 0;
+              if (residentPage >= totalResPages) residentPage = totalResPages - 1;
+
+              const pageItems = allResidents.slice(
+                residentPage * pageSize,
+                (residentPage + 1) * pageSize
               );
 
-            const navRow = new ActionRowBuilder().addComponents(
-              new ButtonBuilder()
-                .setCustomId('towny_res_page_prev')
-                .setLabel('◀ Prev')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(residentPage === 0),
-              new ButtonBuilder()
-                .setCustomId('towny_res_page_indicator')
-                .setLabel(`Page ${residentPage + 1} of ${totalResPages}`)
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(true),
-              new ButtonBuilder()
-                .setCustomId('towny_res_page_next')
-                .setLabel('Next ▶')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(residentPage >= totalResPages - 1),
-              new ButtonBuilder()
-                .setCustomId('towny_btn_town_info')
-                .setLabel('🏠 Town Overview')
-                .setStyle(ButtonStyle.Primary)
-            );
+              const residentLines = pageItems.map((r, idx) => {
+                const num = residentPage * pageSize + idx + 1;
+                const mayorBadge = r.isMayor ? ' 👑 **[MAYOR]**' : '';
+                const rankTag = r.rank ? ` \`[${r.rank}]\`` : '';
+                const dispStr =
+                  r.displayName && r.displayName !== r.name ? ` (*${r.displayName}*)` : '';
 
-            await interaction.editReply({
-              embeds: [resEmbed],
-              files: [],
-              components: [navRow],
-            });
-          }
+                if (r.isOnline) {
+                  const locStr = r.location?.world
+                    ? ` — 📍 \`${r.location.world}\` (${Math.round(r.location.x ?? 0)}, ${Math.round(r.location.y ?? 0)}, ${Math.round(r.location.z ?? 0)})`
+                    : '';
+                  return `**${num}.** 🟢 **\`${r.name}\`**${dispStr}${mayorBadge}${rankTag}${locStr}`;
+                }
 
-          // ── Action: View Nation ────────────────────────────────────────
-          if (i.customId.startsWith('towny_btn_nation_')) {
-            const nSlug = i.customId.replace('towny_btn_nation_', '');
-            const nationsList = Array.isArray(data.nations) ? data.nations : [];
-            const targetNation = nationsList.find(
-              (n) =>
-                n?.slug?.toLowerCase() === nSlug.toLowerCase() ||
-                n?.name?.toLowerCase() === nSlug.toLowerCase()
-            );
+                const lastSeenTs = r.lastSeen
+                  ? Math.floor(new Date(r.lastSeen).getTime() / 1000)
+                  : null;
+                const timeStr = lastSeenTs ? ` (Last seen <t:${lastSeenTs}:R>)` : '';
+                return `**${num}.** ⚪ **\`${r.name}\`**${dispStr}${mayorBadge}${rankTag}${timeStr}`;
+              });
 
-            if (targetNation) {
-              const nKing = targetNation.king || {};
-              const nCap = targetNation.capital || {};
-              const nFmtName = targetNation.name ? targetNation.name.replace(/_/g, ' ') : nSlug;
-
-              const nationEmbed = createBaseEmbed()
+              const resEmbed = createBaseEmbed()
                 .setColor(EMBED_COLORS.CYBER)
-                .setTitle(`🏳️ Nation Profile: ${nFmtName}`)
-                .setDescription(`Detailed profile telemetry for nation **${nFmtName}**.`)
-                .addFields(
-                  {
-                    name: '👑 Leadership & Capital',
-                    value: `• **King:** \`${nKing.name || 'Unknown'}\`\n• **Capital:** \`${nCap.name ? nCap.name.replace(/_/g, ' ') : 'N/A'}\``,
-                    inline: true,
-                  },
-                  {
-                    name: '📊 Coverage & Population',
-                    value: `• **Member Towns:** \`${targetNation.towns ?? 0}\`\n• **Online Residents:** \`${targetNation.onlineResidents ?? 0}\`\n• **Total Residents:** \`${targetNation.residents ?? 0}\``,
-                    inline: true,
-                  }
+                .setTitle(
+                  `👥 Residents Directory: ${formattedName} (Page ${residentPage + 1}/${totalResPages})`
+                )
+                .setDescription(
+                  `Showing **${allResidents.length}** recorded resident(s) for town **${formattedName}**.\n\n` +
+                    (residentLines.length > 0
+                      ? residentLines.join('\n')
+                      : 'No resident telemetry recorded yet.')
                 );
 
-              const backRow = new ActionRowBuilder().addComponents(
+              const navRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                  .setCustomId('towny_res_page_prev')
+                  .setLabel('◀ Prev')
+                  .setStyle(ButtonStyle.Secondary)
+                  .setDisabled(residentPage === 0),
+                new ButtonBuilder()
+                  .setCustomId('towny_res_page_indicator')
+                  .setLabel(`Page ${residentPage + 1} of ${totalResPages}`)
+                  .setStyle(ButtonStyle.Secondary)
+                  .setDisabled(true),
+                new ButtonBuilder()
+                  .setCustomId('towny_res_page_next')
+                  .setLabel('Next ▶')
+                  .setStyle(ButtonStyle.Secondary)
+                  .setDisabled(residentPage >= totalResPages - 1),
                 new ButtonBuilder()
                   .setCustomId('towny_btn_town_info')
-                  .setLabel('🏠 Back to Town Profile')
+                  .setLabel('🏠 Town Overview')
                   .setStyle(ButtonStyle.Primary)
               );
 
               await interaction.editReply({
-                embeds: [nationEmbed],
+                embeds: [resEmbed],
                 files: [],
-                components: [backRow],
+                components: [navRow],
               });
             }
+
+            // ── Action: View Nation ────────────────────────────────────────
+            if (i.customId.startsWith('towny_btn_nation_')) {
+              const nSlug = i.customId.replace('towny_btn_nation_', '');
+              const nationsList = Array.isArray(data.nations) ? data.nations : [];
+              const targetNation = nationsList.find(
+                (n) =>
+                  n?.slug?.toLowerCase() === nSlug.toLowerCase() ||
+                  n?.name?.toLowerCase() === nSlug.toLowerCase()
+              );
+
+              if (targetNation) {
+                const nKing = targetNation.king || {};
+                const nCap = targetNation.capital || {};
+                const nFmtName = targetNation.name ? targetNation.name.replace(/_/g, ' ') : nSlug;
+
+                const nationEmbed = createBaseEmbed()
+                  .setColor(EMBED_COLORS.CYBER)
+                  .setTitle(`🏳️ Nation Profile: ${nFmtName}`)
+                  .setDescription(`Detailed profile telemetry for nation **${nFmtName}**.`)
+                  .addFields(
+                    {
+                      name: '👑 Leadership & Capital',
+                      value: `• **King:** \`${nKing.name || 'Unknown'}\`\n• **Capital:** \`${nCap.name ? nCap.name.replace(/_/g, ' ') : 'N/A'}\``,
+                      inline: true,
+                    },
+                    {
+                      name: '📊 Coverage & Population',
+                      value: `• **Member Towns:** \`${targetNation.towns ?? 0}\`\n• **Online Residents:** \`${targetNation.onlineResidents ?? 0}\`\n• **Total Residents:** \`${targetNation.residents ?? 0}\``,
+                      inline: true,
+                    }
+                  );
+
+                const backRow = new ActionRowBuilder().addComponents(
+                  new ButtonBuilder()
+                    .setCustomId('towny_btn_town_info')
+                    .setLabel('🏠 Back to Town Profile')
+                    .setStyle(ButtonStyle.Primary)
+                );
+
+                await interaction.editReply({
+                  embeds: [nationEmbed],
+                  files: [],
+                  components: [backRow],
+                });
+              }
+            }
+          } catch (err) {
+            logger.error(`Towny collector error: ${err.message}`);
           }
         });
       }
@@ -921,9 +923,17 @@ module.exports = {
         }
       }
 
+      const { createNationNavRow } = require('../../utils/discordNavHelper.js');
+      const navRow = createNationNavRow(
+        nation.name,
+        kingName !== 'Unknown' ? kingName : null,
+        capital.name || null
+      );
+
       return interaction.editReply({
         embeds: [embed],
         files: chartFile ? [chartFile] : [],
+        components: navRow ? [navRow] : [],
       });
     }
 
