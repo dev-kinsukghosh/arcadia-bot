@@ -1026,3 +1026,10 @@ The following rules MUST be followed at all times:
   - Integrated Non-Expiring Interaction Routing (`src/events/interactionCreate.js`): Programmed button interaction routing for `nav_` and `player_view_` custom IDs directly inside the global `interactionCreate` event listener. Allows users to click navigation buttons across `/towny`, `/players`, `/shops`, `/events`, and `/wars` indefinitely without relying on short-lived message collectors.
   - Attached ActionRow Navigation Buttons across Discord Commands (`src/commands/general/towny.js`, `src/commands/general/players.js`, `src/commands/general/shops.js`): Appended interactive navigation action rows to slash command responses, enabling instant seamless cross-referencing between Towns, Nations, Players, and Player Shops directly in Discord.
   - Resolved `InteractionCollector` Double-Deferral Conflict (`src/commands/general/towny.js`): Fixed `DiscordAPIError[40060]: Interaction has already been acknowledged` and `DiscordAPIError[10062]: Unknown interaction` exceptions. Added custom ID filtering (`!i.customId.startsWith('towny_btn_')`) and `if (!i.deferred && !i.replied)` checks in `towny.js` collector, allowing `interactionCreate.js` to process global `nav_` buttons cleanly without double-deferral conflicts or unhandled promise rejections.
+
+### 11-09-2026
+
+- **Database Migration & Pipeline Deployment Trigger**:
+  - Executed safe database migration (`npm run db:migrate:safe`) to ensure Drizzle ORM schema is up to date after database backup rollback.
+  - Created and pushed trigger commit (`chore: trigger deployment pipeline`) to `origin/main` to launch the automated CI/CD deployment pipeline.
+
