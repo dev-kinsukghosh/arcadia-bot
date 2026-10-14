@@ -96,38 +96,38 @@ async function main() {
     logger.error('Failed to load slash commands:', err);
   }
 
-  // const serviceis = process.argv.includes('--noservices');
-  // // 3. Start background sync services
-  // if (!serviceis) {
-  //   logger.info('Starting background sync services');
-  //   const services = [
-  //     { name: 'ConvoySync', path: './src/services/convoySync.js', fnName: 'startConvoySync' },
-  //     { name: 'CurrencySync', path: './src/services/currencySync.js', fnName: 'startCurrencySync' },
-  //     { name: 'HeadsSync', path: './src/services/headManager.js', fnName: 'startHeadsSync' },
-  //     { name: 'ShopsSync', path: './src/services/shopsSync.js', fnName: 'startShopsSync' },
-  //     { name: 'TownySync', path: './src/services/townySync.js', fnName: 'startTownySync' },
-  //     {
-  //       name: 'EmptyEndpointsSync',
-  //       path: './src/services/emptyEndpointsSync.js',
-  //       fnName: 'startEmptyEndpointsSync',
-  //     },
-  //     { name: 'PlayerSync', path: './src/services/playerSync.js', fnName: 'startPlayerSync' },
-  //   ];
+  const serviceis = process.argv.includes('--noservices');
+  // 3. Start background sync services
+  if (!serviceis) {
+    logger.info('Starting background sync services');
+    const services = [
+      { name: 'ConvoySync', path: './src/services/convoySync.js', fnName: 'startConvoySync' },
+      { name: 'CurrencySync', path: './src/services/currencySync.js', fnName: 'startCurrencySync' },
+      { name: 'HeadsSync', path: './src/services/headManager.js', fnName: 'startHeadsSync' },
+      { name: 'ShopsSync', path: './src/services/shopsSync.js', fnName: 'startShopsSync' },
+      { name: 'TownySync', path: './src/services/townySync.js', fnName: 'startTownySync' },
+      {
+        name: 'EmptyEndpointsSync',
+        path: './src/services/emptyEndpointsSync.js',
+        fnName: 'startEmptyEndpointsSync',
+      },
+      { name: 'PlayerSync', path: './src/services/playerSync.js', fnName: 'startPlayerSync' },
+    ];
 
-  //   for (const service of services) {
-  //     try {
-  //       const mod = require(service.path);
-  //       if (typeof mod[service.fnName] === 'function') {
-  //         mod[service.fnName](client);
-  //       }
-  //     } catch (err) {
-  //       logger.error(`Error starting ${service.name}:`, err);
-  //       reportError(err, `Service Startup: ${service.name} failed to start.`);
-  //     }
-  //   }
-  // } else {
-  //   logger.info('Background sync services are disabled no service flag triggered.');
-  // }
+    for (const service of services) {
+      try {
+        const mod = require(service.path);
+        if (typeof mod[service.fnName] === 'function') {
+          mod[service.fnName](client);
+        }
+      } catch (err) {
+        logger.error(`Error starting ${service.name}:`, err);
+        reportError(err, `Service Startup: ${service.name} failed to start.`);
+      }
+    }
+  } else {
+    logger.info('Background sync services are disabled no service flag triggered.');
+  }
 
   // 4. Start Express Webserver for Dashboard API
   const isBotOnly = process.argv.includes('--bot-only');
