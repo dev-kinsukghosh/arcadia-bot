@@ -124,6 +124,7 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── devConfigHelper.js
 │       ├── discordNavHelper.js
 │       ├── discordNavRouter.js
+│       ├── discordNavState.js
 │       ├── emojiCache.js
 │       ├── embedHelper.js
 │       ├── emitter.js
@@ -146,11 +147,17 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── database.test.js
 │   ├── notify.test.js
 │   ├── options.test.js
-│   └── shops.test.js
+│   ├── redis.test.js
+│   ├── shops.test.js
+│   ├── sql.test.js
+│   ├── suggestFeedback.test.js
+│   └── towny.test.js
 ├── .env
 ├── .env.example
 ├── .dockerignore
 ├── .gitignore
+├── .nvmrc
+├── .node-version
 ├── Dockerfile
 ├── drizzle.config.js
 ├── eslint.config.js
@@ -175,7 +182,9 @@ This file serves as a reference guide for the directory structure and file respo
 - [package.json](./package.json): Workspace script targets (`npm start`, `npm run dev`, `npm run deploy`, `npm run lint`, etc.) and dependencies listing.
 - [.env.example](./.env.example): Template configuration containing environment variable keys.
 - [.dockerignore](./.dockerignore): Excludes non-essential files (node_modules, tests, docs, logs, git) from Docker build context.
-- [Dockerfile](./Dockerfile): Multi-stage production Docker image — installs only production deps in a slim Node 22 base with a non-root user.
+- [.nvmrc](./.nvmrc): Specifies Node.js version 24 for Node Version Manager.
+- [.node-version](./.node-version): Specifies Node.js version 24 for tools like fnm, asdf, and mise.
+- [Dockerfile](./Dockerfile): Multi-stage production Docker image — installs only production deps in a slim Node 24 base with a non-root user.
 - [Api.enpoints.md](./Api.enpoints.md): API endpoint mapping documentation for the ArcadiaMC server.
 - [fs.md](./fs.md): _(This file)_ File system reference guide.
 - [GEMINI.md](./GEMINI.md): Development rule book, project context, and daily change-log repository.
@@ -297,6 +306,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/devConfigHelper.js](./src/utils/devConfigHelper.js): Manages memory caching and persistence for developer configurations (`webyCustom`).
   - [src/utils/discordNavHelper.js](./src/utils/discordNavHelper.js): Helper module constructing Discord ActionRow navigation button rows with web dashboard deep links.
   - [src/utils/discordNavRouter.js](./src/utils/discordNavRouter.js): Navigation router module fetching telemetry and rendering interactive embeds for Town, Nation, Player, and Shop navigation buttons.
+  - [src/utils/discordNavState.js](./src/utils/discordNavState.js): In-memory LRU cache session and stack manager for breadcrumb button navigation history and command invoker ownership validation.
   - [src/utils/emojiCache.js](./src/utils/emojiCache.js): Manages in-memory caching of application custom emojis.
   - [src/utils/embedHelper.js](./src/utils/embedHelper.js): Central helper module to build styled, uniform Discord embeds.
   - [src/utils/emitter.js](./src/utils/emitter.js): Central EventEmitter instance for cross-module real-time communications.
@@ -318,8 +328,10 @@ This file serves as a reference guide for the directory structure and file respo
   - [tests/heads.test.js](./tests/heads.test.js): Integration tests for player heads downloading, caching and cron updates.
   - [tests/notify.test.js](./tests/notify.test.js): Integration tests for item stock notifications table mapping.
   - [tests/options.test.js](./tests/options.test.js): Integration tests for guild custom options toggles and memory cache synchronization.
+  - [tests/redis.test.js](./tests/redis.test.js): Redis database checker testing connection latency, String lifecycle (SET/GET/TTL/DEL), Hash operations, and MessagePack binary serialization.
   - [tests/shops.test.js](./tests/shops.test.js): Integration tests for player shops database query mappings, sync scheduler, and 25-minute TTL cache.
+  - [tests/sql.test.js](./tests/sql.test.js): MySQL/Drizzle database checker testing pool initialization, ping latency, server metadata, and CRUD operations on internal table.
   - [tests/suggestFeedback.test.js](./tests/suggestFeedback.test.js): Unit tests for suggestion and feedback channel getters, automation fallbacks, and payload JSON formatting.
-
+  - [tests/towny.test.js](./tests/towny.test.js): Integration tests for towny sync, history snapshots, and database mappings.
   - [tests/api.test.js](./tests/api.test.js): Connection verification and response validation test for the ArcadiaMC API endpoints.
   - [tests/database.test.js](./tests/database.test.js): Direct query health validation for Drizzle ORM and MySQL tables.

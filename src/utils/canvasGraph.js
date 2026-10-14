@@ -142,9 +142,45 @@ function drawTopChart(labels, values, title, subtitle, valueSuffix = '') {
  * @param {string} title - Comparison header
  * @returns {Buffer} - PNG buffer
  */
+/**
+ * Truncates and draws text safely within maxWidth
+ */
+function drawFittedText(
+  ctx,
+  text,
+  x,
+  y,
+  maxWidth,
+  baseSize = 14,
+  weight = 'bold',
+  family = 'sans-serif'
+) {
+  let size = baseSize;
+  ctx.font = `${weight} ${size}px ${family}`;
+  while (ctx.measureText(text).width > maxWidth && size > 9) {
+    size -= 1;
+    ctx.font = `${weight} ${size}px ${family}`;
+  }
+  let rendered = text;
+  if (ctx.measureText(rendered).width > maxWidth) {
+    while (rendered.length > 2 && ctx.measureText(rendered + '…').width > maxWidth) {
+      rendered = rendered.slice(0, -1);
+    }
+    rendered = rendered + '…';
+  }
+  ctx.fillText(rendered, x, y);
+}
+
+/**
+ * Renders a side-by-side comparative card for two entities (Towns / Nations)
+ * @param {Object} item1 - Telemetry for item 1
+ * @param {Object} item2 - Telemetry for item 2
+ * @param {string} title - Comparison header
+ * @returns {Buffer} - PNG buffer
+ */
 function drawCompareChart(item1, item2, title) {
-  const width = 750;
-  const height = 420;
+  const width = 800;
+  const height = 430;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
@@ -159,162 +195,231 @@ function drawCompareChart(item1, item2, title) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, width, height);
 
-  // Border border highlight
+  // Border highlight
   ctx.strokeStyle = '#1e293b';
   ctx.lineWidth = 1;
   ctx.strokeRect(0, 0, width, height);
 
-  // Header Title
+  // Header Title (safely fitted so it never overflows)
   ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 20px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(title, width / 2, 45);
+  drawFittedText(ctx, title, width / 2, 42, width - 80, 20, 'bold', 'sans-serif');
 
   ctx.strokeStyle = 'rgba(30, 41, 59, 0.7)';
   ctx.beginPath();
-  ctx.moveTo(40, 65);
-  ctx.lineTo(width - 40, 65);
+  ctx.moveTo(35, 62);
+  ctx.lineTo(width - 35, 62);
   ctx.stroke();
 
   // Panels layout
-  const panelW = 220;
-  const panelH = 300;
-  const middleW = width - panelW * 2 - 80;
-
-  const yStart = 85;
+  const panelW = 230;
+  const panelH = 310;
+  const yStart = 80;
 
   // Helper to draw item panel
   const drawPanel = (x, item, isLeft) => {
     // Card background
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
     ctx.beginPath();
     ctx.roundRect(x, yStart, panelW, panelH, 12);
     ctx.fill();
 
+    // Subtle gradient header inside card
+    const cardHeaderGrad = ctx.createLinearGradient(x, yStart, x, yStart + 90);
+    cardHeaderGrad.addColorStop(
+      0,
+      isLeft ? 'rgba(59, 130, 246, 0.18)' : 'rgba(16, 185, 129, 0.18)'
+    );
+    cardHeaderGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+    ctx.fillStyle = cardHeaderGrad;
+    ctx.beginPath();
+    ctx.roundRect(x, yStart, panelW, 90, [12, 12, 0, 0]);
+    ctx.fill();
+
     ctx.strokeStyle = isLeft ? '#3b82f6' : '#10b981';
     ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x, yStart, panelW, panelH, 12);
     ctx.stroke();
 
-    // Name
-    ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 16px sans-serif';
+    // Badge tag (TOWN 1 / TOWN 2)
+    ctx.fillStyle = isLeft ? '#60a5fa' : '#34d399';
+    ctx.font = 'bold 10px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(item.name.replace(/_/g, ' '), x + panelW / 2, yStart + 35);
+    ctx.fillText(isLeft ? 'TOWN 1' : 'TOWN 2', x + panelW / 2, yStart + 22);
 
-    // Leader label
+    // Name (auto-fitted)
+    ctx.fillStyle = '#f8fafc';
+    ctx.textAlign = 'center';
+    drawFittedText(
+      ctx,
+      String(item.name || 'Unknown').replace(/_/g, ' '),
+      x + panelW / 2,
+      yStart + 45,
+      panelW - 24,
+      17,
+      'bold',
+      'sans-serif'
+    );
+
+    // Leader title
     ctx.fillStyle = '#64748b';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(item.leaderTitle || 'Mayor', x + panelW / 2, yStart + 60);
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText(
+      (item.leaderTitle || 'MAYOR').toUpperCase(),
+      x + panelW / 2,
+      yStart + 66
+    );
 
-    // Leader name
+    // Leader name (auto-fitted)
     ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(item.leaderName || 'Unknown', x + panelW / 2, yStart + 76);
+    ctx.textAlign = 'center';
+    drawFittedText(
+      ctx,
+      String(item.leaderName || 'Unknown'),
+      x + panelW / 2,
+      yStart + 83,
+      panelW - 24,
+      13,
+      'bold',
+      'sans-serif'
+    );
 
-    // Sub-stats
+    // Separator line
+    ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+    ctx.beginPath();
+    ctx.moveTo(x + 20, yStart + 98);
+    ctx.lineTo(x + panelW - 20, yStart + 98);
+    ctx.stroke();
+
+    // Sub-stats helper
     const drawSubStat = (yOffset, icon, label, val) => {
-      ctx.fillStyle = '#475569';
-      ctx.font = '10px sans-serif';
-      ctx.fillText(label, x + panelW / 2, yOffset);
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${icon} ${label}`, x + panelW / 2, yOffset);
 
-      ctx.fillStyle = '#f1f5f9';
-      ctx.font = 'bold 15px monospace';
-      ctx.fillText(val, x + panelW / 2, yOffset + 18);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText(val, x + panelW / 2, yOffset + 20);
     };
 
-    drawSubStat(yStart + 120, '👥', 'RESIDENTS', formatNumber(item.residents));
-    drawSubStat(yStart + 185, '📦', 'TERRITORY CHUNKS', formatNumber(item.chunks));
+    drawSubStat(yStart + 122, '👥', 'RESIDENTS', formatNumber(item.residents));
+    drawSubStat(yStart + 180, '📦', 'TERRITORY CHUNKS', formatNumber(item.chunks));
 
-    // Status flag
-    ctx.fillStyle = '#475569';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('STATUS', x + panelW / 2, yStart + 245);
+    // Status / Nation flag
+    ctx.fillStyle = '#64748b';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`🚩 ${item.statusTitle || 'NATION'}`, x + panelW / 2, yStart + 238);
 
-    ctx.fillStyle = item.statusColor || '#60a5fa';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(item.status || 'Active', x + panelW / 2, yStart + 262);
+    ctx.fillStyle = item.statusColor || (isLeft ? '#60a5fa' : '#34d399');
+    ctx.textAlign = 'center';
+    drawFittedText(
+      ctx,
+      String(item.status || 'Neutral'),
+      x + panelW / 2,
+      yStart + 258,
+      panelW - 24,
+      12,
+      'bold',
+      'sans-serif'
+    );
   };
 
-  // Draw panels
-  drawPanel(40, item1, true);
-  drawPanel(width - 40 - panelW, item2, false);
+  // Draw Left and Right Panels
+  const leftX = 35;
+  const rightX = width - 35 - panelW;
+  drawPanel(leftX, item1, true);
+  drawPanel(rightX, item2, false);
 
   // Middle comparison section
-  const midX = 40 + panelW;
+  const midCenterX = width / 2;
 
   // Draw VS Circle
-  ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
   ctx.beginPath();
-  ctx.arc(width / 2, yStart + 65, 30, 0, Math.PI * 2);
+  ctx.arc(midCenterX, yStart + 52, 26, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = '#334155';
   ctx.lineWidth = 2;
   ctx.stroke();
 
   ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 18px monospace';
+  ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('VS', width / 2, yStart + 71);
+  ctx.fillText('VS', midCenterX, yStart + 58);
 
-  // Stat comparisons lines
+  // Stat comparisons bars
+  const barW = 210;
+  const barStartX = midCenterX - barW / 2;
+  const barH = 10;
+
   const drawComparisonBar = (y, val1, val2, label) => {
-    ctx.fillStyle = '#64748b';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(label, width / 2, y - 10);
-
-    const barW = middleW - 40;
-    const barStartX = midX + 20;
-    const barH = 10;
-
-    // Background bar
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.roundRect(barStartX, y, barW, barH, 4);
-    ctx.fill();
-
-    // Calculation ratio
-    const sum = val1 + val2 || 1;
-    const splitX = barStartX + (val1 / sum) * barW;
-
-    // Left fill (Item 1)
-    if (val1 > 0) {
-      ctx.fillStyle = '#3b82f6';
-      ctx.beginPath();
-      ctx.roundRect(barStartX, y, (val1 / sum) * barW, barH, 4);
-      ctx.fill();
-    }
-
-    // Right fill (Item 2)
-    if (val2 > 0) {
-      ctx.fillStyle = '#10b981';
-      ctx.beginPath();
-      // Draw from split point to end
-      const w2 = (val2 / sum) * barW;
-      ctx.roundRect(splitX, y, w2, barH, 4);
-      ctx.fill();
-    }
-
-    // Values indicators
+    // Header above bar: Left value, Center label, Right value
     ctx.fillStyle = '#60a5fa';
     ctx.font = 'bold 12px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(formatNumber(val1), barStartX - 10, y + 9);
+    ctx.textAlign = 'left';
+    ctx.fillText(formatNumber(val1), barStartX, y - 8);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, midCenterX, y - 8);
 
     ctx.fillStyle = '#34d399';
     ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(formatNumber(val2), barStartX + barW, y - 8);
+
+    // Track background
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect(barStartX, y, barW, barH, 5);
+    ctx.fill();
+
+    // Fill proportions
+    const sum = (Number(val1) || 0) + (Number(val2) || 0);
+    const p1 = sum > 0 ? (Number(val1) || 0) / sum : 0.5;
+    const w1 = Math.round(p1 * barW);
+
+    if (w1 > 0) {
+      ctx.fillStyle = '#3b82f6';
+      ctx.beginPath();
+      // If full bar, round all corners, else round left corners
+      ctx.roundRect(barStartX, y, w1, barH, w1 >= barW ? 5 : [5, 0, 0, 5]);
+      ctx.fill();
+    }
+
+    const w2 = barW - w1;
+    if (w2 > 0) {
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.roundRect(barStartX + w1, y, w2, barH, w2 >= barW ? 5 : [0, 5, 5, 0]);
+      ctx.fill();
+    }
+
+    // Proportions percentage underneath bar
+    const pct1 = Math.round(p1 * 100);
+    const pct2 = 100 - pct1;
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '9px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(formatNumber(val2), barStartX + barW + 10, y + 9);
+    ctx.fillText(`${pct1}%`, barStartX, y + 20);
+
+    ctx.textAlign = 'right';
+    ctx.fillText(`${pct2}%`, barStartX + barW, y + 20);
   };
 
-  drawComparisonBar(yStart + 160, item1.residents, item2.residents, 'POPULATION RATIO');
-  drawComparisonBar(yStart + 230, item1.chunks, item2.chunks, 'TERRITORY SIZE');
+  drawComparisonBar(yStart + 150, item1.residents ?? 0, item2.residents ?? 0, 'POPULATION RATIO');
+  drawComparisonBar(yStart + 225, item1.chunks ?? 0, item2.chunks ?? 0, 'TERRITORY SIZE');
 
   // Footer
   ctx.fillStyle = '#334155';
   ctx.font = '9px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('ARCADIA COMMUNITY MULTI-DATA SYSTEM', width / 2, height - 20);
+  ctx.fillText('ARCADIA COMMUNITY MULTI-DATA SYSTEM', midCenterX, height - 16);
 
   return canvas.toBuffer('image/png');
 }

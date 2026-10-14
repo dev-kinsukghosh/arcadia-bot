@@ -52,6 +52,35 @@ module.exports = {
         customId.startsWith('player_view_') ||
         customId.startsWith('towny_view_')
       ) {
+        const {
+          getNavOwner,
+          pushNavState,
+          popNavState,
+          parseNavCustomId,
+        } = require('../utils/discordNavState.js');
+
+        const parsed = parseNavCustomId(customId);
+        const msgCmdUserId =
+          interaction.message?.interactionMetadata?.user?.id ||
+          interaction.message?.interaction?.user?.id;
+        const cachedOwnerId = getNavOwner(interaction.message?.id);
+        const authorizedUserId = parsed.ownerId || cachedOwnerId || msgCmdUserId;
+
+        // Verify that only the user who created this command embed can interact with it
+        if (authorizedUserId) {
+          if (interaction.user.id !== authorizedUserId) {
+            return interaction.reply({
+              content: '❌ Only the user who ran this command can interact with this embed.',
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+        } else {
+          return interaction.reply({
+            content: '❌ Only the user who ran this command can interact with this embed.',
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+
         try {
           await interaction.deferUpdate().catch(() => {});
 
@@ -59,41 +88,92 @@ module.exports = {
             renderTownView,
             renderNationView,
             renderPlayerView,
+            renderShopView,
+            renderTownPlayersView,
+            renderNationPlayersView,
           } = require('../utils/discordNavRouter.js');
 
           let result = null;
 
-          if (customId.startsWith('nav_player:') || customId.startsWith('player_view_profile_')) {
-            const name = customId.includes(':')
-              ? customId.split(':')[1]
-              : customId.replace('player_view_profile_', '');
-            result = await renderPlayerView(name);
-          } else if (
-            customId.startsWith('nav_town:') ||
-            customId.startsWith('nav_ptown:') ||
-            customId.startsWith('player_view_town_') ||
-            customId.startsWith('towny_view_town_')
-          ) {
-            const name = customId.includes(':')
-              ? customId.split(':')[1]
-              : customId.replace(/^(player_view_town_|towny_view_town_)/, '');
-            result = await renderTownView(name);
-          } else if (
-            customId.startsWith('nav_nation:') ||
-            customId.startsWith('nav_pnation:') ||
-            customId.startsWith('player_view_nation_') ||
-            customId.startsWith('towny_view_nation_')
-          ) {
-            const name = customId.includes(':')
-              ? customId.split(':')[1]
-              : customId.replace(/^(player_view_nation_|towny_view_nation_)/, '');
-            result = await renderNationView(name);
+          if (parsed.action === 'nav_back') {
+            const popResult = popNavState(interaction.message.id);
+            const target = popResult?.target || {
+              type: parsed.targetType,
+              name: parsed.targetName,
+            };
+            const backOption = popResult?.previous || null;
+            const options = { back: backOption, ownerId: authorizedUserId };
+
+            if (target.type === 'player') {
+              result = await renderPlayerView(target.name, options);
+            } else if (target.type === 'town') {
+              result = await renderTownView(target.name, options);
+            } else if (target.type === 'nation') {
+              result = await renderNationView(target.name, options);
+            } else if (target.type === 'shop') {
+              result = await renderShopView(target.name, options);
+            } else if (target.type === 'ptown') {
+              result = await renderTownPlayersView(target.name, options);
+            } else if (target.type === 'pnation') {
+              result = await renderNationPlayersView(target.name, options);
+            }
+          } else {
+            let targetType = parsed.targetType;
+            let targetName = parsed.targetName;
+
+            // Handle legacy player_view_ and towny_view_ prefixes
+            if (customId.startsWith('player_view_profile_')) {
+              targetType = 'player';
+              targetName = customId.replace('player_view_profile_', '');
+            } else if (
+              customId.startsWith('player_view_town_') ||
+              customId.startsWith('towny_view_town_')
+            ) {
+              targetType = 'town';
+              targetName = customId.replace(/^(player_view_town_|towny_view_town_)/, '');
+            } else if (
+              customId.startsWith('player_view_nation_') ||
+              customId.startsWith('towny_view_nation_')
+            ) {
+              targetType = 'nation';
+              targetName = customId.replace(/^(player_view_nation_|towny_view_nation_)/, '');
+            }
+
+            const fromTarget =
+              parsed.fromType && parsed.fromName
+                ? { type: parsed.fromType, name: parsed.fromName }
+                : null;
+
+            const pushResult = pushNavState(
+              interaction.message.id,
+              authorizedUserId,
+              { type: targetType, name: targetName },
+              fromTarget
+            );
+
+            const backTarget = pushResult?.previous || fromTarget || null;
+            const options = { back: backTarget, ownerId: authorizedUserId };
+
+            if (targetType === 'player') {
+              result = await renderPlayerView(targetName, options);
+            } else if (targetType === 'town') {
+              result = await renderTownView(targetName, options);
+            } else if (targetType === 'nation') {
+              result = await renderNationView(targetName, options);
+            } else if (targetType === 'shop') {
+              result = await renderShopView(targetName, options);
+            } else if (targetType === 'ptown') {
+              result = await renderTownPlayersView(targetName, options);
+            } else if (targetType === 'pnation') {
+              result = await renderNationPlayersView(targetName, options);
+            }
           }
 
           if (result) {
             await interaction.editReply({
               embeds: result.embeds,
               components: result.components,
+              files: result.files || [],
             });
           }
         } catch (err) {

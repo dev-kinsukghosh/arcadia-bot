@@ -2,18 +2,26 @@ const { arcadiaApi } = require('./apiClient.js');
 const { getPlayersCache } = require('../services/playerSync.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('./embedHelper.js');
 const { db } = require('./db.js');
-const { playerProfiles } = require('../db/schema.js');
+const { playerProfiles, playerShops } = require('../db/schema.js');
 const { eq, or } = require('drizzle-orm');
+const redisClient = require('./redis.js');
+const { getAppEmojis } = require('./emojiCache.js');
 const {
   createTownNavRow,
   createNationNavRow,
   createPlayerNavRow,
+  createShopNavRow,
 } = require('./discordNavHelper.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
+const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:5173';
 
 /**
  * Renders Town profile embed and navigation row
+ * @param {string} townName
+ * @param {object} [options={}]
  */
-async function renderTownView(townName) {
+async function renderTownView(townName, options = {}) {
   const queryLower = String(townName).toLowerCase().trim();
   const queryClean = queryLower.replace(/_/g, ' ');
 
@@ -117,7 +125,8 @@ async function renderTownView(townName) {
   const navRow = createTownNavRow(
     town.name,
     mayorName !== 'Unknown' ? mayorName : null,
-    nation?.name || null
+    nation?.name || null,
+    options
   );
 
   return {
@@ -128,8 +137,10 @@ async function renderTownView(townName) {
 
 /**
  * Renders Nation profile embed and navigation row
+ * @param {string} nationName
+ * @param {object} [options={}]
  */
-async function renderNationView(nationName) {
+async function renderNationView(nationName, options = {}) {
   const queryLower = String(nationName).toLowerCase().trim();
   const queryClean = queryLower.replace(/_/g, ' ');
 
@@ -191,7 +202,8 @@ async function renderNationView(nationName) {
   const navRow = createNationNavRow(
     nation.name,
     kingName !== 'Unknown' ? kingName : null,
-    capital.name || null
+    capital.name || null,
+    options
   );
 
   return {
@@ -202,8 +214,10 @@ async function renderNationView(nationName) {
 
 /**
  * Renders Player profile embed and navigation row
+ * @param {string} playerName
+ * @param {object} [options={}]
  */
-async function renderPlayerView(playerName) {
+async function renderPlayerView(playerName, options = {}) {
   const query = String(playerName).trim().toLowerCase();
 
   const data = await getPlayersCache().catch(() => null);
@@ -327,7 +341,8 @@ async function renderPlayerView(playerName) {
     name,
     rawTownName && rawTownName !== 'None' ? rawTownName : null,
     rawNationName && rawNationName !== 'None' ? rawNationName : null,
-    true
+    true,
+    options
   );
 
   return {
@@ -336,8 +351,399 @@ async function renderPlayerView(playerName) {
   };
 }
 
+/**
+ * Renders Player Shop profile embed and navigation row
+ * @param {string} ownerOrShopName
+ * @param {object} [options={}]
+ */
+async function renderShopView(ownerOrShopName, options = {}) {
+  const query = String(ownerOrShopName).trim().toLowerCase();
+
+  let shopsList = [];
+  if (redisClient && redisClient.status === 'ready') {
+    try {
+      const cached = await redisClient.get('cache:shops');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.shops)) {
+          shopsList = parsed.shops;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (shopsList.length === 0 && db) {
+    try {
+      shopsList = await db.select().from(playerShops);
+    } catch {
+      // ignore
+    }
+  }
+
+  const shop = shopsList.find((s) => {
+    if (!s) return false;
+    const o = (s.ownerName || s.owner || '').toLowerCase();
+    const n = (s.name || '').toLowerCase();
+    const k = (s.key || '').toLowerCase();
+    return o === query || n === query || k === query;
+  });
+
+  if (!shop) {
+    return {
+      embeds: [
+        errorEmbed(
+          'Shop Not Found',
+          `No player shop found matching \`${ownerOrShopName}\`. The player may not own an active market stall.`
+        ),
+      ],
+      components: [],
+    };
+  }
+
+  const shopName = (shop.name || 'Player Shop').replace(/_/g, ' ');
+  const worldName = shop.world || 'currentarc';
+  const coords = `X: ${shop.plotX ?? 0}, Z: ${shop.plotZ ?? 0}`;
+  const ownerUuid = shop.owner || 'Unknown';
+  const shopCurrency = shop.currency ? shop.currency.toUpperCase() : 'N/A';
+
+  const embed = createBaseEmbed()
+    .setColor(EMBED_COLORS.CYBER)
+    .setTitle(`🛒 Shop Details: ${shopName}`)
+    .setDescription(`Detailed inventory and profile telemetry for player shop **${shopName}**.`)
+    .addFields(
+      {
+        name: 'Profile Metadata',
+        value: `• **Owner:** \`${shop.ownerName || 'Unknown'}\`\n• **Owner UUID:** \`${ownerUuid}\`\n• **Location:** \`${coords}\` in \`${worldName}\`\n• **Primary Currency:** \`${shopCurrency}\``,
+        inline: false,
+      },
+      {
+        name: 'Town Territory',
+        value: `• **Town:** \`${shop.townName || 'Wilderness / None'}\``,
+        inline: true,
+      }
+    );
+
+  const navRow = createShopNavRow(shop.ownerName || shop.owner, shop.townName, options);
+
+  return {
+    embeds: [embed],
+    components: navRow ? [navRow] : [],
+  };
+}
+
+/**
+ * Renders Town Residents roster embed and navigation row
+ * @param {string} townName
+ * @param {object} [options={}]
+ */
+async function renderTownPlayersView(townName, options = {}) {
+  const queryLower = String(townName).toLowerCase().trim();
+  const queryClean = queryLower.replace(/_/g, ' ');
+
+  const data = await arcadiaApi.getTowny().catch(() => null);
+  const towns = Array.isArray(data?.towns) ? data.towns : [];
+  const town = towns.find((t) => {
+    if (!t) return false;
+    const nameLower = t.name ? t.name.toLowerCase() : '';
+    const nameClean = nameLower.replace(/_/g, ' ');
+    return nameLower === queryLower || nameClean === queryClean;
+  });
+
+  if (!town) {
+    return {
+      embeds: [
+        errorEmbed('Town Not Found', `No active town matching \`${townName}\` could be found.`),
+      ],
+      components: [],
+    };
+  }
+
+  const formattedName = town.name ? town.name.replace(/_/g, ' ') : 'Unknown Town';
+  const mayorName = town.mayor?.name || 'Unknown';
+
+  const residentsMap = new Map();
+
+  if (db) {
+    try {
+      const dbRes = await db
+        .select()
+        .from(playerProfiles)
+        .where(or(eq(playerProfiles.townId, town.id), eq(playerProfiles.townName, town.name)));
+      for (const r of dbRes) {
+        residentsMap.set(r.name.toLowerCase(), {
+          name: r.name,
+          displayName: r.displayName || r.name,
+          rank: r.rank || 'PLAYER',
+          isOnline: false,
+          isMayor: r.name?.toLowerCase() === mayorName.toLowerCase(),
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const playersCache = await getPlayersCache();
+  const onlineList = Array.isArray(playersCache?.players) ? playersCache.players : [];
+  for (const p of onlineList) {
+    if (p.town?.id === town.id || p.town?.name?.toLowerCase() === town.name.toLowerCase()) {
+      const existing = residentsMap.get(p.name.toLowerCase()) || {};
+      residentsMap.set(p.name.toLowerCase(), {
+        ...existing,
+        name: p.name,
+        displayName: p.displayName || p.name,
+        rank: p.rank || 'PLAYER',
+        isOnline: true,
+        isMayor: p.name?.toLowerCase() === mayorName.toLowerCase(),
+      });
+    }
+  }
+
+  if (mayorName && mayorName !== 'Unknown' && !residentsMap.has(mayorName.toLowerCase())) {
+    residentsMap.set(mayorName.toLowerCase(), {
+      name: mayorName,
+      displayName: mayorName,
+      rank: 'MAYOR',
+      isOnline: false,
+      isMayor: true,
+    });
+  }
+
+  const allResidents = Array.from(residentsMap.values());
+  allResidents.sort((a, b) => {
+    if (a.isMayor) return -1;
+    if (b.isMayor) return 1;
+    if (a.isOnline && !b.isOnline) return -1;
+    if (!a.isOnline && b.isOnline) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const residentLines = allResidents.slice(0, 15).map((r, idx) => {
+    const mayorBadge = r.isMayor ? ' 👑 **[MAYOR]**' : '';
+    const statusDot = r.isOnline ? '🟢' : '⚪';
+    const nickStr = r.displayName && r.displayName !== r.name ? ` (${r.displayName})` : '';
+    return `\`${idx + 1}.\` ${statusDot} **${r.name}**${nickStr}${mayorBadge} · \`${r.rank}\``;
+  });
+
+  const embed = createBaseEmbed()
+    .setColor(EMBED_COLORS.CYBER)
+    .setTitle(`👥 Residents Directory: ${formattedName}`)
+    .setDescription(
+      `Showing **${allResidents.length}** recorded resident(s) for town **${formattedName}**.\n\n` +
+        (residentLines.length > 0
+          ? residentLines.join('\n')
+          : 'No resident telemetry recorded yet.') +
+        (allResidents.length > 15 ? `\n\n*... and ${allResidents.length - 15} more.*` : '')
+    );
+
+  const row = new ActionRowBuilder();
+  const ownerSuffix = options?.ownerId ? `:u_${options.ownerId}` : '';
+  const currentEncoded = encodeURIComponent(town.name);
+
+  // Back button to Town Overview
+  row.addComponents(
+    new ButtonBuilder()
+      .setCustomId(`nav_town:${currentEncoded}:from_ptown:${currentEncoded}${ownerSuffix}`)
+      .setLabel(`Back: ${formattedName.slice(0, 16)}`)
+      .setEmoji('↩️')
+      .setStyle(ButtonStyle.Secondary)
+  );
+
+  if (mayorName && mayorName !== 'Unknown') {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(
+          `nav_player:${encodeURIComponent(mayorName)}:from_ptown:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`Mayor: ${mayorName.slice(0, 16)}`)
+        .setEmoji('👑')
+        .setStyle(ButtonStyle.Primary)
+    );
+  }
+
+  if (town.nation?.name) {
+    const cleanNation = town.nation.name.replace(/_/g, ' ');
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(
+          `nav_nation:${encodeURIComponent(town.nation.name)}:from_ptown:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`Nation: ${cleanNation.slice(0, 16)}`)
+        .setEmoji('🚩')
+        .setStyle(ButtonStyle.Secondary)
+    );
+  }
+
+  row.addComponents(
+    new ButtonBuilder()
+      .setURL(`${DASHBOARD_URL}/towny?tab=towns&search=${encodeURIComponent(town.name)}`)
+      .setLabel('Web Dashboard')
+      .setEmoji('🌐')
+      .setStyle(ButtonStyle.Link)
+  );
+
+  return {
+    embeds: [embed],
+    components: [row],
+  };
+}
+
+/**
+ * Renders Nation Residents roster embed and navigation row
+ * @param {string} nationName
+ * @param {object} [options={}]
+ */
+async function renderNationPlayersView(nationName, options = {}) {
+  const queryLower = String(nationName).toLowerCase().trim();
+  const queryClean = queryLower.replace(/_/g, ' ');
+
+  const data = await arcadiaApi.getTowny().catch(() => null);
+  const nations = Array.isArray(data?.nations) ? data.nations : [];
+  const nation = nations.find((n) => {
+    if (!n) return false;
+    const nameLower = n.name ? n.name.toLowerCase() : '';
+    const nameClean = nameLower.replace(/_/g, ' ');
+    return nameLower === queryLower || nameClean === queryClean;
+  });
+
+  if (!nation) {
+    return {
+      embeds: [
+        errorEmbed(
+          'Nation Not Found',
+          `No active nation matching \`${nationName}\` could be found.`
+        ),
+      ],
+      components: [],
+    };
+  }
+
+  const formattedName = nation.name ? nation.name.replace(/_/g, ' ') : 'Unknown Nation';
+  const kingName = nation.king?.name || 'Unknown';
+
+  const residentsMap = new Map();
+
+  if (db) {
+    try {
+      const dbRes = await db
+        .select()
+        .from(playerProfiles)
+        .where(
+          or(eq(playerProfiles.nationId, nation.id), eq(playerProfiles.nationName, nation.name))
+        );
+      for (const r of dbRes) {
+        residentsMap.set(r.name.toLowerCase(), {
+          name: r.name,
+          displayName: r.displayName || r.name,
+          rank: r.rank || 'PLAYER',
+          isOnline: false,
+          isKing: r.name?.toLowerCase() === kingName.toLowerCase(),
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const playersCache = await getPlayersCache();
+  const onlineList = Array.isArray(playersCache?.players) ? playersCache.players : [];
+  for (const p of onlineList) {
+    if (p.nation?.id === nation.id || p.nation?.name?.toLowerCase() === nation.name.toLowerCase()) {
+      const existing = residentsMap.get(p.name.toLowerCase()) || {};
+      residentsMap.set(p.name.toLowerCase(), {
+        ...existing,
+        name: p.name,
+        displayName: p.displayName || p.name,
+        rank: p.rank || 'PLAYER',
+        isOnline: true,
+        isKing: p.name?.toLowerCase() === kingName.toLowerCase(),
+      });
+    }
+  }
+
+  if (kingName && kingName !== 'Unknown' && !residentsMap.has(kingName.toLowerCase())) {
+    residentsMap.set(kingName.toLowerCase(), {
+      name: kingName,
+      displayName: kingName,
+      rank: 'KING',
+      isOnline: false,
+      isKing: true,
+    });
+  }
+
+  const allResidents = Array.from(residentsMap.values());
+  allResidents.sort((a, b) => {
+    if (a.isKing) return -1;
+    if (b.isKing) return 1;
+    if (a.isOnline && !b.isOnline) return -1;
+    if (!a.isOnline && b.isOnline) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const residentLines = allResidents.slice(0, 15).map((r, idx) => {
+    const kingBadge = r.isKing ? ' 👑 **[KING]**' : '';
+    const statusDot = r.isOnline ? '🟢' : '⚪';
+    const nickStr = r.displayName && r.displayName !== r.name ? ` (${r.displayName})` : '';
+    return `\`${idx + 1}.\` ${statusDot} **${r.name}**${nickStr}${kingBadge} · \`${r.rank}\``;
+  });
+
+  const embed = createBaseEmbed()
+    .setColor(EMBED_COLORS.CYBER)
+    .setTitle(`👥 Nation Residents: ${formattedName}`)
+    .setDescription(
+      `Showing **${allResidents.length}** recorded resident(s) across federation **${formattedName}**.\n\n` +
+        (residentLines.length > 0
+          ? residentLines.join('\n')
+          : 'No resident telemetry recorded yet.') +
+        (allResidents.length > 15 ? `\n\n*... and ${allResidents.length - 15} more.*` : '')
+    );
+
+  const row = new ActionRowBuilder();
+  const ownerSuffix = options?.ownerId ? `:u_${options.ownerId}` : '';
+  const currentEncoded = encodeURIComponent(nation.name);
+
+  // Back button to Nation Overview
+  row.addComponents(
+    new ButtonBuilder()
+      .setCustomId(`nav_nation:${currentEncoded}:from_pnation:${currentEncoded}${ownerSuffix}`)
+      .setLabel(`Back: ${formattedName.slice(0, 16)}`)
+      .setEmoji('↩️')
+      .setStyle(ButtonStyle.Secondary)
+  );
+
+  if (kingName && kingName !== 'Unknown') {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(
+          `nav_player:${encodeURIComponent(kingName)}:from_pnation:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`King: ${kingName.slice(0, 16)}`)
+        .setEmoji('👑')
+        .setStyle(ButtonStyle.Primary)
+    );
+  }
+
+  row.addComponents(
+    new ButtonBuilder()
+      .setURL(`${DASHBOARD_URL}/towny?tab=nations&search=${encodeURIComponent(nation.name)}`)
+      .setLabel('Web Dashboard')
+      .setEmoji('🌐')
+      .setStyle(ButtonStyle.Link)
+  );
+
+  return {
+    embeds: [embed],
+    components: [row],
+  };
+}
+
 module.exports = {
   renderTownView,
   renderNationView,
   renderPlayerView,
+  renderShopView,
+  renderTownPlayersView,
+  renderNationPlayersView,
 };

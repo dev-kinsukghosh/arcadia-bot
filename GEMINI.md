@@ -1033,3 +1033,44 @@ The following rules MUST be followed at all times:
   - Executed safe database migration (`npm run db:migrate:safe`) to ensure Drizzle ORM schema is up to date after database backup rollback.
   - Created and pushed trigger commit (`chore: trigger deployment pipeline`) to `origin/main` to launch the automated CI/CD deployment pipeline.
 
+### 14-10-2026
+
+- **Node.js 24 Migration**:
+  - Migrated the application runtime specification to Node.js 24.
+  - Added `"engines": { "node": ">=24.0.0" }` in `package.json` to enforce Node 24+ runtime requirements.
+  - Updated `Dockerfile` multi-stage build images (`deps` and `runtime` stages) from `node:22-slim` to `node:24-slim`.
+  - Updated GitHub Actions CI/CD deployment workflow (`.github/workflows/deploy.yml`) setup-node step from `node-version: 22` to `node-version: 24`.
+  - Created `.nvmrc` and `.node-version` pinning Node.js version `24` for version managers (nvm, fnm, asdf, mise).
+  - Verified local Node 24 (`v24.21.0`) compatibility: confirmed `@napi-rs/canvas` native binary bindings, Discord.js, Drizzle, Express, and Vite/Vue 3 SSG prerender pipeline compile and run without issues.
+  - Updated `fs.md` directory mapping to reflect new `.nvmrc` and `.node-version` files and Dockerfile updates.
+- **Dependency Security Audit & Patching**:
+  - Executed safe `npm audit fix` to resolve 17 security vulnerabilities in sub-dependencies (including critical advisories in `proxy-addr` and `shell-quote`, as well as high-severity advisories across `axios`, `compression`, `mysql2`, `qs`, and `undici`).
+  - Verified with `npm audit --omit=dev` that production dependencies now have **0 vulnerabilities**.
+  - Documented remaining 7 dev-only advisories originating from local tooling (`drizzle-kit` and `nodemon`) which are isolated to local developer machines and excluded from production images.
+- **Slash Commands — `/towny compare` Overflow & Format Fix**:
+  - Resolved canvas text collision and overflow bugs in `drawCompareChart` (`src/utils/canvasGraph.js`):
+    - Added `drawFittedText` auto-scaling/truncating helper to prevent town names, mayor names, nation titles, and headers from overflowing cards or exceeding canvas borders.
+    - Fixed middle comparison bar numbers overlapping and drawing directly across the left and right card borders by positioning value indicators and labels clearly above and below the comparison tracks with generous margins.
+    - Updated panel status label from hardcoded `STATUS` to `NATION`, properly formatting nation associations.
+  - Enhanced `/towny compare` Discord Embed response (`src/commands/general/towny.js`):
+    - Added structured side-by-side inline embed fields for Town 1 and Town 2 profiles (Mayor, Nation, Residents, Claimed Chunks, PVP Status).
+    - Added a Head-to-Head Leaders section displaying population and territory size leaders with exact difference counts.
+    - Added interactive ActionRow navigation buttons to inspect either town directly or jump to the Web Dashboard.
+    - Improved town name matching to support underscore and space-separated user input queries.
+- **Database Checker Suites (Redis & SQL)**:
+  - Created `tests/redis.test.js`: Dedicated Redis database checker verifying connection latency, String lifecycle (SET/GET/TTL/DEL), Hash operations (HSET/HGET/HGETALL/HDEL), and MessagePack binary serialization helpers (`packData`/`unpackData`).
+  - Created `tests/sql.test.js`: Dedicated SQL database checker testing MySQL connection pool initialization, ping query (`SELECT 1 + 1`), server metadata (`VERSION()`, `DATABASE()`), and Drizzle ORM CRUD lifecycle operations on the `internal` table.
+  - Added npm scripts `"test:redis"` and `"test:sql"` to `package.json`.
+  - Added `Redis Database Checker Suite` and `SQL Database Checker Suite` options to `/test` developer slash command (`src/commands/general/test.js`).
+- **Interactive Breadcrumb Navigation & Interaction Authorization**:
+  - Created `src/utils/discordNavState.js`: In-memory LRU cache session and stack manager tracking user navigation history across commands (capped at 1,000 active messages, 10 stack depth, 2-hour TTL).
+  - Implemented Breadcrumb Back Navigation: When inspecting player affiliations (`/players info`) and drilling into Town or Nation views, a dynamic "↩️ Back: [Name]" button is automatically prepended to the ActionRow, allowing users to return directly to the previous profile without needing to re-type the command.
+  - Added Command Invoker Ownership Verification:
+    - Appended unique `:u_<userId>` tags to navigation button custom IDs and tracked message invocation metadata.
+    - Added authorization gate in `src/events/interactionCreate.js` to strictly reject non-command invokers with an ephemeral error (`❌ Only the user who ran this command can interact with this embed.`).
+    - Added fallback checks ensuring messages lacking owner metadata are protected from unauthorized cross-user manipulation.
+  - Updated `src/utils/discordNavHelper.js` & `src/utils/discordNavRouter.js`: Enhanced `createTownNavRow`, `createNationNavRow`, `createPlayerNavRow`, `createShopNavRow`, `renderTownPlayersView`, and `renderNationPlayersView` to pass navigation stack history, skip duplicate buttons (e.g. mayor/king when already pointed to by back button), and maintain author ownership across transitions.
+  - Updated `/towny compare` (`src/commands/general/towny.js`) inspection buttons to include author ownership tags and initialize navigation state.
+  - Updated `fs.md` to document `src/utils/discordNavState.js`.
+
+

@@ -284,17 +284,25 @@ module.exports = {
       const rawNationName = onlinePlayer?.nation?.name || dbProfile?.nationName;
 
       const { createPlayerNavRow } = require('../../utils/discordNavHelper.js');
+      const { initNavState } = require('../../utils/discordNavState.js');
       const navRow = createPlayerNavRow(
         name,
         rawTownName && rawTownName !== 'None' ? rawTownName : null,
         rawNationName && rawNationName !== 'None' ? rawNationName : null,
-        true
+        true,
+        { ownerId: interaction.user.id }
       );
 
-      return interaction.editReply({
+      const response = await interaction.editReply({
         embeds: [embed],
         components: navRow ? [navRow] : [],
       });
+
+      if (response?.id) {
+        initNavState(response.id, interaction.user.id, { type: 'player', name });
+      }
+
+      return response;
     }
   },
 };

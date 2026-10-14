@@ -24,6 +24,8 @@ module.exports = {
         .addChoices(
           { name: 'Run All Test Suites', value: 'all' },
           { name: 'Environment Connection Suite', value: 'env' },
+          { name: 'Redis Database Checker Suite', value: 'redis' },
+          { name: 'SQL Database Checker Suite', value: 'sql' },
           { name: 'ArcadiaMC API Connection Suite', value: 'api' },
           { name: 'Database Query Suite', value: 'db' },
           { name: 'Blacklist Functionality Suite', value: 'blacklist' },
@@ -258,6 +260,12 @@ module.exports = {
     if (testId === 'env') {
       cmd = 'npx vitest run tests/env.test.js';
       suiteName = 'Environment Connection Suite';
+    } else if (testId === 'redis') {
+      cmd = 'npx vitest run tests/redis.test.js';
+      suiteName = 'Redis Database Checker Suite';
+    } else if (testId === 'sql') {
+      cmd = 'npx vitest run tests/sql.test.js';
+      suiteName = 'SQL Database Checker Suite';
     } else if (testId === 'api') {
       cmd = 'npx vitest run tests/api.test.js';
       suiteName = 'ArcadiaMC API Connection Suite';

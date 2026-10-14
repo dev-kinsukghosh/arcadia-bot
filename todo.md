@@ -1,11 +1,17 @@
 # todo 1
-
-Fix Shop test
-Migrate to Node 24
 Setup pokemon catcher and auto nation members count update AL-sam
 
+
+
 # todo 2
+DEV admin panel to see sats user cmd sats 
+CPU time resorce use DB use FLAG controlls and other stuff clear cache view icons restart bot
+# details Oauth
+only allow my discord account and ones in DEV_ID
+Split up server.js into multiple files and folders
+More Telemtry and logs for dev panel
 
-A profiler for Discord And Website seeing where most of the time is taken and fixing those speedsConcept: On the currency list dashboard (dashboard/src/components/MarketMonitor.vue), we display rates, standard deviation, and stability index. We should display color-coded trend arrows or inline sparklines representing the 24-hour and 7-day rate direction.
-Spin up subagents if needed in all 3 bot Website and api looks for things can Fast up dont do just find
-
+# Todo 3 
+Fix Time formats in updates like blacklist list Cis info
+IF the To Currency is arc in both website and discord bot force turn off TAX
+and alart user Other currencies cannot be Exchanged back to arcs and as they are base exchange tax does not apply to them

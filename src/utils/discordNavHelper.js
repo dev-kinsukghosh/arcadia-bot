@@ -4,41 +4,80 @@ const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:5173';
 
 /**
  * Builds interactive navigation buttons for a Town
+ * @param {string} townName
+ * @param {string|null} mayorName
+ * @param {string|null} nationName
+ * @param {object} [options={}]
+ * @param {object|null} [options.back] - { type: 'player'|'nation'|'town', name: string }
+ * @param {string|null} [options.ownerId] - Command invoker Discord user ID
  */
-function createTownNavRow(townName, mayorName, nationName) {
+function createTownNavRow(townName, mayorName, nationName, options = {}) {
   const row = new ActionRowBuilder();
+  const ownerSuffix = options?.ownerId ? `:u_${options.ownerId}` : '';
+  const currentEncoded = encodeURIComponent(townName || '');
 
-  if (mayorName) {
+  // 1. Back button (if back target exists)
+  if (options?.back && options.back.name) {
+    const cleanBackName = options.back.name.replace(/_/g, ' ');
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_player:${mayorName}`)
-        .setLabel(`Mayor: ${mayorName}`)
+        .setCustomId(
+          `nav_back:${options.back.type}:${encodeURIComponent(options.back.name)}${ownerSuffix}`
+        )
+        .setLabel(`Back: ${cleanBackName.slice(0, 16)}`)
+        .setEmoji('↩️')
+        .setStyle(ButtonStyle.Secondary)
+    );
+  }
+
+  // 2. Mayor button (skip if back button already points to the Mayor)
+  const isBackMayor =
+    options?.back?.type === 'player' &&
+    options?.back?.name?.toLowerCase() === mayorName?.toLowerCase();
+
+  if (mayorName && !isBackMayor && row.components.length < 5) {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(
+          `nav_player:${encodeURIComponent(mayorName)}:from_town:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`Mayor: ${mayorName.slice(0, 16)}`)
         .setEmoji('👑')
         .setStyle(ButtonStyle.Primary)
     );
   }
 
-  if (townName) {
+  // 3. Town Players button
+  if (townName && row.components.length < 5) {
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_ptown:${townName}`)
+        .setCustomId(`nav_ptown:${currentEncoded}:from_town:${currentEncoded}${ownerSuffix}`)
         .setLabel('Town Players')
         .setEmoji('👥')
         .setStyle(ButtonStyle.Secondary)
     );
   }
 
-  if (nationName) {
+  // 4. Nation button (skip if back button already points to this Nation)
+  const isBackNation =
+    options?.back?.type === 'nation' &&
+    options?.back?.name?.toLowerCase() === nationName?.toLowerCase();
+
+  if (nationName && !isBackNation && row.components.length < 5) {
+    const cleanNation = nationName.replace(/_/g, ' ');
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_nation:${nationName}`)
-        .setLabel(`Nation: ${nationName}`)
+        .setCustomId(
+          `nav_nation:${encodeURIComponent(nationName)}:from_town:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`Nation: ${cleanNation.slice(0, 16)}`)
         .setEmoji('🚩')
         .setStyle(ButtonStyle.Secondary)
     );
   }
 
-  if (townName) {
+  // 5. Web Dashboard link
+  if (townName && row.components.length < 5) {
     row.addComponents(
       new ButtonBuilder()
         .setURL(`${DASHBOARD_URL}/towny?tab=towns&search=${encodeURIComponent(townName)}`)
@@ -53,41 +92,80 @@ function createTownNavRow(townName, mayorName, nationName) {
 
 /**
  * Builds interactive navigation buttons for a Nation
+ * @param {string} nationName
+ * @param {string|null} kingName
+ * @param {string|null} capitalName
+ * @param {object} [options={}]
+ * @param {object|null} [options.back] - { type: 'player'|'town'|'nation', name: string }
+ * @param {string|null} [options.ownerId] - Command invoker Discord user ID
  */
-function createNationNavRow(nationName, kingName, capitalName) {
+function createNationNavRow(nationName, kingName, capitalName, options = {}) {
   const row = new ActionRowBuilder();
+  const ownerSuffix = options?.ownerId ? `:u_${options.ownerId}` : '';
+  const currentEncoded = encodeURIComponent(nationName || '');
 
-  if (kingName) {
+  // 1. Back button (if back target exists)
+  if (options?.back && options.back.name) {
+    const cleanBackName = options.back.name.replace(/_/g, ' ');
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_player:${kingName}`)
-        .setLabel(`King: ${kingName}`)
+        .setCustomId(
+          `nav_back:${options.back.type}:${encodeURIComponent(options.back.name)}${ownerSuffix}`
+        )
+        .setLabel(`Back: ${cleanBackName.slice(0, 16)}`)
+        .setEmoji('↩️')
+        .setStyle(ButtonStyle.Secondary)
+    );
+  }
+
+  // 2. King button (skip if back button already points to the King)
+  const isBackKing =
+    options?.back?.type === 'player' &&
+    options?.back?.name?.toLowerCase() === kingName?.toLowerCase();
+
+  if (kingName && !isBackKing && row.components.length < 5) {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(
+          `nav_player:${encodeURIComponent(kingName)}:from_nation:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`King: ${kingName.slice(0, 16)}`)
         .setEmoji('👑')
         .setStyle(ButtonStyle.Primary)
     );
   }
 
-  if (nationName) {
+  // 3. Nation Players button
+  if (nationName && row.components.length < 5) {
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_pnation:${nationName}`)
+        .setCustomId(`nav_pnation:${currentEncoded}:from_nation:${currentEncoded}${ownerSuffix}`)
         .setLabel('Nation Players')
         .setEmoji('👥')
         .setStyle(ButtonStyle.Secondary)
     );
   }
 
-  if (capitalName) {
+  // 4. Capital button (skip if back button already points to the Capital)
+  const isBackCapital =
+    options?.back?.type === 'town' &&
+    options?.back?.name?.toLowerCase() === capitalName?.toLowerCase();
+
+  if (capitalName && !isBackCapital && row.components.length < 5) {
+    const cleanCapital = capitalName.replace(/_/g, ' ');
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_town:${capitalName}`)
-        .setLabel(`Capital: ${capitalName}`)
+        .setCustomId(
+          `nav_town:${encodeURIComponent(capitalName)}:from_nation:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`Capital: ${cleanCapital.slice(0, 16)}`)
         .setEmoji('🏰')
         .setStyle(ButtonStyle.Secondary)
     );
   }
 
-  if (nationName) {
+  // 5. Web Dashboard link
+  if (nationName && row.components.length < 5) {
     row.addComponents(
       new ButtonBuilder()
         .setURL(`${DASHBOARD_URL}/towny?tab=nations&search=${encodeURIComponent(nationName)}`)
@@ -102,41 +180,87 @@ function createNationNavRow(nationName, kingName, capitalName) {
 
 /**
  * Builds interactive navigation buttons for a Player Profile
+ * @param {string} playerName
+ * @param {string|null} townName
+ * @param {string|null} nationName
+ * @param {boolean|object} [hasShop=false]
+ * @param {object} [options={}]
+ * @param {object|null} [options.back] - { type: 'player'|'town'|'nation'|'shop', name: string }
+ * @param {string|null} [options.ownerId] - Command invoker Discord user ID
  */
-function createPlayerNavRow(playerName, townName, nationName, hasShop = false) {
-  const row = new ActionRowBuilder();
+function createPlayerNavRow(playerName, townName, nationName, hasShop = false, options = {}) {
+  if (typeof hasShop === 'object' && hasShop !== null) {
+    options = hasShop;
+    hasShop = false;
+  }
 
-  if (townName) {
+  const row = new ActionRowBuilder();
+  const ownerSuffix = options?.ownerId ? `:u_${options.ownerId}` : '';
+  const currentEncoded = encodeURIComponent(playerName || '');
+
+  // 1. Back button (if back target exists)
+  if (options?.back && options.back.name) {
+    const cleanBackName = options.back.name.replace(/_/g, ' ');
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_town:${townName}`)
-        .setLabel(`Town: ${townName}`)
+        .setCustomId(
+          `nav_back:${options.back.type}:${encodeURIComponent(options.back.name)}${ownerSuffix}`
+        )
+        .setLabel(`Back: ${cleanBackName.slice(0, 16)}`)
+        .setEmoji('↩️')
+        .setStyle(ButtonStyle.Secondary)
+    );
+  }
+
+  // 2. Town button (skip if back button already points to this Town)
+  const isBackTown =
+    options?.back?.type === 'town' &&
+    options?.back?.name?.toLowerCase() === townName?.toLowerCase();
+
+  if (townName && !isBackTown && row.components.length < 5) {
+    const cleanTown = townName.replace(/_/g, ' ');
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(
+          `nav_town:${encodeURIComponent(townName)}:from_player:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`Town: ${cleanTown.slice(0, 16)}`)
         .setEmoji('🏰')
         .setStyle(ButtonStyle.Primary)
     );
   }
 
-  if (nationName) {
+  // 3. Nation button (skip if back button already points to this Nation)
+  const isBackNation =
+    options?.back?.type === 'nation' &&
+    options?.back?.name?.toLowerCase() === nationName?.toLowerCase();
+
+  if (nationName && !isBackNation && row.components.length < 5) {
+    const cleanNation = nationName.replace(/_/g, ' ');
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_nation:${nationName}`)
-        .setLabel(`Nation: ${nationName}`)
+        .setCustomId(
+          `nav_nation:${encodeURIComponent(nationName)}:from_player:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`Nation: ${cleanNation.slice(0, 16)}`)
         .setEmoji('🚩')
         .setStyle(ButtonStyle.Secondary)
     );
   }
 
-  if (hasShop && playerName) {
+  // 4. Shop button
+  if (hasShop && playerName && row.components.length < 5) {
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_shop:${playerName}`)
+        .setCustomId(`nav_shop:${currentEncoded}:from_player:${currentEncoded}${ownerSuffix}`)
         .setLabel('Player Shop')
         .setEmoji('🛒')
         .setStyle(ButtonStyle.Success)
     );
   }
 
-  if (playerName) {
+  // 5. Web Dashboard link
+  if (playerName && row.components.length < 5) {
     row.addComponents(
       new ButtonBuilder()
         .setURL(`${DASHBOARD_URL}/players?search=${encodeURIComponent(playerName)}`)
@@ -151,31 +275,68 @@ function createPlayerNavRow(playerName, townName, nationName, hasShop = false) {
 
 /**
  * Builds interactive navigation buttons for a Shop Listing
+ * @param {string} ownerName
+ * @param {string|null} townName
+ * @param {object} [options={}]
+ * @param {object|null} [options.back] - { type: string, name: string }
+ * @param {string|null} [options.ownerId] - Command invoker Discord user ID
  */
-function createShopNavRow(ownerName, townName) {
+function createShopNavRow(ownerName, townName, options = {}) {
   const row = new ActionRowBuilder();
+  const ownerSuffix = options?.ownerId ? `:u_${options.ownerId}` : '';
+  const currentEncoded = encodeURIComponent(ownerName || 'shop');
 
-  if (ownerName) {
+  // 1. Back button (if back target exists)
+  if (options?.back && options.back.name) {
+    const cleanBackName = options.back.name.replace(/_/g, ' ');
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_player:${ownerName}`)
-        .setLabel(`Owner: ${ownerName}`)
+        .setCustomId(
+          `nav_back:${options.back.type}:${encodeURIComponent(options.back.name)}${ownerSuffix}`
+        )
+        .setLabel(`Back: ${cleanBackName.slice(0, 16)}`)
+        .setEmoji('↩️')
+        .setStyle(ButtonStyle.Secondary)
+    );
+  }
+
+  // 2. Owner button (skip if back button already points to owner)
+  const isBackOwner =
+    options?.back?.type === 'player' &&
+    options?.back?.name?.toLowerCase() === ownerName?.toLowerCase();
+
+  if (ownerName && !isBackOwner && row.components.length < 5) {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(
+          `nav_player:${encodeURIComponent(ownerName)}:from_shop:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`Owner: ${ownerName.slice(0, 16)}`)
         .setEmoji('👤')
         .setStyle(ButtonStyle.Primary)
     );
   }
 
-  if (townName) {
+  // 3. Shop Town button (skip if back button already points to shop town)
+  const isBackTown =
+    options?.back?.type === 'town' &&
+    options?.back?.name?.toLowerCase() === townName?.toLowerCase();
+
+  if (townName && !isBackTown && row.components.length < 5) {
+    const cleanTown = townName.replace(/_/g, ' ');
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId(`nav_town:${townName}`)
-        .setLabel(`Shop Town: ${townName}`)
+        .setCustomId(
+          `nav_town:${encodeURIComponent(townName)}:from_shop:${currentEncoded}${ownerSuffix}`
+        )
+        .setLabel(`Shop Town: ${cleanTown.slice(0, 16)}`)
         .setEmoji('🏰')
         .setStyle(ButtonStyle.Secondary)
     );
   }
 
-  if (ownerName) {
+  // 4. Web Dashboard link
+  if (ownerName && row.components.length < 5) {
     row.addComponents(
       new ButtonBuilder()
         .setURL(`${DASHBOARD_URL}/shops?search=${encodeURIComponent(ownerName)}`)

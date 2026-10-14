@@ -1,5 +1,5 @@
 # ── Stage 1: Install production dependencies ─────────────────────────
-FROM node:22-slim AS deps
+FROM node:24-slim AS deps
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
 # ── Stage 2: Lean runtime image ──────────────────────────────────────
-FROM node:22-slim AS runtime
+FROM node:24-slim AS runtime
 
 # Security: run as non-root
 RUN groupadd -r arcadia && useradd -r -g arcadia -m arcadia

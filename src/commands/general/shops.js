@@ -467,12 +467,24 @@ module.exports = {
         );
 
       const { createShopNavRow } = require('../../utils/discordNavHelper.js');
-      const navRow = createShopNavRow(shop.ownerName || shop.owner, shop.townName);
+      const { initNavState } = require('../../utils/discordNavState.js');
+      const navRow = createShopNavRow(shop.ownerName || shop.owner, shop.townName, {
+        ownerId: interaction.user.id,
+      });
 
-      return interaction.editReply({
+      const initialResponse = await interaction.editReply({
         embeds: [embed],
         components: navRow ? [navRow] : [],
       });
+
+      if (initialResponse?.id) {
+        initNavState(initialResponse.id, interaction.user.id, {
+          type: 'shop',
+          name: shop.ownerName || shop.owner,
+        });
+      }
+
+      return initialResponse;
     }
 
     // ── Subcommand: Search ────────────────────────────────────────────
