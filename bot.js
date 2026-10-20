@@ -5,6 +5,7 @@ const { loadEvents } = require('./src/handlers/eventHandler.js');
 const { loadCommands } = require('./src/handlers/commandHandler.js');
 const { initErrorHandler, reportError } = require('./src/utils/errorHandler.js');
 const { loadBlacklist } = require('./src/utils/blacklistHelper.js');
+const { telemetry } = require('./src/utils/telemetry.js');
 const pc = require('picocolors');
 
 // Import services to trigger their initialization and logging
@@ -22,9 +23,13 @@ const client = new Client({
   partials: [Partials.User, Partials.GuildMember, Partials.Message, Partials.Channel],
 });
 
+// Attach client to telemetry manager for live Discord bot metrics
+telemetry.setClient(client);
+
 async function main() {
   // Initialize crash interception immediately
   initErrorHandler(client);
+
 
   logger.info(pc.bold(pc.magenta('=========================================')));
   logger.info(pc.bold(pc.magenta('    STARTING ARCADIA COMMUNITY BOT       ')));
@@ -118,13 +123,24 @@ async function main() {
       try {
         const mod = require(service.path);
         if (typeof mod[service.fnName] === 'function') {
+          telemetry.recordServiceRun(service.name, {
+            durationMs: 0,
+            success: true,
+            details: 'Service active',
+          });
           mod[service.fnName](client);
         }
       } catch (err) {
+        telemetry.recordServiceRun(service.name, {
+          durationMs: 0,
+          success: false,
+          error: err.message,
+        });
         logger.error(`Error starting ${service.name}:`, err);
         reportError(err, `Service Startup: ${service.name} failed to start.`);
       }
     }
+
   } else {
     logger.info('Background sync services are disabled no service flag triggered.');
   }

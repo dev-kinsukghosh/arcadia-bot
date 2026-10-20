@@ -12,6 +12,9 @@ module.exports = {
   async execute(interaction) {
     // Check if the user is blacklisted
     if (isBlacklisted(interaction.user.id)) {
+      const { telemetry } = require('../utils/telemetry.js');
+      telemetry.recordBlacklistBlock(interaction.user.id);
+
       if (interaction.isRepliable()) {
         try {
           const reason = getBlacklistReason(interaction.user.id);
@@ -33,6 +36,9 @@ module.exports = {
 
     // Handle autocomplete interactions
     if (interaction.isAutocomplete()) {
+      const { telemetry } = require('../utils/telemetry.js');
+      telemetry.recordAutocomplete(interaction.commandName);
+
       const command = interaction.client.commands.get(interaction.commandName);
       if (command && typeof command.autocomplete === 'function') {
         try {
@@ -43,6 +49,7 @@ module.exports = {
       }
       return;
     }
+
 
     // Handle button navigation interactions
     if (interaction.isButton() && interaction.customId) {
@@ -82,7 +89,11 @@ module.exports = {
         }
 
         try {
+          const { telemetry } = require('../utils/telemetry.js');
+          telemetry.recordButtonClick(customId, parsed.action);
+
           await interaction.deferUpdate().catch(() => {});
+
 
           const {
             renderTownView,
@@ -229,28 +240,54 @@ module.exports = {
         const expirationTime = timestamps.get(userId) + cooldownAmount;
 
         if (now < expirationTime) {
+          const { telemetry } = require('../utils/telemetry.js');
+          telemetry.recordCooldownHit(interaction.commandName, userId);
+
           const timeLeft = ((expirationTime - now) / 1000).toFixed(1);
           return interaction.reply({
             content: `⚠️ Please wait **${timeLeft}s** before using the \`/${interaction.commandName}\` command again.`,
             flags: MessageFlags.Ephemeral,
           });
         }
+
       }
 
       timestamps.set(userId, now);
       setTimeout(() => timestamps.delete(userId), cooldownAmount);
     }
 
-    // Track statistics in Redis (non-blocking)
-    if (redis && redis.status === 'ready') {
-      redis.incr('stats:commands:total').catch(() => {});
-      redis.hincrby('stats:commands:usage', interaction.commandName, 1).catch(() => {});
-    }
+    // Track statistics and execution telemetry
+    const { telemetry } = require('../utils/telemetry.js');
+    const cmdStartTime = Date.now();
 
     try {
       logger.info(`[COMMAND RUN] User ${interaction.user.tag} invoked /${interaction.commandName}`);
       await command.execute(interaction);
+      const durationMs = Date.now() - cmdStartTime;
+
+      telemetry.recordCommandExecution({
+        commandName: interaction.commandName,
+        userId: interaction.user.id,
+        userTag: interaction.user.tag || interaction.user.username,
+        guildId: interaction.guildId || 'DM',
+        guildName: interaction.guild?.name || 'Direct Message',
+        durationMs,
+        success: true,
+      });
     } catch (error) {
+      const durationMs = Date.now() - cmdStartTime;
+
+      telemetry.recordCommandExecution({
+        commandName: interaction.commandName,
+        userId: interaction.user.id,
+        userTag: interaction.user.tag || interaction.user.username,
+        guildId: interaction.guildId || 'DM',
+        guildName: interaction.guild?.name || 'Direct Message',
+        durationMs,
+        success: false,
+        error: error.message,
+      });
+
       try {
         const { reportError } = require('../utils/errorHandler.js');
         await reportError(error, `Slash Command Execution (/${interaction.commandName})`);
@@ -276,5 +313,6 @@ module.exports = {
         // Silently ignore secondary interaction response failures
       }
     }
+
   },
 };

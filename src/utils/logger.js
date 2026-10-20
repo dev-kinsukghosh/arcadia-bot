@@ -40,7 +40,16 @@ const icons = {
   CRITICAL: '💀',
 };
 
+const { logBuffer } = require('./logBuffer.js');
+
 function log(level, message, ...args) {
+  // Always buffer structured logs for telemetry & dev panel
+  try {
+    logBuffer.addLog(level, message, ...args);
+  } catch {
+    // Ignore buffering errors to prevent breaking core logging
+  }
+
   if (levels[level] >= levels[currentLevel]) {
     const timestamp = pc.gray(dayjs().format('HH:mm:ss'));
     const gradientFn = gradients[level] || gradients.DEBUG;
@@ -86,4 +95,5 @@ module.exports = {
   warn: (msg, ...args) => log('WARNING', msg, ...args),
   error: (msg, ...args) => log('ERROR', msg, ...args),
   critical: (msg, ...args) => log('CRITICAL', msg, ...args),
+  logBuffer,
 };

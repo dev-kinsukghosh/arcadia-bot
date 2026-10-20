@@ -1,11 +1,12 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { successEmbed, errorEmbed } = require('../../utils/embedHelper.js');
+const { telemetry } = require('../../utils/telemetry.js');
 const redis = require('../../utils/redis.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('stats-dev')
-    .setDescription('view bot developer statistics'),
+    .setDescription('view bot and web developer telemetry'),
 
   async execute(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -23,41 +24,55 @@ module.exports = {
       });
     }
 
-    // Retrieve stats from Redis
-    let totalCommands = 0;
-    let mostUsedCommandStr = 'None';
+    const snapshot = await telemetry.getSnapshot();
 
-    if (redis && redis.status === 'ready') {
-      try {
-        totalCommands = parseInt((await redis.get('stats:commands:total')) || '0', 10);
-        const commandUsage = await redis.hgetall('stats:commands:usage');
+    // Command metrics
+    const totalCmds = snapshot.commands.total || 0;
+    const successRate = snapshot.commands.successRate || 100;
+    const avgDuration = snapshot.commands.avgDurationMs || 0;
+    const topCmds = snapshot.commands.topCommands.slice(0, 3);
+    const topCmdsStr =
+      topCmds.length > 0
+        ? topCmds.map((c) => `\`/${c.name}\` (${c.count})`).join(', ')
+        : 'None recorded yet';
 
-        let maxCount = 0;
-        let mostUsed = '';
+    // Web & HTTP metrics
+    const httpTotal = snapshot.http.totalRequests || 0;
+    const cacheHitRatio = snapshot.http.cacheHitRatioPercent || 0;
+    const pageviews = snapshot.web.pageViewsTotal || 0;
+    const activeVisitors = snapshot.web.activeVisitors || 0;
 
-        for (const [cmd, countStr] of Object.entries(commandUsage)) {
-          const count = parseInt(countStr, 10);
-          if (count > maxCount) {
-            maxCount = count;
-            mostUsed = cmd;
-          }
-        }
+    // Recent command executions
+    const recentCmds = snapshot.commands.recent.slice(0, 3);
+    const recentStr =
+      recentCmds.length > 0
+        ? recentCmds
+            .map(
+              (r) =>
+                `• \`/${r.command}\` by **${r.userTag}** (${r.durationMs}ms) ${r.success ? '✅' : '❌'}`
+            )
+            .join('\n')
+        : 'No recent executions';
 
-        if (mostUsed) {
-          mostUsedCommandStr = `\`/${mostUsed}\` (used **${maxCount}** times)`;
-        }
-      } catch {
-        // Ignore stats retrieval errors
-      }
-    }
+    let description = '### 🤖 Discord Bot Telemetry\n';
+    description += `*   **Lifetime Commands Run:** \`${totalCmds}\`\n`;
+    description += `*   **Command Success Rate:** \`${successRate}%\`\n`;
+    description += `*   **Average Execution Time:** \`${avgDuration}ms\`\n`;
+    description += `*   **Active Guilds:** \`${snapshot.discord.guildsCount}\` (WS Ping: \`${snapshot.discord.wsPingMs}ms\`)\n`;
+    description += `*   **Top Commands:** ${topCmdsStr}\n\n`;
 
-    let description = '### 📊 Bot Statistics\n';
-    description += `*   **Lifetime Commands Run:** \`${totalCommands}\`\n`;
-    description += `*   **Guilds (Servers) Active:** \`${interaction.client.guilds.cache.size}\`\n`;
-    description += `*   **Most Used Command:** ${mostUsedCommandStr}\n`;
+    description += '### 🌐 Web & Dashboard Telemetry\n';
+    description += `*   **Total API Requests:** \`${httpTotal}\` (Avg Latency: \`${snapshot.http.avgDurationMs}ms\`)\n`;
+    description += `*   **Cache Hit Ratio:** \`${cacheHitRatio}%\` (${snapshot.http.cacheHits} hits / ${snapshot.http.cacheMisses} misses)\n`;
+    description += `*   **Web Page Views:** \`${pageviews}\`\n`;
+    description += `*   **Active Web Visitors (5m):** \`${activeVisitors}\`\n\n`;
+
+    description += '### ⏱️ Recent Command Activity\n';
+    description += `${recentStr}\n`;
 
     return interaction.editReply({
-      embeds: [successEmbed('Developer Stats & Command Telemetry', description)],
+      embeds: [successEmbed('Developer Telemetry (Bot & Web)', description)],
     });
   },
 };
+

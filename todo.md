@@ -8,9 +8,7 @@ DEV admin panel to see sats user cmd sats
 CPU time resorce use DB use FLAG controlls and other stuff clear cache view icons restart bot
 # details Oauth
 only allow my discord account and ones in DEV_ID
-Split up server.js into multiple files and folders
-More Telemtry and logs for dev panel
-
+- [x] Split up server.js into multiple files and folders
 # Todo 3 
 Fix Time formats in updates like blacklist list Cis info
 IF the To Currency is arc in both website and discord bot force turn off TAX

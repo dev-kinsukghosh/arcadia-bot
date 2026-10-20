@@ -37,6 +37,19 @@ apiClient.interceptors.request.use((req) => {
 apiClient.interceptors.response.use(
   (res) => {
     const duration = Date.now() - res.config.meta.startTime;
+    try {
+      const { telemetry } = require('./telemetry.js');
+      telemetry.recordExternalApiCall({
+        method: res.config.method?.toUpperCase() || 'GET',
+        url: res.config.url || '',
+        status: res.status,
+        durationMs: duration,
+        success: true,
+      });
+    } catch {
+      // Ignore telemetry errors
+    }
+
     logger.system(
       `<-- [API] ${res.status} ${res.config.method?.toUpperCase()} ${res.config.url} (${duration}ms)`
     );
@@ -45,8 +58,22 @@ apiClient.interceptors.response.use(
   (error) => {
     const duration = error.config?.meta?.startTime
       ? Date.now() - error.config.meta.startTime
-      : null;
+      : 0;
     const durationStr = duration ? ` (${duration}ms)` : '';
+
+    try {
+      const { telemetry } = require('./telemetry.js');
+      telemetry.recordExternalApiCall({
+        method: error.config?.method?.toUpperCase() || 'GET',
+        url: error.config?.url || '',
+        status: error.response?.status || 500,
+        durationMs: duration,
+        success: false,
+        error: error.message,
+      });
+    } catch {
+      // Ignore telemetry errors
+    }
 
     if (error.response) {
       logger.error(
@@ -63,6 +90,7 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 
 // Opossum Circuit Breaker setup
 const breakerOptions = {

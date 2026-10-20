@@ -43,8 +43,10 @@
     "test:redis": "vitest run tests/redis.test.js",
     "test:sql": "vitest run tests/sql.test.js",
     "test:suggest": "vitest run tests/suggestFeedback.test.js",
+    "test:telemetry": "vitest run tests/telemetry.test.js",
     "upload:emojis": "node scripts/upload-emojis.js"
   },
+
   "nodemonConfig": {
     "delay": 2500,
     "ignore": [

@@ -12,7 +12,14 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── workflows/
 │   │   └── deploy.yml
 │   └── gitlab-sync.yml
+├── changelogs/
+│   ├── 06-2026.md
+│   ├── 07-2026.md
+│   ├── 08-2026.md
+│   ├── 09-2026.md
+│   └── 10-2026.md
 ├── dashboard/
+
 │   ├── index.html
 │   ├── prerender.mjs
 │   ├── vite.config.mjs
@@ -53,6 +60,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── scan-endpoints-fast.js
 │   └── sync-missing-shop-icons.js
 ├── src/
+│   ├── app.js
 │   ├── server.js
 │   ├── deploy-commands.js
 │   ├── commands/
@@ -75,6 +83,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── currencies.js
 │   │       ├── dealfinder.js
 │   │       ├── devconfig.js
+│   │       ├── dev-logs.js
 │   │       ├── dev-slist.js
 │   │       ├── enotify.js
 │   │       ├── events.js
@@ -97,6 +106,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── towny.js
 │   │       └── wars.js
 │   ├── heads/
+│   ├── icons/
 │   ├── db/
 │   │   ├── schema.js
 │   │   └── redisSchema.js
@@ -106,6 +116,21 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── handlers/
 │   │   ├── commandHandler.js
 │   │   └── eventHandler.js
+│   ├── middleware/
+│   │   ├── cache.js
+│   │   ├── errorHandler.js
+│   │   ├── hostRouter.js
+│   │   └── rateLimiter.js
+│   ├── routes/
+│   │   ├── assetRoutes.js
+│   │   ├── currencyRoutes.js
+│   │   ├── devRoutes.js
+│   │   ├── eventsRoutes.js
+│   │   ├── index.js
+│   │   ├── playersRoutes.js
+│   │   ├── shopsRoutes.js
+│   │   ├── townyRoutes.js
+│   │   └── warsRoutes.js
 │   ├── services/
 │   │   ├── convoySync.js
 │   │   ├── currencySync.js
@@ -115,6 +140,8 @@ This file serves as a reference guide for the directory structure and file respo
 │   │   ├── playerSync.js
 │   │   ├── shopsSync.js
 │   │   └── townySync.js
+│   ├── ws/
+│   │   └── websocketServer.js
 │   └── utils/
 │       ├── alAuthHelper.js
 │       ├── apiClient.js
@@ -132,10 +159,12 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── guildConfigHelper.js
 │       ├── guildOptionsHelper.js
 │       ├── iconDownloader.js
+│       ├── logBuffer.js
 │       ├── logger.js
 │       ├── minecraftWordlist.js
 │       ├── redis.js
-│       └── redisOm.js
+│       ├── redisOm.js
+│       └── telemetry.js
 ├── tests/
 │   ├── setup.js
 │   ├── blacklist.test.js
@@ -148,6 +177,8 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── notify.test.js
 │   ├── options.test.js
 │   ├── redis.test.js
+│   └── telemetry.test.js
+
 │   ├── shops.test.js
 │   ├── sql.test.js
 │   ├── suggestFeedback.test.js
@@ -196,6 +227,15 @@ This file serves as a reference guide for the directory structure and file respo
 - [.github/gitlab-sync.yml](./.github/gitlab-sync.yml): Mirror synchronization workflow for GitLab.
 - [.github/workflows/deploy.yml](./.github/workflows/deploy.yml): CI/CD deployment pipeline for building and publishing Docker image to GHCR, connecting to server via SSH, deploying with secrets/vars, and pruning unused images.
 
+### 📂 changelogs/
+
+- [changelogs/06-2026.md](./changelogs/06-2026.md): Monthly change log for June 2026 covering initial bot setup, Drizzle ORM, Redis-OM, convoy sync, canvas cards, and custom cyber logger.
+- [changelogs/07-2026.md](./changelogs/07-2026.md): Monthly change log for July 2026 covering `/cis-info`, emoji uploader, blacklist system, stock notifications (`notifyiic`), currencies sync, `/exchange`, and web dashboard initialization.
+- [changelogs/08-2026.md](./changelogs/08-2026.md): Monthly change log for August 2026 covering testing suites, player heads manager, Towny synchronization, Player Shops monitor, interactive charts, and DoS security shields.
+- [changelogs/09-2026.md](./changelogs/09-2026.md): Monthly change log for September 2026 covering Al-Sam governance commands, developer config management, suggestion/feedback submission streaming, and ESLint flat config tuning.
+- [changelogs/10-2026.md](./changelogs/10-2026.md): Monthly change log for October 2026 covering Node 24 runtime migration, security patching, `/towny compare` fixes, database checker suites, navigation breadcrumbs, and developer telemetry & logging architecture.
+
+
 ### 📂 scripts/
 
 - [scripts/setup.js](./scripts/setup.js): Assistant script to bootstrap directories and setup the `.env` template config.
@@ -235,7 +275,8 @@ This file serves as a reference guide for the directory structure and file respo
 
 ### 📂 src/
 
-- [src/server.js](./src/server.js): Express backend webserver managing API endpoints and DoS/DDoS security shields (fingerprints, connection limits).
+- [src/app.js](./src/app.js): Express application factory configuring compression, Helmet, CORS, body parsers, rate limiting, domain routing, and error handlers.
+- [src/server.js](./src/server.js): HTTP server entry point initializing network timeouts and binding the real-time WebSocket server.
 - [src/deploy-commands.js](./src/deploy-commands.js): Slash Command deployment script utilizing the Discord REST API.
   - 📂 **src/commands/**: Contains category subfolders containing Discord Slash Commands.
     - 📂 **src/commands/general/**:
@@ -259,9 +300,10 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/exchange.js](./src/commands/general/exchange.js): `/exchange` — Calculates conversions and exchange rates between nation currencies.
       - [src/commands/general/forcesync.js](./src/commands/general/forcesync.js): `/forcesync` — Forces manual convoy data synchronization from the API (Developer Only).
       - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Lists all guilds the bot is currently in (Developer Only).
-      - [src/commands/general/healthz.js](./src/commands/general/healthz.js): `/healthz` — Displays bot status, connection states, and server resources (Developer Only).
       - [src/commands/general/devconfig.js](./src/commands/general/devconfig.js): `/devconfig` — Configure dynamic bot features, output channels, and parameters (Developer Only).
+      - [src/commands/general/dev-logs.js](./src/commands/general/dev-logs.js): `/dev-logs` — Displays formatted application and system logs with level filters, search, and stats (Developer Only).
       - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Displays a paginated list of all joined guilds with server name and ID (Developer Only).
+
       - [src/commands/general/exchange.js](./src/commands/general/exchange.js): `/exchange` — Convert amounts between any two nation currencies or base ARC.
       - [src/commands/general/feedback.js](./src/commands/general/feedback.js): `/feedback` — Submit feedback or reviews about the bot to developers.
       - [src/commands/general/forcesync.js](./src/commands/general/forcesync.js): `/forcesync` — Manually trigger convoy stock synchronization (Developer Only).
@@ -289,6 +331,23 @@ This file serves as a reference guide for the directory structure and file respo
 - 📂 **src/handlers/**: Dynamic modules loaders.
   - [src/handlers/commandHandler.js](./src/handlers/commandHandler.js): Registers and maps command files category-wise.
   - [src/handlers/eventHandler.js](./src/handlers/eventHandler.js): Imports and registers bot listeners dynamically.
+- 📂 **src/middleware/**: Express middleware functions for caching, rate limiting, and domain routing.
+  - [src/middleware/cache.js](./src/middleware/cache.js): In-memory Redis cache and client Cache-Control header middleware (`cacheEndpoint`).
+  - [src/middleware/errorHandler.js](./src/middleware/errorHandler.js): Global Express error handling middleware.
+  - [src/middleware/hostRouter.js](./src/middleware/hostRouter.js): Conditional hostname routing discriminating between web dashboard SPA and API requests.
+  - [src/middleware/rateLimiter.js](./src/middleware/rateLimiter.js): IP and device fingerprint rate limiting with DDoS slow-down tarpitting.
+- 📂 **src/routes/**: Modular Express route handlers.
+  - [src/routes/index.js](./src/routes/index.js): Main API router aggregating and mounting modular route handlers.
+  - [src/routes/assetRoutes.js](./src/routes/assetRoutes.js): Player avatar head streaming proxy and static shop item icon serving.
+  - [src/routes/currencyRoutes.js](./src/routes/currencyRoutes.js): Active nation currency listings, convoy trades, price history, and market stability stats.
+  - [src/routes/devRoutes.js](./src/routes/devRoutes.js): Developer telemetry and administration routes for telemetry snapshots, log querying, web client telemetry ingestion, and Redis cache clearing.
+  - [src/routes/eventsRoutes.js](./src/routes/eventsRoutes.js): Real-time server events and historical `s_events` logs.
+  - [src/routes/playersRoutes.js](./src/routes/playersRoutes.js): Cached online player lists and player profile lookups.
+  - [src/routes/shopsRoutes.js](./src/routes/shopsRoutes.js): Player shops catalog with cached Mojang UUID username resolutions.
+  - [src/routes/townyRoutes.js](./src/routes/townyRoutes.js): Real-time Towny data and historical resident/chunk logs.
+  - [src/routes/warsRoutes.js](./src/routes/warsRoutes.js): Live telemetry on server war status and military sieges.
+- 📂 **src/ws/**: Real-time WebSocket server handling.
+  - [src/ws/websocketServer.js](./src/ws/websocketServer.js): WebSocket server managing client subscriptions, 5-second telemetry broadcasts, and currency sync broadcasts.
 - 📂 **src/services/**: Background synchronization services.
   - [src/services/convoySync.js](./src/services/convoySync.js): Synchronization worker to fetch and track convoy shop items.
   - [src/services/currencySync.js](./src/services/currencySync.js): Synchronization worker to fetch, track, and cache currencies.
@@ -314,10 +373,12 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/guildConfigHelper.js](./src/utils/guildConfigHelper.js): Manages memory caching of guild nation currency configurations.
   - [src/utils/guildOptionsHelper.js](./src/utils/guildOptionsHelper.js): Manages memory caching and DB state of guild custom command/event configurations.
   - [src/utils/iconDownloader.js](./src/utils/iconDownloader.js): Downloads missing block and item icons from assets.mcasset.cloud.
-  - [src/utils/logger.js](./src/utils/logger.js): Winston/Picocolors logger.
+  - [src/utils/logBuffer.js](./src/utils/logBuffer.js): In-memory circular buffer and Redis list logger buffering structured log objects with search and level queries.
+  - [src/utils/logger.js](./src/utils/logger.js): Winston/Picocolors logger integrated with logBuffer.
   - [src/utils/minecraftWordlist.js](./src/utils/minecraftWordlist.js): Generates ~10,000 Minecraft and server-related endpoint candidate paths.
   - [src/utils/redis.js](./src/utils/redis.js): Connection client for Redis cache operations.
   - [src/utils/redisOm.js](./src/utils/redisOm.js): Redis-OM client wrapper initialization.
+  - [src/utils/telemetry.js](./src/utils/telemetry.js): Central performance & telemetry manager tracking system resources (CPU, RAM, Event Loop), Discord bot metrics, command latencies, sync workers, HTTP API, and web frontend telemetry.
 - 📂 **tests/**: Codebase testing suite and validation tools.
   - [tests/setup.js](./tests/setup.js): Global Vitest setup configuring log levels during execution.
   - [tests/alAuth.test.js](./tests/alAuth.test.js): Integration tests for Al-Sam role-lock authorization and developer bypasses.
@@ -332,6 +393,8 @@ This file serves as a reference guide for the directory structure and file respo
   - [tests/shops.test.js](./tests/shops.test.js): Integration tests for player shops database query mappings, sync scheduler, and 25-minute TTL cache.
   - [tests/sql.test.js](./tests/sql.test.js): MySQL/Drizzle database checker testing pool initialization, ping latency, server metadata, and CRUD operations on internal table.
   - [tests/suggestFeedback.test.js](./tests/suggestFeedback.test.js): Unit tests for suggestion and feedback channel getters, automation fallbacks, and payload JSON formatting.
+  - [tests/telemetry.test.js](./tests/telemetry.test.js): Unit tests for logBuffer operations, ANSI stripping, capacity shifting, and telemetry metrics calculation.
   - [tests/towny.test.js](./tests/towny.test.js): Integration tests for towny sync, history snapshots, and database mappings.
   - [tests/api.test.js](./tests/api.test.js): Connection verification and response validation test for the ArcadiaMC API endpoints.
   - [tests/database.test.js](./tests/database.test.js): Direct query health validation for Drizzle ORM and MySQL tables.
+
