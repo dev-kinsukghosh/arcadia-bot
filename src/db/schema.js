@@ -240,6 +240,21 @@ const pokemonCaptures = mysqlTable(
   ]
 );
 
+// Pokemon Opt-Outs Table (Custom Command CC Feature)
+const pokemonOptOuts = mysqlTable(
+  'pokemon_opt_outs',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    guildId: varchar('guild_id', { length: 255 }).notNull(),
+    userId: varchar('user_id', { length: 255 }).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('user_opt_out_idx').on(table.userId),
+    uniqueIndex('guild_user_opt_out_unique_idx').on(table.guildId, table.userId),
+  ]
+);
+
 module.exports = {
   convoyItems,
   blacklist,
@@ -262,4 +277,5 @@ module.exports = {
   eventNotifications,
   apiEndpoints,
   pokemonCaptures,
+  pokemonOptOuts,
 };

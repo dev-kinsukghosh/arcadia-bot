@@ -114,8 +114,10 @@ This file serves as a reference guide for the directory structure and file respo
 │   │   ├── schema.js
 │   │   └── redisSchema.js
 │   ├── events/
+│   │   ├── interactionCreate.js
+│   │   ├── messageCreate.js
 │   │   ├── ready.js
-│   │   └── interactionCreate.js
+│   │   └── serverjoinlog.js
 │   ├── handlers/
 │   │   ├── commandHandler.js
 │   │   └── eventHandler.js
@@ -321,7 +323,7 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/notifyiic.js](./src/commands/general/notifyiic.js): `/notifyiic` — Subscribe to item stock notifications in a specific channel.
       - [src/commands/general/pemoji.js](./src/commands/general/pemoji.js): `/pemoji` — Download a Minecraft player skin render and upload it as a server emoji.
       - [src/commands/general/ping.js](./src/commands/general/ping.js): Ping/latency check.
-      - [src/commands/general/pokemon.js](./src/commands/general/pokemon.js): `/pokemon` — Master Pokémon command for capture (with interactive fight-back battle mini-game), list, summon, and release subcommands (CC).
+      - [src/commands/general/pokemon.js](./src/commands/general/pokemon.js): `/pokemon` — Master Pokémon command for capture, list, summon, release, transfer ownership, captive fightback breakout, and opt-in/opt-out configuration subcommands (CC).
       - [src/commands/general/shops.js](./src/commands/general/shops.js): `/shops` — List player shops, view shop listings/coordinates, and search for active item offers.
       - [src/commands/general/stats-dev.js](./src/commands/general/stats-dev.js): `/stats-dev` — Displays command execution telemetry and active servers count (Developer Only).
       - [src/commands/general/suggest.js](./src/commands/general/suggest.js): `/suggest` — Submit feature suggestions for the bot to developers.
@@ -334,7 +336,9 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/db/redisSchema.js](./src/db/redisSchema.js): Schema models and repositories mapping for Redis-OM.
   - 📂 **src/events/**: Discord event handlers.
   - [src/events/ready.js](./src/events/ready.js): Triggered on client login success.
-  - [src/events/interactionCreate.js](./src/events/interactionCreate.js): Command execution event router.
+  - [src/events/interactionCreate.js](./src/events/interactionCreate.js): Command execution event router and activity tracking.
+  - [src/events/messageCreate.js](./src/events/messageCreate.js): Tracks recent user message activity for Pokémon capture validity.
+  - [src/events/serverjoinlog.js](./src/events/serverjoinlog.js): Logs new guild join occurrences to developer channels.
 - 📂 **src/handlers/**: Dynamic modules loaders.
   - [src/handlers/commandHandler.js](./src/handlers/commandHandler.js): Registers and maps command files category-wise.
   - [src/handlers/eventHandler.js](./src/handlers/eventHandler.js): Imports and registers bot listeners dynamically.
@@ -384,7 +388,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/logger.js](./src/utils/logger.js): Winston/Picocolors logger integrated with logBuffer.
   - [src/utils/maintenanceHelper.js](./src/utils/maintenanceHelper.js): Central maintenance mode manager, state persistence (Redis + MySQL), dev verification, Express middleware, and 403 HTML generator.
   - [src/utils/minecraftWordlist.js](./src/utils/minecraftWordlist.js): Generates ~10,000 Minecraft and server-related endpoint candidate paths.
-  - [src/utils/pokemonHelper.js](./src/utils/pokemonHelper.js): Central helper module for Pokémon mini-game managing encounters, interactive fight-back refusal battles, summon embeds with user pfp, release workflows, party listings, and user resolution.
+  - [src/utils/pokemonHelper.js](./src/utils/pokemonHelper.js): Central helper module for Pokémon mini-game managing encounters, interactive fight-back refusal battles, summon embeds with user pfp, release workflows, ownership transfers, captive breakout battles, party listings, opt-in/opt-out preferences, channel fight-back permissions validation, and user resolution.
   - [src/utils/redis.js](./src/utils/redis.js): Connection client for Redis cache operations.
   - [src/utils/redisOm.js](./src/utils/redisOm.js): Redis-OM client wrapper initialization.
   - [src/utils/telemetry.js](./src/utils/telemetry.js): Central performance & telemetry manager tracking system resources (CPU, RAM, Event Loop), Discord bot metrics, command latencies, sync workers, HTTP API, and web frontend telemetry.

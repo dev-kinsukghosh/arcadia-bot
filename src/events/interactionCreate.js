@@ -69,6 +69,16 @@ module.exports = {
       return;
     }
 
+    // Record user activity for Pokémon capture validity
+    if (interaction.guildId && interaction.user && !interaction.user.bot) {
+      try {
+        const { recordUserMessageActivity } = require('../utils/pokemonHelper.js');
+        recordUserMessageActivity(interaction.guildId, interaction.user.id, Date.now());
+      } catch {
+        // Silently ignore activity tracking errors
+      }
+    }
+
     // Handle autocomplete interactions
     if (interaction.isAutocomplete()) {
       const { telemetry } = require('../utils/telemetry.js');

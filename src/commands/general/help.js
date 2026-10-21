@@ -190,10 +190,10 @@ const PUBLIC_COMMANDS = [
   {
     name: 'pokemon',
     category: '🎮 Pokemon (CC)',
-    summary: 'Capture, party list, summon, or release',
-    usage: '/pokemon <capture|list|summon|release>',
+    summary: 'Party, capture, transfer, or fightback',
+    usage: '/pokemon <capture|list|summon|release|transfer|fightback|opt>',
     details:
-      'Master Pokémon command. Capture server members with an interactive fight-back battle mini-game (/pokemon capture), view your party (/pokemon list), summon into battle with user avatars (/pokemon summon), or release Pokémon back to the wild (/pokemon release).',
+      'Master Pokémon command. Capture members (/pokemon capture), view party (/pokemon list), summon companions (/pokemon summon), release (/pokemon release), transfer ownership (/pokemon transfer), fight back to escape (/pokemon fightback), or configure opt-in/opt-out status (/pokemon opt).',
   },
   {
     name: 'ping',
