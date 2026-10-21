@@ -20,7 +20,6 @@ const MAX_LOGS = 1000;
 const REDIS_LOGS_KEY = 'logs:recent';
 const REDIS_LOGS_MAX = 500;
 
-
 // ANSI stripper regex
 const ANSI_REGEX =
   // eslint-disable-next-line no-control-regex
@@ -114,7 +113,6 @@ class LogBuffer {
         redis.hincrby('stats:logs:levels', normLevel, 1).catch(() => {});
       }
     }
-
 
     return entry;
   }
@@ -235,7 +233,6 @@ class LogBuffer {
         // Ignore redis deletion error
       }
     }
-
   }
 }
 

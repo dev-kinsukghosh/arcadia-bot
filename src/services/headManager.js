@@ -7,6 +7,7 @@ const logger = require('../utils/logger.js');
 const { db } = require('../utils/db.js');
 const { playerHeads, playerProfiles } = require('../db/schema.js');
 const { eq, sql } = require('drizzle-orm');
+const { isNpcPlayer } = require('../utils/townOwnerManager.js');
 
 // In-flight deduplication map to prevent multiple upstream API calls for the same username
 const inflightRequests = new Map();
@@ -51,6 +52,7 @@ function getOfflineUuid(username) {
  * Resolves a Minecraft username to a UUID using caching and Mojang's API.
  */
 async function resolveUsernameToUuid(username) {
+  if (isNpcPlayer(username)) return null;
   const lowerName = username.toLowerCase();
 
   // 1. Try memory cache
@@ -377,7 +379,7 @@ async function checkScheduleAndRunBatch(townyData) {
     const players = new Map();
     if (townyData.towns) {
       townyData.towns.forEach((t) => {
-        if (t.mayor && t.mayor.name && t.mayor.uuid) {
+        if (t.mayor && t.mayor.name && t.mayor.uuid && !isNpcPlayer(t.mayor.name)) {
           players.set(t.mayor.uuid, t.mayor.name);
         }
       });
@@ -458,6 +460,7 @@ async function updateAllHeadsConcurrencyJob() {
 
     const tasks = records.map((record) => async () => {
       const { uuid, username, pngData: oldPng } = record;
+      if (isNpcPlayer(username)) return;
 
       try {
         const newPng = await fetchHeadFromApis(uuid, username);

@@ -7,6 +7,13 @@ const warsRoutes = require('./warsRoutes.js');
 const playersRoutes = require('./playersRoutes.js');
 const shopsRoutes = require('./shopsRoutes.js');
 const assetRoutes = require('./assetRoutes.js');
+const {
+  isMaintenanceActive,
+  getMaintenanceReason,
+  getMaintenanceDetails,
+  isDevRequest,
+  generateMaintenanceHtml,
+} = require('../utils/maintenanceHelper.js');
 
 const apiRouter = express.Router();
 
@@ -35,11 +42,23 @@ const getStatus = (req, res) => {
   });
 };
 
+const getMaintenanceStatus = (req, res) => {
+  const active = isMaintenanceActive();
+  const reason = getMaintenanceReason();
+
+  return res.status(active ? 403 : 200).json({
+    maintenance: active,
+    status: active ? 'maintenance' : 'operational',
+    reason: reason || undefined,
+  });
+};
+
 // 0. Base API info & status routes
 apiRouter.get('/', getApiInfo);
 apiRouter.get('/api', getApiInfo);
 apiRouter.get('/status', getStatus);
 apiRouter.get('/api/status', getStatus);
+apiRouter.get('/api/maintenance', getMaintenanceStatus);
 
 // Mount Developer Telemetry & Admin Routes
 apiRouter.use('/dev', devRoutes);

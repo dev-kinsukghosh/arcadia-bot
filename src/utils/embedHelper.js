@@ -73,10 +73,73 @@ function infoEmbed(title, description) {
     .setDescription(description);
 }
 
+/**
+ * Formats a date, string, or epoch timestamp into an explicit UTC string with dynamic Discord relative timestamp.
+ * Format: `YYYY-MM-DD HH:mm:ss UTC` (<t:epoch:R>)
+ *
+ * @param {Date|string|number} dateInput
+ * @param {object} [options]
+ * @param {boolean} [options.includeRelative=true]
+ * @param {boolean} [options.includeSeconds=true]
+ * @returns {string}
+ */
+function formatUtcTime(dateInput, options = {}) {
+  if (!dateInput) return 'Unknown';
+
+  const { includeRelative = true, includeSeconds = true } = options;
+
+  let d;
+  if (dateInput instanceof Date) {
+    d = dateInput;
+  } else if (typeof dateInput === 'number') {
+    d = new Date(dateInput < 9999999999 ? dateInput * 1000 : dateInput);
+  } else if (typeof dateInput === 'string') {
+    const num = Number(dateInput);
+    if (!isNaN(num) && num > 0) {
+      d = new Date(num < 9999999999 ? num * 1000 : num);
+    } else {
+      const sanitized =
+        dateInput.includes('Z') || dateInput.includes('+') || dateInput.includes('T')
+          ? dateInput
+          : `${dateInput.replace(' ', 'T')}Z`;
+      d = new Date(sanitized);
+    }
+  } else {
+    d = new Date(dateInput);
+  }
+
+  if (isNaN(d.getTime())) {
+    return 'Unknown';
+  }
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const yyyy = d.getUTCFullYear();
+  const mm = pad(d.getUTCMonth() + 1);
+  const dd = pad(d.getUTCDate());
+  const hh = pad(d.getUTCHours());
+  const min = pad(d.getUTCMinutes());
+  const ss = pad(d.getUTCSeconds());
+
+  const timeStr = includeSeconds
+    ? `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss} UTC`
+    : `${yyyy}-${mm}-${dd} ${hh}:${min} UTC`;
+
+  const epochSec = Math.floor(d.getTime() / 1000);
+  const nowSec = Math.floor(Date.now() / 1000);
+  // Guard against minor clock skew showing "in a few seconds" for just-updated records
+  const relativeSec = epochSec > nowSec && epochSec - nowSec <= 10 ? nowSec : epochSec;
+
+  if (includeRelative) {
+    return `\`${timeStr}\` (<t:${relativeSec}:R>)`;
+  }
+  return `\`${timeStr}\``;
+}
+
 module.exports = {
   createBaseEmbed,
   successEmbed,
   errorEmbed,
   infoEmbed,
+  formatUtcTime,
   EMBED_COLORS,
 };

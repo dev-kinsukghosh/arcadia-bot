@@ -10,7 +10,12 @@ const {
 } = require('discord.js');
 const { db } = require('../../utils/db.js');
 const { convoyItems } = require('../../db/schema.js');
-const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
+const {
+  createBaseEmbed,
+  errorEmbed,
+  formatUtcTime,
+  EMBED_COLORS,
+} = require('../../utils/embedHelper.js');
 const { getCurrencyCache } = require('../../services/currencySync.js');
 const { getAppEmojis } = require('../../utils/emojiCache.js');
 const { getGuildCurrency } = require('../../utils/guildConfigHelper.js');
@@ -344,10 +349,9 @@ module.exports = {
         );
 
       if (itemRecord.updatedAt) {
-        const ts = Math.floor(itemRecord.updatedAt.getTime() / 1000);
         embed.addFields({
-          name: '⏱️ Last Rotated / Updated',
-          value: `<t:${ts}:F> (<t:${ts}:R>)`,
+          name: '⏱️ Last Rotated / Updated (UTC)',
+          value: formatUtcTime(itemRecord.updatedAt),
           inline: false,
         });
       }
@@ -449,6 +453,21 @@ module.exports = {
         value: bottom5Str || 'None recorded',
         inline: false,
       });
+
+      const latestUpdated = allItems.reduce((max, it) => {
+        if (!it.updatedAt) return max;
+        const d = it.updatedAt instanceof Date ? it.updatedAt : new Date(it.updatedAt);
+        const t = d.getTime();
+        return !isNaN(t) && t > max ? t : max;
+      }, 0);
+
+      if (latestUpdated > 0) {
+        embed.addFields({
+          name: '⏱️ Last Rotated / Updated (UTC)',
+          value: formatUtcTime(latestUpdated),
+          inline: false,
+        });
+      }
 
       return embed;
     };

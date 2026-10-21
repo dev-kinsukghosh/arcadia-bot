@@ -41,6 +41,7 @@ This file serves as a reference guide for the directory structure and file respo
 │       │   ├── EventsWarsMonitor.vue
 │       │   ├── ExchangeCalculator.vue
 │       │   ├── HistoryChart.vue
+│       │   ├── MaintenanceView.vue
 │       │   ├── MarketMonitor.vue
 │       │   ├── PlayerMonitor.vue
 │       │   ├── ShopsMonitor.vue
@@ -94,6 +95,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── help.js
 │   │       ├── invite.js
 │   │       ├── invite-bd.js
+│   │       ├── maintenance.js
 │   │       ├── ncurrency.js
 │   │       ├── notifyiic.js
 │   │       ├── pemoji.js
@@ -161,6 +163,7 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── iconDownloader.js
 │       ├── logBuffer.js
 │       ├── logger.js
+│       ├── maintenanceHelper.js
 │       ├── minecraftWordlist.js
 │       ├── redis.js
 │       ├── redisOm.js
@@ -172,6 +175,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── endpointScanner.test.js
 │   ├── env.test.js
 │   ├── heads.test.js
+│   ├── maintenance.test.js
 │   ├── api.test.js
 │   ├── database.test.js
 │   ├── notify.test.js
@@ -235,7 +239,6 @@ This file serves as a reference guide for the directory structure and file respo
 - [changelogs/09-2026.md](./changelogs/09-2026.md): Monthly change log for September 2026 covering Al-Sam governance commands, developer config management, suggestion/feedback submission streaming, and ESLint flat config tuning.
 - [changelogs/10-2026.md](./changelogs/10-2026.md): Monthly change log for October 2026 covering Node 24 runtime migration, security patching, `/towny compare` fixes, database checker suites, navigation breadcrumbs, and developer telemetry & logging architecture.
 
-
 ### 📂 scripts/
 
 - [scripts/setup.js](./scripts/setup.js): Assistant script to bootstrap directories and setup the `.env` template config.
@@ -264,6 +267,7 @@ This file serves as a reference guide for the directory structure and file respo
     - [dashboard/src/components/ConvoyStock.vue](./dashboard/src/components/ConvoyStock.vue): Convoy Shop monitor with segmented **Convoy Live** / **All Items** view toggle, rarity-grouped card sections, and TransitionGroup animations.
     - [dashboard/src/components/ExchangeCalculator.vue](./dashboard/src/components/ExchangeCalculator.vue): Conversion widget to calculate rates between nation currencies.
     - [dashboard/src/components/HistoryChart.vue](./dashboard/src/components/HistoryChart.vue): Comparison Line chart graphing historical rates over 7-120 days.
+    - [dashboard/src/components/MaintenanceView.vue](./dashboard/src/components/MaintenanceView.vue): Real-time maintenance and infrastructure health monitor displaying active reasons, status badges, operational services grid, and developer access unlock gateway.
     - [dashboard/src/components/MarketMonitor.vue](./dashboard/src/components/MarketMonitor.vue): Unified market table view displaying pinned favorites and category filters.
     - [dashboard/src/components/ShopsMonitor.vue](./dashboard/src/components/ShopsMonitor.vue): Player Shops directory with searching, item filtering, coordinates copy tool, and detail modal.
     - [dashboard/src/components/TownyMonitor.vue](./dashboard/src/components/TownyMonitor.vue): Towny monitor displaying overview counts, towns, and nations with detail modals.
@@ -311,6 +315,7 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/help.js](./src/commands/general/help.js): `/help` — Categorized command directory list and detailed usage instructions.
       - [src/commands/general/invite.js](./src/commands/general/invite.js): `/invite` — Get official Discord invite link to add bot to server.
       - [src/commands/general/invite-bd.js](./src/commands/general/invite-bd.js): `/invite-bd` — Generates a single-use invite to join a server the bot is in (Developer Only).
+      - [src/commands/general/maintenance.js](./src/commands/general/maintenance.js): `/maintenance` — Toggle system maintenance mode on/off with optional reason (Developer Only).
       - [src/commands/general/ncurrency.js](./src/commands/general/ncurrency.js): `/ncurrency` — Set this server's nation currency config (Admin Only).
       - [src/commands/general/notifyiic.js](./src/commands/general/notifyiic.js): `/notifyiic` — Subscribe to item stock notifications in a specific channel.
       - [src/commands/general/pemoji.js](./src/commands/general/pemoji.js): `/pemoji` — Download a Minecraft player skin render and upload it as a server emoji.
@@ -375,10 +380,12 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/iconDownloader.js](./src/utils/iconDownloader.js): Downloads missing block and item icons from assets.mcasset.cloud.
   - [src/utils/logBuffer.js](./src/utils/logBuffer.js): In-memory circular buffer and Redis list logger buffering structured log objects with search and level queries.
   - [src/utils/logger.js](./src/utils/logger.js): Winston/Picocolors logger integrated with logBuffer.
+  - [src/utils/maintenanceHelper.js](./src/utils/maintenanceHelper.js): Central maintenance mode manager, state persistence (Redis + MySQL), dev verification, Express middleware, and 403 HTML generator.
   - [src/utils/minecraftWordlist.js](./src/utils/minecraftWordlist.js): Generates ~10,000 Minecraft and server-related endpoint candidate paths.
   - [src/utils/redis.js](./src/utils/redis.js): Connection client for Redis cache operations.
   - [src/utils/redisOm.js](./src/utils/redisOm.js): Redis-OM client wrapper initialization.
   - [src/utils/telemetry.js](./src/utils/telemetry.js): Central performance & telemetry manager tracking system resources (CPU, RAM, Event Loop), Discord bot metrics, command latencies, sync workers, HTTP API, and web frontend telemetry.
+  - [src/utils/townOwnerManager.js](./src/utils/townOwnerManager.js): Manages town owner preservation across ruined states, preventing overwrite by fake NPC player names (NPCX), caching owners in Redis/MySQL, and enriching Towny data.
 - 📂 **tests/**: Codebase testing suite and validation tools.
   - [tests/setup.js](./tests/setup.js): Global Vitest setup configuring log levels during execution.
   - [tests/alAuth.test.js](./tests/alAuth.test.js): Integration tests for Al-Sam role-lock authorization and developer bypasses.
@@ -387,6 +394,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [tests/embedHelper.test.js](./tests/embedHelper.test.js): Unit tests for central Discord embed rendering helpers.
   - [tests/env.test.js](./tests/env.test.js): Health check test for configuration, database connection pools, and Redis pings.
   - [tests/heads.test.js](./tests/heads.test.js): Integration tests for player heads downloading, caching and cron updates.
+  - [tests/maintenance.test.js](./tests/maintenance.test.js): Unit and integration tests for maintenanceHelper state toggling, dev authentication, and Express 403 middleware.
   - [tests/notify.test.js](./tests/notify.test.js): Integration tests for item stock notifications table mapping.
   - [tests/options.test.js](./tests/options.test.js): Integration tests for guild custom options toggles and memory cache synchronization.
   - [tests/redis.test.js](./tests/redis.test.js): Redis database checker testing connection latency, String lifecycle (SET/GET/TTL/DEL), Hash operations, and MessagePack binary serialization.
@@ -397,4 +405,3 @@ This file serves as a reference guide for the directory structure and file respo
   - [tests/towny.test.js](./tests/towny.test.js): Integration tests for towny sync, history snapshots, and database mappings.
   - [tests/api.test.js](./tests/api.test.js): Connection verification and response validation test for the ArcadiaMC API endpoints.
   - [tests/database.test.js](./tests/database.test.js): Direct query health validation for Drizzle ORM and MySQL tables.
-

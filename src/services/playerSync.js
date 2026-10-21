@@ -7,6 +7,8 @@ const logger = require('../utils/logger.js');
 const { ActivityType } = require('discord.js');
 const pc = require('picocolors');
 
+const { isNpcPlayer } = require('../utils/townOwnerManager.js');
+
 const SYNC_INTERVAL = 60 * 1000; // 1 minute
 
 let discordClient = null;
@@ -68,7 +70,7 @@ async function savePlayersData(payload) {
     // Upsert static/rarely changing player metadata into player_profiles table
     if (Array.isArray(payload.players)) {
       for (const p of payload.players) {
-        if (!p.uuid || !p.name) continue;
+        if (!p.uuid || !p.name || isNpcPlayer(p.name)) continue;
         try {
           // Check existing profile by UUID to detect account name / display name changes
           const existing = await db

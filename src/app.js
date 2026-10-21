@@ -6,6 +6,7 @@ const { telemetry } = require('./utils/telemetry.js');
 const { applyRateLimiters } = require('./middleware/rateLimiter.js');
 const { createHostRouter } = require('./middleware/hostRouter.js');
 const { errorHandler } = require('./middleware/errorHandler.js');
+const { maintenanceMiddleware } = require('./utils/maintenanceHelper.js');
 const { apiRouter } = require('./routes/index.js');
 
 const app = express();
@@ -48,6 +49,9 @@ app.use(
 // 3. Body payload limits to prevent buffer overflow/exhaustion attacks
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ limit: '10kb', extended: true }));
+
+// 3.5. Maintenance mode middleware (developer bypass, HTTP 403 error for public requests)
+app.use(maintenanceMiddleware);
 
 // 4. Rate limiting and tarpitting middleware
 applyRateLimiters(app);

@@ -3,6 +3,11 @@ const redis = require('../utils/redis.js');
 const { MessageFlags } = require('discord.js');
 const { isBlacklisted, getBlacklistReason } = require('../utils/blacklistHelper.js');
 const { errorEmbed } = require('../utils/embedHelper.js');
+const {
+  isMaintenanceActive,
+  getMaintenanceReason,
+  isDevUser,
+} = require('../utils/maintenanceHelper.js');
 
 const cooldowns = new Map();
 
@@ -34,6 +39,36 @@ module.exports = {
       return;
     }
 
+    // Check if maintenance mode is active (developers bypass maintenance)
+    const isDev = isDevUser(interaction.user.id);
+    if (isMaintenanceActive() && !isDev) {
+      const reason = getMaintenanceReason();
+      const reasonText = reason ? `\n\n**Reason:** ${reason}` : '';
+
+      if (interaction.isAutocomplete()) {
+        return interaction
+          .respond([{ name: '⚠️ Bot is under maintenance', value: 'maintenance' }])
+          .catch(() => {});
+      }
+
+      if (interaction.isRepliable()) {
+        try {
+          await interaction.reply({
+            embeds: [
+              errorEmbed(
+                'Bot Under Maintenance',
+                `The bot is currently undergoing maintenance and commands/interactions are temporarily disabled for non-developers.${reasonText}\n\nPlease check back later.`
+              ),
+            ],
+            flags: MessageFlags.Ephemeral,
+          });
+        } catch {
+          // Ignore
+        }
+      }
+      return;
+    }
+
     // Handle autocomplete interactions
     if (interaction.isAutocomplete()) {
       const { telemetry } = require('../utils/telemetry.js');
@@ -49,7 +84,6 @@ module.exports = {
       }
       return;
     }
-
 
     // Handle button navigation interactions
     if (interaction.isButton() && interaction.customId) {
@@ -93,7 +127,6 @@ module.exports = {
           telemetry.recordButtonClick(customId, parsed.action);
 
           await interaction.deferUpdate().catch(() => {});
-
 
           const {
             renderTownView,
@@ -203,9 +236,7 @@ module.exports = {
       return;
     }
 
-    // Parse developer IDs from environment configuration
-    const devIds = (process.env.DEV_ID || '').split(',').map((id) => id.trim());
-    const isDev = devIds.includes(interaction.user.id);
+    // Developer access flag is already verified above via isDevUser
 
     // Enforce server-specific command options for custom commands (disabled by default, enabled by dev)
     const CC_COMMANDS = ['pemoji', 'al-nadd', 'al-nrm', 'al-setseat', 'al-seatcalc'];
@@ -249,7 +280,6 @@ module.exports = {
             flags: MessageFlags.Ephemeral,
           });
         }
-
       }
 
       timestamps.set(userId, now);
@@ -313,6 +343,5 @@ module.exports = {
         // Silently ignore secondary interaction response failures
       }
     }
-
   },
 };

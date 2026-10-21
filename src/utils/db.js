@@ -15,9 +15,15 @@ if (config.db.name && config.db.user) {
       database: config.db.name,
       user: config.db.user,
       password: config.db.password,
+      timezone: 'Z',
       waitForConnections: true,
       connectionLimit: config.db.connectionLimit,
       queueLimit: 0,
+    });
+
+    // Enforce UTC (+00:00) session timezone on every MySQL connection in the pool
+    connection.on('connection', (conn) => {
+      conn.query("SET time_zone = '+00:00'");
     });
 
     db = drizzle(connection, { schema, mode: 'default' });

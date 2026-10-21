@@ -3,6 +3,7 @@ const {
   successEmbed,
   errorEmbed,
   createBaseEmbed,
+  formatUtcTime,
   EMBED_COLORS,
 } = require('../../utils/embedHelper.js');
 const { blacklistUser, unblacklistUser } = require('../../utils/blacklistHelper.js');
@@ -132,7 +133,8 @@ module.exports = {
             successEmbed(
               'User Blacklisted',
               `Successfully added **${targetUser.tag}** (\`${targetId}\`) to the blacklist.\n\n` +
-                `**Reason:** ${reason}`
+                `**Reason:** ${reason}\n` +
+                `**Added (UTC):** ${formatUtcTime(new Date())}`
             ),
           ],
         });
@@ -192,7 +194,8 @@ module.exports = {
           embeds: [
             successEmbed(
               'User Unblacklisted',
-              `Successfully removed **${userTag}** (\`${targetId}\`) from the blacklist.`
+              `Successfully removed **${userTag}** (\`${targetId}\`) from the blacklist.\n\n` +
+                `**Removed (UTC):** ${formatUtcTime(new Date())}`
             ),
           ],
         });
@@ -261,9 +264,7 @@ module.exports = {
             }
           }
 
-          const dateStr = record.createdAt
-            ? `<t:${Math.floor(record.createdAt.getTime() / 1000)}:R>`
-            : 'Unknown';
+          const dateStr = formatUtcTime(record.createdAt);
 
           return (
             `• **${userTag}** (\`${record.userId}\`)\n` +

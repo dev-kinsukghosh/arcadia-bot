@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 const { LogBuffer } = require('../src/utils/logBuffer.js');
 const { TelemetryManager } = require('../src/utils/telemetry.js');
 
@@ -163,7 +162,11 @@ describe('TelemetryManager Utility', () => {
   });
 
   it('should track Discord REST rate limits and Gateway dispatch events', () => {
-    telemetry.recordDiscordRateLimit({ route: '/channels/123/messages', retryAfter: 1500, global: false });
+    telemetry.recordDiscordRateLimit({
+      route: '/channels/123/messages',
+      retryAfter: 1500,
+      global: false,
+    });
     telemetry.recordGatewayEvent('INTERACTION_CREATE');
     telemetry.recordGatewayEvent('MESSAGE_CREATE');
 
@@ -188,7 +191,11 @@ describe('TelemetryManager Utility', () => {
   });
 
   it('should track unauthorized access attempts to protected panel endpoints', () => {
-    telemetry.recordUnauthorizedAccess({ ip: '1.2.3.4', path: '/api/dev/telemetry', method: 'GET' });
+    telemetry.recordUnauthorizedAccess({
+      ip: '1.2.3.4',
+      path: '/api/dev/telemetry',
+      method: 'GET',
+    });
 
     expect(telemetry.securityStats.unauthorizedAttemptsTotal).toBe(1);
     expect(telemetry.securityStats.recentUnauthorized.length).toBe(1);
@@ -259,5 +266,3 @@ describe('TelemetryManager Utility', () => {
     expect(snapshot.redis).toBeDefined();
   });
 });
-
-

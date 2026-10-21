@@ -5,9 +5,32 @@ import { useRouter, useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import axios from 'axios';
 import { useMarketStore } from './stores/marketStore.js';
+import MaintenanceView from './components/MaintenanceView.vue';
 
 // Retrieve API URL from Vite environment variables (falls back to relative path '')
 const API_BASE = import.meta.env.VITE_API_URL || '';
+
+// Maintenance State Management with synchronous precheck
+const getInitialMaintenanceState = () => {
+  if (typeof window === 'undefined') return { active: false, reason: '' };
+  if (window.__INITIAL_MAINTENANCE__) return window.__INITIAL_MAINTENANCE__;
+  try {
+    if (sessionStorage.getItem('maintenance_active') === 'true') {
+      return {
+        active: true,
+        reason: sessionStorage.getItem('maintenance_reason') || '',
+      };
+    }
+  } catch {
+    // ignore
+  }
+  return { active: false, reason: '' };
+};
+
+const initialMaint = getInitialMaintenanceState();
+const isMaintenance = ref(initialMaint.active);
+const maintenanceReason = ref(initialMaint.reason);
+let maintenancePoller = null;
 
 // --- DEVICE FINGERPRINTING & API SETUP ---
 function initDeviceFingerprint() {
@@ -19,6 +42,34 @@ function initDeviceFingerprint() {
   }
   axios.defaults.headers.common['X-Device-Fingerprint'] = fingerprint;
 }
+
+// Global Axios response interceptor redirecting to root on 403 maintenance response
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response &&
+      error.response.status === 403 &&
+      (error.response.data?.maintenance ||
+        error.response.data?.error === 'Maintenance Mode' ||
+        error.response.data?.error === 'Forbidden')
+    ) {
+      isMaintenance.value = true;
+      maintenanceReason.value = error.response.data?.reason || '';
+      window.__IS_MAINTENANCE__ = true;
+      try {
+        sessionStorage.setItem('maintenance_active', 'true');
+        sessionStorage.setItem('maintenance_reason', maintenanceReason.value);
+      } catch {
+        // ignore
+      }
+      if (route.path !== '/') {
+        router.replace('/');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // --- STATE MANAGEMENT ---
 const router = useRouter();
@@ -102,6 +153,22 @@ function initWebSocket() {
   socket.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
+      if (msg.type === 'error' && (msg.code === 403 || msg.error === 'Maintenance Mode')) {
+        console.warn('System maintenance event received:', msg.reason);
+        isMaintenance.value = true;
+        maintenanceReason.value = msg.reason || '';
+        window.__IS_MAINTENANCE__ = true;
+        try {
+          sessionStorage.setItem('maintenance_active', 'true');
+          sessionStorage.setItem('maintenance_reason', maintenanceReason.value);
+        } catch {
+          // ignore
+        }
+        if (route.path !== '/') {
+          router.replace('/');
+        }
+        return;
+      }
       if (msg.type === 'update') {
         console.log('Real-time currency rates update received via WebSocket!');
         fetchLatestStats();
@@ -111,7 +178,23 @@ function initWebSocket() {
     }
   };
 
-  socket.onclose = () => {
+  socket.onclose = (event) => {
+    if (event.code === 4003 || event.reason === 'Maintenance Mode') {
+      console.warn('WebSocket connection closed due to maintenance mode.');
+      isMaintenance.value = true;
+      window.__IS_MAINTENANCE__ = true;
+      try {
+        sessionStorage.setItem('maintenance_active', 'true');
+      } catch {
+        // ignore
+      }
+      if (route.path !== '/') {
+        router.replace('/');
+      }
+      // Recheck more gently during maintenance (every 15s) instead of spamming every 5s
+      setTimeout(initWebSocket, 15000);
+      return;
+    }
     console.warn('WebSocket connection closed. Retrying in 5 seconds...');
     setTimeout(initWebSocket, 5000);
   };
@@ -134,20 +217,75 @@ const openBotInvite = () => {
   );
 };
 
+async function checkMaintenanceStatus() {
+  try {
+    const res = await axios.get(`${API_BASE}/api/maintenance`, {
+      headers: { Accept: 'application/json' },
+      validateStatus: () => true,
+    });
+    if (res.data && res.data.maintenance && !res.data.isDev) {
+      isMaintenance.value = true;
+      maintenanceReason.value = res.data.reason || '';
+      window.__IS_MAINTENANCE__ = true;
+      try {
+        sessionStorage.setItem('maintenance_active', 'true');
+        sessionStorage.setItem('maintenance_reason', maintenanceReason.value);
+      } catch {
+        // ignore
+      }
+      if (route.path !== '/') {
+        router.replace('/');
+      }
+    } else if (res.data && !res.data.maintenance) {
+      if (isMaintenance.value) {
+        isMaintenance.value = false;
+        maintenanceReason.value = '';
+        window.__IS_MAINTENANCE__ = false;
+        try {
+          sessionStorage.removeItem('maintenance_active');
+          sessionStorage.removeItem('maintenance_reason');
+        } catch {
+          // ignore
+        }
+        fetchLatestStats();
+      }
+    }
+  } catch {
+    // Ignore status check errors
+  }
+}
+
 onMounted(() => {
   initDeviceFingerprint();
-  fetchLatestStats();
+  checkMaintenanceStatus();
+  maintenancePoller = setInterval(checkMaintenanceStatus, 8000);
+  if (!isMaintenance.value) {
+    fetchLatestStats();
+  }
   initWebSocket();
   document.addEventListener('click', handleClickOutside);
 });
 
 onUnmounted(() => {
+  if (maintenancePoller) {
+    clearInterval(maintenancePoller);
+  }
   document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
 <template class="scroll-smooth">
+  <!-- Fancy Maintenance View when maintenance mode is active -->
   <div
+    v-if="isMaintenance"
+    class="flex min-h-screen items-center justify-center bg-[#07080c] p-4 font-sans text-slate-100"
+  >
+    <MaintenanceView :reason="maintenanceReason" />
+  </div>
+
+  <!-- Normal Dashboard Layout when maintenance is inactive -->
+  <div
+    v-else
     class="flex min-h-screen flex-col bg-[#07080c] font-sans text-slate-100 selection:bg-blue-600 selection:text-white"
   >
     <!-- Navbar Header -->
@@ -446,10 +584,16 @@ onUnmounted(() => {
     </header>
 
     <!-- Main Workspace -->
-    <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 md:px-10 md:py-8">
+    <main
+      :class="
+        route.path === '/maintenance'
+          ? 'flex flex-1 items-center justify-center p-0'
+          : 'mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 md:px-10 md:py-8'
+      "
+    >
       <!-- Error Alert -->
       <div
-        v-if="fetchError"
+        v-if="fetchError && route.path !== '/maintenance'"
         class="mb-6 flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-red-400 shadow-md"
       >
         <font-awesome-icon icon="circle-exclamation" class="mt-0.5 text-red-400" />
@@ -463,9 +607,9 @@ onUnmounted(() => {
 
       <!-- Dashboard Pages / Loading Wrapper -->
       <Transition name="fade" mode="out-in" appear>
-        <!-- Loading State -->
+        <!-- Loading State (bypassed on maintenance screen) -->
         <div
-          v-if="isLoading"
+          v-if="isLoading && route.path !== '/maintenance'"
           key="loading"
           class="flex flex-col items-center justify-center space-y-4 py-24"
         >
@@ -500,10 +644,10 @@ onUnmounted(() => {
       <div class="mx-auto flex max-w-360 flex-col items-center justify-between gap-4 sm:flex-row">
         <div>ArcadiaMC Community Bot. Built by webdevkin</div>
         <div class="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
-          <span class="flex items-center gap-1">
+          <div class="flex items-center gap-1.5 text-slate-400">
             <span class="size-2.5 animate-pulse rounded-full bg-emerald-500" />
-            System Online
-          </span>
+            <span>System Online</span>
+          </div>
           <span class="font-mono text-[10px]">v1.1.5</span>
           <button
             class="group animate-pulse-glow relative flex items-center gap-2 overflow-hidden rounded-lg border border-indigo-500/30 bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_0_10px_rgba(99,102,241,0.3)] transition-all duration-300 hover:scale-105 hover:border-indigo-400 active:scale-95"

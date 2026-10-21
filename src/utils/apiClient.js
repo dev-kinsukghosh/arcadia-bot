@@ -56,9 +56,7 @@ apiClient.interceptors.response.use(
     return res.data;
   },
   (error) => {
-    const duration = error.config?.meta?.startTime
-      ? Date.now() - error.config.meta.startTime
-      : 0;
+    const duration = error.config?.meta?.startTime ? Date.now() - error.config.meta.startTime : 0;
     const durationStr = duration ? ` (${duration}ms)` : '';
 
     try {
@@ -90,7 +88,6 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
 
 // Opossum Circuit Breaker setup
 const breakerOptions = {

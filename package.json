@@ -6,9 +6,6 @@
   "license": "ISC",
   "author": "",
   "main": "bot.js",
-  "engines": {
-    "node": ">=24.0.0"
-  },
   "scripts": {
     "dashboard:build": "node dashboard/prerender.mjs",
     "dashboard:check": "npm-run-all lint",
@@ -40,13 +37,13 @@
     "test:db": "vitest run tests/database.test.js",
     "test:devconfig": "vitest run tests/devConfig.test.js",
     "test:env": "vitest run tests/env.test.js",
+    "test:maintenance": "vitest run tests/maintenance.test.js",
     "test:redis": "vitest run tests/redis.test.js",
     "test:sql": "vitest run tests/sql.test.js",
     "test:suggest": "vitest run tests/suggestFeedback.test.js",
     "test:telemetry": "vitest run tests/telemetry.test.js",
     "upload:emojis": "node scripts/upload-emojis.js"
   },
-
   "nodemonConfig": {
     "delay": 2500,
     "ignore": [
@@ -125,5 +122,8 @@
     "unplugin-vue-components": "^32.1.0",
     "vite-plugin-vue-inspector": "^7.0.0",
     "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

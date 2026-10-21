@@ -222,6 +222,18 @@ function extractTownAndNation(ev) {
   return { townName, nationName };
 }
 
+function getEventMayorName(data) {
+  if (!data || typeof data !== 'object') return null;
+  if (data.oldMayorName && !/^npc[-_]?\d+$/i.test(data.oldMayorName)) {
+    return data.oldMayorName;
+  }
+  const mayorName = data.mayor?.name;
+  if (mayorName && !/^npc[-_]?\d+$/i.test(mayorName)) {
+    return mayorName;
+  }
+  return null;
+}
+
 function handleCardClick(ev) {
   const { townName, nationName } = extractTownAndNation(ev);
   if (townName) {
@@ -458,11 +470,11 @@ onMounted(() => {
 
                 <!-- Mayor Pill -->
                 <span
-                  v-if="ev.data && typeof ev.data === 'object' && ev.data.mayor?.name"
+                  v-if="getEventMayorName(ev.data)"
                   class="inline-flex items-center gap-1 rounded border border-slate-700/50 bg-slate-800 px-2 py-0.5 text-slate-300"
                 >
                   <font-awesome-icon icon="crown" class="text-[10px] text-amber-400" />
-                  Mayor: {{ ev.data.mayor.name }}
+                  Mayor: {{ getEventMayorName(ev.data) }}
                 </span>
 
                 <!-- King Pill -->

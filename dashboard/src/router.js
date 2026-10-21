@@ -11,7 +11,14 @@ import PlayerMonitor from './components/PlayerMonitor.vue';
 const routes = [
   {
     path: '/',
-    redirect: '/live-market',
+    name: 'root',
+    beforeEnter: (to, from, next) => {
+      if (typeof window !== 'undefined' && window.__IS_MAINTENANCE__) {
+        return next();
+      }
+      next('/live-market');
+    },
+    component: MarketMonitor,
   },
   {
     path: '/monitor',
@@ -61,8 +68,21 @@ const routes = [
 
 export function createRouterInstance() {
   const isServer = typeof window === 'undefined';
-  return createRouter({
+  const router = createRouter({
     history: isServer ? createMemoryHistory() : createWebHistory(),
     routes,
   });
+
+  router.beforeEach((to, from, next) => {
+    if (isServer) return next();
+
+    // When maintenance is active, any page navigation instantly redirects to '/'
+    if (window.__IS_MAINTENANCE__ && to.path !== '/') {
+      return next('/');
+    }
+
+    next();
+  });
+
+  return router;
 }

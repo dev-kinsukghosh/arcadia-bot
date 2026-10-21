@@ -173,6 +173,20 @@ async function saveEventsToSEvents(eventsList) {
         .onDuplicateKeyUpdate({
           set: { id: sql`id` },
         });
+
+      // Preserve town owner if event indicates a town fell into ruin
+      if (ev.type === 'town_ruined') {
+        try {
+          const parsedData = typeof ev.data === 'object' ? ev.data : JSON.parse(ev.data || '{}');
+          if (parsedData?.oldMayorName) {
+            const { recordRuinedTownOwner } = require('../utils/townOwnerManager.js');
+            const town = parsedData.town || {};
+            await recordRuinedTownOwner(town.id, town.name, parsedData.oldMayorName);
+          }
+        } catch {
+          // ignore
+        }
+      }
     } catch (err) {
       logger.warn(`Failed to record event in s_events: ${err.message}`);
     }

@@ -265,11 +265,7 @@ function drawCompareChart(item1, item2, title) {
     // Leader title
     ctx.fillStyle = '#64748b';
     ctx.font = 'bold 9px sans-serif';
-    ctx.fillText(
-      (item.leaderTitle || 'MAYOR').toUpperCase(),
-      x + panelW / 2,
-      yStart + 66
-    );
+    ctx.fillText((item.leaderTitle || 'MAYOR').toUpperCase(), x + panelW / 2, yStart + 66);
 
     // Leader name (auto-fitted)
     ctx.fillStyle = '#e2e8f0';

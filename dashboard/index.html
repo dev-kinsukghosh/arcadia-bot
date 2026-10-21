@@ -29,6 +29,20 @@
         font-family: 'Outfit', sans-serif;
       }
     </style>
+    <!-- Instant synchronous maintenance precheck cache -->
+    <script>
+      (function () {
+        try {
+          if (sessionStorage.getItem('maintenance_active') === 'true') {
+            window.__INITIAL_MAINTENANCE__ = {
+              active: true,
+              reason: sessionStorage.getItem('maintenance_reason') || '',
+            };
+            window.__IS_MAINTENANCE__ = true;
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="overflow-x-hidden bg-[#090a0f] text-slate-100 antialiased">
     <div id="app"></div>

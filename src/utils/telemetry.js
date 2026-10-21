@@ -78,13 +78,62 @@ class TelemetryManager {
 
     // Background sync services telemetry
     this.services = {
-      ConvoySync: { status: 'idle', lastRun: null, durationMs: 0, runs: 0, errors: 0, lastError: null },
-      CurrencySync: { status: 'idle', lastRun: null, durationMs: 0, runs: 0, errors: 0, lastError: null },
-      HeadsSync: { status: 'idle', lastRun: null, durationMs: 0, runs: 0, errors: 0, lastError: null },
-      ShopsSync: { status: 'idle', lastRun: null, durationMs: 0, runs: 0, errors: 0, lastError: null },
-      TownySync: { status: 'idle', lastRun: null, durationMs: 0, runs: 0, errors: 0, lastError: null },
-      EmptyEndpointsSync: { status: 'idle', lastRun: null, durationMs: 0, runs: 0, errors: 0, lastError: null },
-      PlayerSync: { status: 'idle', lastRun: null, durationMs: 0, runs: 0, errors: 0, lastError: null },
+      ConvoySync: {
+        status: 'idle',
+        lastRun: null,
+        durationMs: 0,
+        runs: 0,
+        errors: 0,
+        lastError: null,
+      },
+      CurrencySync: {
+        status: 'idle',
+        lastRun: null,
+        durationMs: 0,
+        runs: 0,
+        errors: 0,
+        lastError: null,
+      },
+      HeadsSync: {
+        status: 'idle',
+        lastRun: null,
+        durationMs: 0,
+        runs: 0,
+        errors: 0,
+        lastError: null,
+      },
+      ShopsSync: {
+        status: 'idle',
+        lastRun: null,
+        durationMs: 0,
+        runs: 0,
+        errors: 0,
+        lastError: null,
+      },
+      TownySync: {
+        status: 'idle',
+        lastRun: null,
+        durationMs: 0,
+        runs: 0,
+        errors: 0,
+        lastError: null,
+      },
+      EmptyEndpointsSync: {
+        status: 'idle',
+        lastRun: null,
+        durationMs: 0,
+        runs: 0,
+        errors: 0,
+        lastError: null,
+      },
+      PlayerSync: {
+        status: 'idle',
+        lastRun: null,
+        durationMs: 0,
+        runs: 0,
+        errors: 0,
+        lastError: null,
+      },
     };
 
     // External ArcadiaMC API Telemetry
@@ -270,7 +319,8 @@ class TelemetryManager {
   recordDiscordRateLimit(data = {}) {
     this.discordStats.rateLimitsTotal += 1;
     const route = data.route || data.url || 'unknown';
-    this.discordStats.rateLimitsByRoute[route] = (this.discordStats.rateLimitsByRoute[route] || 0) + 1;
+    this.discordStats.rateLimitsByRoute[route] =
+      (this.discordStats.rateLimitsByRoute[route] || 0) + 1;
     this.discordStats.lastRateLimit = {
       route,
       retryAfterMs: data.retryAfter || data.timeToReset || 0,
@@ -706,7 +756,10 @@ class TelemetryManager {
   /**
    * Record a background sync service run
    */
-  recordServiceRun(serviceName, { durationMs = 0, success = true, error = null, itemsCount = null, details = null } = {}) {
+  recordServiceRun(
+    serviceName,
+    { durationMs = 0, success = true, error = null, itemsCount = null, details = null } = {}
+  ) {
     if (!this.services[serviceName]) {
       this.services[serviceName] = {
         status: 'idle',
@@ -934,7 +987,8 @@ class TelemetryManager {
       this.webStats.browsers[browser] = (this.webStats.browsers[browser] || 0) + 1;
     }
     if (clientOs) {
-      this.webStats.operatingSystems[clientOs] = (this.webStats.operatingSystems[clientOs] || 0) + 1;
+      this.webStats.operatingSystems[clientOs] =
+        (this.webStats.operatingSystems[clientOs] || 0) + 1;
     }
 
     if (vital && vital.metric && this.webStats.webVitals[vital.metric.toLowerCase()]) {
@@ -1013,7 +1067,11 @@ class TelemetryManager {
     const start = Date.now();
     try {
       if (!connection) {
-        return { connected: false, latencyMs: 0, error: 'Database connection instance unavailable' };
+        return {
+          connected: false,
+          latencyMs: 0,
+          error: 'Database connection instance unavailable',
+        };
       }
       await connection.execute('SELECT 1');
       return {
@@ -1034,7 +1092,8 @@ class TelemetryManager {
    * Fetch database table row counts, sizes, total database footprint, and connection pool metrics
    */
   async getDatabaseTableCounts() {
-    if (!connection) return { tables: {}, summary: { totalTables: 0, totalRows: 0, totalSizeMb: 0 } };
+    if (!connection)
+      return { tables: {}, summary: { totalTables: 0, totalRows: 0, totalSizeMb: 0 } };
     try {
       const [rows] = await connection.execute(
         `SELECT table_name, table_rows, data_length, index_length 
@@ -1069,9 +1128,15 @@ class TelemetryManager {
       let pool = null;
       if (connection.pool) {
         pool = {
-          allConnections: connection.pool._allConnections ? connection.pool._allConnections.length : null,
-          freeConnections: connection.pool._freeConnections ? connection.pool._freeConnections.length : null,
-          queueLength: connection.pool._connectionQueue ? connection.pool._connectionQueue.length : null,
+          allConnections: connection.pool._allConnections
+            ? connection.pool._allConnections.length
+            : null,
+          freeConnections: connection.pool._freeConnections
+            ? connection.pool._freeConnections.length
+            : null,
+          queueLength: connection.pool._connectionQueue
+            ? connection.pool._connectionQueue.length
+            : null,
         };
       }
 
@@ -1440,7 +1505,9 @@ class TelemetryManager {
     const externalApiAvailability =
       this.externalApiStats.totalCalls > 0
         ? parseFloat(
-            ((this.externalApiStats.successCalls / this.externalApiStats.totalCalls) * 100).toFixed(1)
+            ((this.externalApiStats.successCalls / this.externalApiStats.totalCalls) * 100).toFixed(
+              1
+            )
           )
         : 100;
 
@@ -1498,9 +1565,7 @@ class TelemetryManager {
         failed: this.commandStats.failed,
         successRate:
           this.commandStats.total > 0
-            ? parseFloat(
-                ((this.commandStats.success / this.commandStats.total) * 100).toFixed(1)
-              )
+            ? parseFloat(((this.commandStats.success / this.commandStats.total) * 100).toFixed(1))
             : 100,
         avgDurationMs: this.commandStats.avgDurationMs,
         minDurationMs: this.commandStats.minDurationMs,

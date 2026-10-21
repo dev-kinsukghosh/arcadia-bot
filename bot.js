@@ -30,7 +30,6 @@ async function main() {
   // Initialize crash interception immediately
   initErrorHandler(client);
 
-
   logger.info(pc.bold(pc.magenta('=========================================')));
   logger.info(pc.bold(pc.magenta('    STARTING ARCADIA COMMUNITY BOT       ')));
   logger.info(pc.bold(pc.magenta('=========================================')));
@@ -83,6 +82,15 @@ async function main() {
     await loadDevConfig();
   } catch (err) {
     logger.warn(`DevConfig startup load warning: ${err.message}`);
+  }
+
+  // Load maintenance state cache from DB/Redis safely
+  try {
+    logger.info('Loading maintenance state cache...');
+    const { loadMaintenanceState } = require('./src/utils/maintenanceHelper.js');
+    await loadMaintenanceState();
+  } catch (err) {
+    logger.warn(`Maintenance state startup load warning: ${err.message}`);
   }
 
   // 1. Load Event handlers safely
@@ -140,7 +148,6 @@ async function main() {
         reportError(err, `Service Startup: ${service.name} failed to start.`);
       }
     }
-
   } else {
     logger.info('Background sync services are disabled no service flag triggered.');
   }

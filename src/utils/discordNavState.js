@@ -63,7 +63,9 @@ function pushNavState(messageId, ownerId, target, fromTarget = null) {
     session.ownerId = ownerId;
   }
 
-  const cleanTargetName = String(target.name || '').trim().toLowerCase();
+  const cleanTargetName = String(target.name || '')
+    .trim()
+    .toLowerCase();
 
   // If already at top of stack, do not duplicate
   const top = session.stack[session.stack.length - 1];

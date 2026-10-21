@@ -4,9 +4,9 @@ const { telemetry } = require('../utils/telemetry.js');
 const { logBuffer } = require('../utils/logBuffer.js');
 const redis = require('../utils/redis.js');
 const logger = require('../utils/logger.js');
+const { isDevRequest } = require('../utils/maintenanceHelper.js');
 
 const router = express.Router();
-
 
 /**
  * Developer Authentication Middleware
@@ -14,33 +14,7 @@ const router = express.Router();
  * Checks for dev secret or developer ID match.
  */
 function devAuth(req, res, next) {
-  // Allow localhost during development if DEV_SECRET is not configured
-  const isLocal =
-    req.ip === '127.0.0.1' ||
-    req.ip === '::1' ||
-    req.hostname === 'localhost' ||
-    req.hostname === '127.0.0.1';
-
-  const devSecret = process.env.DEV_SECRET || '';
-  const devIds = (process.env.DEV_ID || '').split(',').map((id) => id.trim()).filter(Boolean);
-
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7).trim()
-    : (req.headers['x-dev-token'] || req.query.key || '').trim();
-
-  // If secret token is set and matches
-  if (devSecret && token && token === devSecret) {
-    return next();
-  }
-
-  // If token matches a configured DEV_ID
-  if (token && devIds.includes(token)) {
-    return next();
-  }
-
-  // Development convenience: if no DEV_SECRET is configured and request is local, allow
-  if (!devSecret && isLocal && process.env.NODE_ENV !== 'production') {
+  if (isDevRequest(req)) {
     return next();
   }
 
@@ -52,7 +26,8 @@ function devAuth(req, res, next) {
 
   return res.status(401).json({
     error: 'Unauthorized',
-    message: 'Valid developer token (x-dev-token header or ?key=) required to access developer telemetry.',
+    message:
+      'Valid developer token (x-dev-token header or ?key=) required to access developer telemetry.',
   });
 }
 
@@ -85,7 +60,6 @@ router.post('/web-telemetry', (req, res) => {
 
 // Apply devAuth to all administrative dev routes below
 router.use(devAuth);
-
 
 /**
  * GET /api/dev/telemetry
@@ -338,7 +312,6 @@ router.get('/security', (req, res) => {
     recentUnauthorized: telemetry.securityStats.recentUnauthorized,
   });
 });
-
 
 /**
  * POST /api/dev/cache/clear

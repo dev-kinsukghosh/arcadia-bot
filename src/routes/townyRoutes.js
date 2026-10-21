@@ -33,7 +33,9 @@ const handleTownyRequest = async (req, res) => {
   }
 
   try {
-    const data = await arcadiaApi.getTowny();
+    const rawData = await arcadiaApi.getTowny();
+    const { processTownyData } = require('../utils/townOwnerManager.js');
+    const data = await processTownyData(rawData);
 
     // Save to Redis
     if (redisClient && redisClient.status === 'ready') {

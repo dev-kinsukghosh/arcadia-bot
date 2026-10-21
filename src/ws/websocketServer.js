@@ -3,6 +3,11 @@ const logger = require('../utils/logger.js');
 const { telemetry } = require('../utils/telemetry.js');
 const redisClient = require('../utils/redis.js');
 const eventEmitter = require('../utils/emitter.js');
+const {
+  isMaintenanceActive,
+  getMaintenanceReason,
+  isDevRequest,
+} = require('../utils/maintenanceHelper.js');
 
 /**
  * Initializes the WebSocket server attached to the HTTP server instance.
@@ -14,8 +19,36 @@ const eventEmitter = require('../utils/emitter.js');
 function initWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
   const clients = new Set();
+  let lastRejectLog = 0;
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
+    const isDev = isDevRequest(req);
+    ws.isDev = isDev;
+
+    if (isMaintenanceActive() && !isDev) {
+      const now = Date.now();
+      if (now - lastRejectLog > 10000) {
+        lastRejectLog = now;
+        logger.info('WebSocket client rejected: Maintenance mode active.');
+      }
+      try {
+        ws.send(
+          JSON.stringify({
+            type: 'error',
+            code: 403,
+            error: 'Maintenance Mode',
+            message:
+              'Website and Bot are currently undergoing maintenance. Only developers have access.',
+            reason: getMaintenanceReason(),
+          })
+        );
+        ws.close(4003, 'Maintenance Mode');
+      } catch {
+        // Ignore
+      }
+      return;
+    }
+
     logger.info('WebSocket client connected.');
     clients.add(ws);
     telemetry.recordWsConnection();
@@ -105,6 +138,30 @@ function initWebSocketServer(server) {
     for (const ws of clients) {
       if (ws.readyState === ws.OPEN) {
         ws.send(msg);
+      }
+    }
+  });
+
+  // Listen to maintenance mode toggle events to disconnect non-developer clients
+  eventEmitter.on('maintenance:changed', (state) => {
+    if (state.enabled) {
+      for (const client of clients) {
+        if (!client.isDev) {
+          try {
+            client.send(
+              JSON.stringify({
+                type: 'error',
+                code: 403,
+                error: 'Maintenance Mode',
+                message: 'System entered maintenance mode. Only developers have access.',
+                reason: state.reason,
+              })
+            );
+            client.close(4003, 'Maintenance Mode');
+          } catch {
+            // Ignore
+          }
+        }
       }
     }
   });

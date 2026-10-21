@@ -97,6 +97,7 @@ async function syncConvoy(force = false, isBackup = false) {
 
       const existing = existingRecords[0];
       let currentTimesSeen = 1;
+      const rotationDate = new Date(parseUpdatedAtToMs(apiUpdatedAt) || Date.now());
 
       if (!existing) {
         // Brand new item — insert with timesSeen = 1
@@ -109,6 +110,7 @@ async function syncConvoy(force = false, isBackup = false) {
           rarity: trade.rarity,
           timesSeen: 1,
           current_p: true,
+          updatedAt: rotationDate,
         });
         inserted++;
       } else {
@@ -135,6 +137,7 @@ async function syncConvoy(force = false, isBackup = false) {
               rarity: trade.rarity,
               timesSeen: currentTimesSeen,
               current_p: true,
+              updatedAt: rotationDate,
             })
             .where(eq(convoyItems.item, trade.item));
 
@@ -147,6 +150,7 @@ async function syncConvoy(force = false, isBackup = false) {
               stock: trade.stock,
               maxStock: trade.maxStock,
               current_p: true,
+              updatedAt: rotationDate,
             })
             .where(eq(convoyItems.item, trade.item));
           updatedStockOnly++;

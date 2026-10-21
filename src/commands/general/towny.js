@@ -49,9 +49,10 @@ async function fetchTownyData() {
 
   // 2. Fallback to API if Redis is down or empty
   try {
-    const data = await arcadiaApi.getTowny();
-    if (data) {
-      townyCache = data;
+    const rawData = await arcadiaApi.getTowny();
+    if (rawData) {
+      const { processTownyData } = require('../../utils/townOwnerManager.js');
+      townyCache = await processTownyData(rawData);
       lastCacheFetch = now;
       return townyCache;
     }
@@ -261,9 +262,11 @@ module.exports = {
 
     await interaction.deferReply();
 
+    const { processTownyData, isNpcPlayer } = require('../../utils/townOwnerManager.js');
     let data;
     try {
-      data = await arcadiaApi.getTowny();
+      const rawData = await arcadiaApi.getTowny();
+      data = await processTownyData(rawData);
     } catch {
       return interaction.editReply({
         embeds: [
@@ -419,7 +422,10 @@ module.exports = {
         .addFields(
           {
             name: '👑 Leadership & Nation',
-            value: `• **Mayor:** \`${mayorName}\`\n• **Mayor UUID:** \`${mayorUuid.substring(0, 8)}...\`\n• **Nation:** \`${nationName}\``,
+            value:
+              `• **Mayor / Owner:** \`${mayorName}\`${town.ruined ? ' *(Preserved)*' : ''}\n` +
+              (town.ruined ? `• **Status:** \`⚠️ Ruined (Fallen into ruin)\`\n` : '') +
+              `• **Mayor UUID:** \`${mayorUuid.substring(0, 8)}...\`\n• **Nation:** \`${nationName}\``,
             inline: true,
           },
           {
@@ -576,6 +582,7 @@ module.exports = {
                       or(eq(playerProfiles.townId, town.id), eq(playerProfiles.townName, town.name))
                     );
                   for (const r of dbRes) {
+                    if (isNpcPlayer(r.name)) continue;
                     residentsMap.set(r.name.toLowerCase(), {
                       name: r.name,
                       displayName: r.displayName || r.name,
@@ -596,6 +603,7 @@ module.exports = {
               const playersCache = await getPlayersCache();
               const onlineList = Array.isArray(playersCache?.players) ? playersCache.players : [];
               for (const p of onlineList) {
+                if (isNpcPlayer(p.name)) continue;
                 if (
                   p.town?.id === town.id ||
                   p.town?.name?.toLowerCase() === town.name.toLowerCase()
@@ -620,12 +628,13 @@ module.exports = {
               if (
                 mayorName &&
                 mayorName !== 'Unknown' &&
+                !isNpcPlayer(mayorName) &&
                 !residentsMap.has(mayorName.toLowerCase())
               ) {
                 residentsMap.set(mayorName.toLowerCase(), {
                   name: mayorName,
                   displayName: mayorName,
-                  rank: 'MAYOR',
+                  rank: town.ruined ? 'MAYOR / OWNER' : 'MAYOR',
                   isOnline: false,
                   isMayor: true,
                 });
@@ -653,7 +662,11 @@ module.exports = {
 
               const residentLines = pageItems.map((r, idx) => {
                 const num = residentPage * pageSize + idx + 1;
-                const mayorBadge = r.isMayor ? ' 👑 **[MAYOR]**' : '';
+                const mayorBadge = r.isMayor
+                  ? town.ruined
+                    ? ' 👑 **[MAYOR / PRESERVED OWNER]**'
+                    : ' 👑 **[MAYOR]**'
+                  : '';
                 const rankTag = r.rank ? ` \`[${r.rank}]\`` : '';
                 const dispStr =
                   r.displayName && r.displayName !== r.name ? ` (*${r.displayName}*)` : '';
@@ -1064,12 +1077,7 @@ module.exports = {
           const nameClean = nameLower.replace(/_/g, ' ');
           const slugLower = t.slug?.toLowerCase() || '';
           const idLower = t.id?.toLowerCase() || '';
-          return (
-            nameLower === ql ||
-            nameClean === qc ||
-            slugLower === ql ||
-            idLower === ql
-          );
+          return nameLower === ql || nameClean === qc || slugLower === ql || idLower === ql;
         });
 
       const t1 = findTown(q1Lower, q1Clean);
@@ -1127,11 +1135,7 @@ module.exports = {
 
       let compareBuffer;
       try {
-        compareBuffer = drawCompareChart(
-          item1,
-          item2,
-          `Comparing: ${name1} vs ${name2}`
-        );
+        compareBuffer = drawCompareChart(item1, item2, `Comparing: ${name1} vs ${name2}`);
       } catch (err) {
         return interaction.editReply({
           embeds: [
@@ -1167,9 +1171,7 @@ module.exports = {
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
         .setTitle(`⚔️ Town Comparison: ${name1} vs ${name2}`)
-        .setDescription(
-          `Head-to-head profile comparison between **${name1}** and **${name2}**.`
-        )
+        .setDescription(`Head-to-head profile comparison between **${name1}** and **${name2}**.`)
         .addFields(
           {
             name: `🟦 ${name1}`,

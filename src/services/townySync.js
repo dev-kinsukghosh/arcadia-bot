@@ -34,11 +34,15 @@ async function syncTowny() {
 
   logger.info(`Starting ${pc.cyan('Towny')} synchronization and history recording...`);
   try {
-    const data = await arcadiaApi.getTowny();
-    if (!data) {
+    const rawData = await arcadiaApi.getTowny();
+    if (!rawData) {
       logger.error(`${pc.red('Failed')} to retrieve Towny data from API.`);
       return false;
     }
+
+    // Process Towny payload to preserve original owners when towns fall into ruin
+    const { processTownyData } = require('../utils/townOwnerManager.js');
+    const data = await processTownyData(rawData);
 
     // 1. Save to Redis cache for dashboard webserver use
     if (redis && redis.status === 'ready') {

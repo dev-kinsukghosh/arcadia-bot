@@ -877,8 +877,13 @@ function closeModals() {
                   </h3>
                   <span class="mt-0.5 inline-block text-[10px] text-slate-500">
                     Mayor: {{ town.mayor?.name }}
+                    <span v-if="town.ruined" class="font-semibold text-rose-400"
+                      >(Preserved Owner)</span
+                    >
                     <span
-                      v-if="town.mayor?.displayName && town.mayor?.displayName !== town.mayor?.name"
+                      v-else-if="
+                        town.mayor?.displayName && town.mayor?.displayName !== town.mayor?.name
+                      "
                       class="text-slate-400"
                     >
                       ({{ town.mayor?.displayName }})
@@ -886,7 +891,13 @@ function closeModals() {
                   </span>
                 </div>
                 <div
-                  v-if="town.nation"
+                  v-if="town.ruined"
+                  class="rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[9px] font-bold text-rose-400"
+                >
+                  ⚠️ Ruined
+                </div>
+                <div
+                  v-else-if="town.nation"
                   class="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[9px] font-bold text-indigo-400"
                 >
                   {{ cleanName(town.nation.name) }}
@@ -1094,16 +1105,24 @@ function closeModals() {
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="text-[8px] font-bold tracking-wider text-slate-500 uppercase">
-                    Town Mayor
+                    Town Mayor / Owner
                   </div>
-                  <button
-                    v-if="selectedTown.mayor?.name"
-                    class="cursor-pointer truncate text-left text-xs font-bold text-slate-100 hover:text-blue-400 hover:underline"
-                    @click="handleNavigateToPlayer(selectedTown.mayor.name)"
-                  >
-                    {{ selectedTown.mayor.name }}
-                  </button>
-                  <div v-else class="truncate text-xs font-bold text-slate-500">Unknown</div>
+                  <div class="flex items-center gap-1.5">
+                    <button
+                      v-if="selectedTown.mayor?.name"
+                      class="cursor-pointer truncate text-left text-xs font-bold text-slate-100 hover:text-blue-400 hover:underline"
+                      @click="handleNavigateToPlayer(selectedTown.mayor.name)"
+                    >
+                      {{ selectedTown.mayor.name }}
+                    </button>
+                    <div v-else class="truncate text-xs font-bold text-slate-500">Unknown</div>
+                    <span
+                      v-if="selectedTown.ruined"
+                      class="rounded border border-rose-500/30 bg-rose-500/20 px-1.5 py-0.5 text-[9px] font-bold text-rose-300"
+                    >
+                      Ruined (Preserved Owner)
+                    </span>
+                  </div>
                   <div
                     v-if="
                       selectedTown.mayor?.displayName &&

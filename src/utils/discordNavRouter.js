@@ -1,4 +1,5 @@
 const { arcadiaApi } = require('./apiClient.js');
+const { processTownyData, isNpcPlayer } = require('./townOwnerManager.js');
 const { getPlayersCache } = require('../services/playerSync.js');
 const { createBaseEmbed, errorEmbed, EMBED_COLORS } = require('./embedHelper.js');
 const { db } = require('./db.js');
@@ -25,7 +26,8 @@ async function renderTownView(townName, options = {}) {
   const queryLower = String(townName).toLowerCase().trim();
   const queryClean = queryLower.replace(/_/g, ' ');
 
-  const data = await arcadiaApi.getTowny().catch(() => null);
+  const rawData = await arcadiaApi.getTowny().catch(() => null);
+  const data = await processTownyData(rawData);
   const towns = Array.isArray(data?.towns) ? data.towns : [];
   const town = towns.find((t) => {
     if (!t) return false;
@@ -88,7 +90,10 @@ async function renderTownView(townName, options = {}) {
     .addFields(
       {
         name: '👑 Leadership & Nation',
-        value: `• **Mayor:** \`${mayorName}\`\n• **Mayor UUID:** \`${mayorUuid.substring(0, 8)}...\`\n• **Nation:** \`${nationName}\``,
+        value:
+          `• **Mayor / Owner:** \`${mayorName}\`${town.ruined ? ' *(Preserved)*' : ''}\n` +
+          (town.ruined ? `• **Status:** \`⚠️ Ruined (Fallen into ruin)\`\n` : '') +
+          `• **Mayor UUID:** \`${mayorUuid.substring(0, 8)}...\`\n• **Nation:** \`${nationName}\``,
         inline: true,
       },
       {
@@ -442,7 +447,8 @@ async function renderTownPlayersView(townName, options = {}) {
   const queryLower = String(townName).toLowerCase().trim();
   const queryClean = queryLower.replace(/_/g, ' ');
 
-  const data = await arcadiaApi.getTowny().catch(() => null);
+  const rawData = await arcadiaApi.getTowny().catch(() => null);
+  const data = await processTownyData(rawData);
   const towns = Array.isArray(data?.towns) ? data.towns : [];
   const town = towns.find((t) => {
     if (!t) return false;
@@ -472,6 +478,7 @@ async function renderTownPlayersView(townName, options = {}) {
         .from(playerProfiles)
         .where(or(eq(playerProfiles.townId, town.id), eq(playerProfiles.townName, town.name)));
       for (const r of dbRes) {
+        if (isNpcPlayer(r.name)) continue;
         residentsMap.set(r.name.toLowerCase(), {
           name: r.name,
           displayName: r.displayName || r.name,
@@ -488,6 +495,7 @@ async function renderTownPlayersView(townName, options = {}) {
   const playersCache = await getPlayersCache();
   const onlineList = Array.isArray(playersCache?.players) ? playersCache.players : [];
   for (const p of onlineList) {
+    if (isNpcPlayer(p.name)) continue;
     if (p.town?.id === town.id || p.town?.name?.toLowerCase() === town.name.toLowerCase()) {
       const existing = residentsMap.get(p.name.toLowerCase()) || {};
       residentsMap.set(p.name.toLowerCase(), {
@@ -501,11 +509,16 @@ async function renderTownPlayersView(townName, options = {}) {
     }
   }
 
-  if (mayorName && mayorName !== 'Unknown' && !residentsMap.has(mayorName.toLowerCase())) {
+  if (
+    mayorName &&
+    mayorName !== 'Unknown' &&
+    !isNpcPlayer(mayorName) &&
+    !residentsMap.has(mayorName.toLowerCase())
+  ) {
     residentsMap.set(mayorName.toLowerCase(), {
       name: mayorName,
       displayName: mayorName,
-      rank: 'MAYOR',
+      rank: town.ruined ? 'MAYOR / OWNER' : 'MAYOR',
       isOnline: false,
       isMayor: true,
     });
@@ -521,7 +534,11 @@ async function renderTownPlayersView(townName, options = {}) {
   });
 
   const residentLines = allResidents.slice(0, 15).map((r, idx) => {
-    const mayorBadge = r.isMayor ? ' 👑 **[MAYOR]**' : '';
+    const mayorBadge = r.isMayor
+      ? town.ruined
+        ? ' 👑 **[MAYOR / PRESERVED OWNER]**'
+        : ' 👑 **[MAYOR]**'
+      : '';
     const statusDot = r.isOnline ? '🟢' : '⚪';
     const nickStr = r.displayName && r.displayName !== r.name ? ` (${r.displayName})` : '';
     return `\`${idx + 1}.\` ${statusDot} **${r.name}**${nickStr}${mayorBadge} · \`${r.rank}\``;
