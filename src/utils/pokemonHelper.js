@@ -1,9 +1,4 @@
-const {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  MessageFlags,
-} = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { db } = require('./db.js');
 const { pokemonCaptures } = require('../db/schema.js');
 const { eq, and, desc } = require('drizzle-orm');
@@ -188,11 +183,13 @@ async function startFightBackMiniGame({
     mgCollector.resetTimer();
 
     const roundEmbed = buildBattleEmbed('⚔️ POKÉMON BATTLE: Break Free!', '#FFA500');
-    await interaction.editReply({
-      content: `<@${targetUser.id}>`,
-      embeds: [roundEmbed],
-      components: [buildMiniGameRow(false)],
-    }).catch(() => {});
+    await interaction
+      .editReply({
+        content: `<@${targetUser.id}>`,
+        embeds: [roundEmbed],
+        components: [buildMiniGameRow(false)],
+      })
+      .catch(() => {});
   });
 
   mgCollector.on('end', async (_, reason) => {
@@ -223,7 +220,9 @@ async function startFightBackMiniGame({
         if (!db) {
           return interaction.editReply({
             content: `<@${targetUser.id}>`,
-            embeds: [errorEmbed('Database Error', 'Could not save capture: Database connection inactive.')],
+            embeds: [
+              errorEmbed('Database Error', 'Could not save capture: Database connection inactive.'),
+            ],
             components: [],
           });
         }
@@ -371,7 +370,13 @@ async function hasTargetCapturedTrainer(guildId, trainerId, targetId) {
     const rows = await db
       .select()
       .from(pokemonCaptures)
-      .where(and(eq(pokemonCaptures.guildId, guildId), eq(pokemonCaptures.trainerId, targetId), eq(pokemonCaptures.pokemonId, trainerId)))
+      .where(
+        and(
+          eq(pokemonCaptures.guildId, guildId),
+          eq(pokemonCaptures.trainerId, targetId),
+          eq(pokemonCaptures.pokemonId, trainerId)
+        )
+      )
       .limit(1);
     return rows.length > 0;
   } catch (err) {
@@ -388,7 +393,9 @@ async function hasTargetCapturedTrainer(guildId, trainerId, targetId) {
 async function handleCaptureFlow(interaction, targetUserOrInput) {
   if (!interaction.guildId || !interaction.guild) {
     return interaction.reply({
-      embeds: [errorEmbed('Server Only', 'Pokémon commands can only be used inside a Discord server.')],
+      embeds: [
+        errorEmbed('Server Only', 'Pokémon commands can only be used inside a Discord server.'),
+      ],
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -604,7 +611,9 @@ async function handleCaptureFlow(interaction, targetUserOrInput) {
       // reason === 'yield' or 'time'
       if (!db) {
         return interaction.editReply({
-          embeds: [errorEmbed('Database Error', 'Could not save capture: Database connection inactive.')],
+          embeds: [
+            errorEmbed('Database Error', 'Could not save capture: Database connection inactive.'),
+          ],
           components: [],
         });
       }
@@ -668,7 +677,9 @@ async function handleCaptureFlow(interaction, targetUserOrInput) {
 async function handleSummonFlow(interaction, pokemonInput) {
   if (!interaction.guildId) {
     return interaction.reply({
-      embeds: [errorEmbed('Server Only', 'Pokémon commands can only be used inside a Discord server.')],
+      embeds: [
+        errorEmbed('Server Only', 'Pokémon commands can only be used inside a Discord server.'),
+      ],
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -760,7 +771,9 @@ async function handleSummonFlow(interaction, pokemonInput) {
 async function handleReleaseFlow(interaction, pokemonInput) {
   if (!interaction.guildId) {
     return interaction.reply({
-      embeds: [errorEmbed('Server Only', 'Pokémon commands can only be used inside a Discord server.')],
+      embeds: [
+        errorEmbed('Server Only', 'Pokémon commands can only be used inside a Discord server.'),
+      ],
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -860,7 +873,9 @@ async function handleReleaseFlow(interaction, pokemonInput) {
 async function handleListFlow(interaction, targetUserOption) {
   if (!interaction.guildId) {
     return interaction.reply({
-      embeds: [errorEmbed('Server Only', 'Pokémon commands can only be used inside a Discord server.')],
+      embeds: [
+        errorEmbed('Server Only', 'Pokémon commands can only be used inside a Discord server.'),
+      ],
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -901,11 +916,7 @@ async function handleListFlow(interaction, targetUserOption) {
   const listEmbed = createBaseEmbed()
     .setColor(EMBED_COLORS.CYBER)
     .setTitle(`🎒 Pokémon Party — ${targetName}`)
-    .setDescription(
-      `${statusStr}\n\n` +
-        `### 👥 Active Party (${party.length})\n` +
-        `${partyDesc}`
-    )
+    .setDescription(`${statusStr}\n\n` + `### 👥 Active Party (${party.length})\n` + `${partyDesc}`)
     .setThumbnail(targetUser.displayAvatarURL({ extension: 'png', size: 256 }))
     .setFooter({
       text: `Webdevkin custom minigame • ${party.length} Pokémon in Party`,
@@ -929,7 +940,9 @@ async function autocompleteMembers(interaction) {
         const name = (m.nickname || m.user.username).toLowerCase();
         const tag = m.user.tag.toLowerCase();
         const id = m.user.id;
-        return name.includes(focusedValue) || tag.includes(focusedValue) || id.includes(focusedValue);
+        return (
+          name.includes(focusedValue) || tag.includes(focusedValue) || id.includes(focusedValue)
+        );
       })
       .slice(0, 25);
 

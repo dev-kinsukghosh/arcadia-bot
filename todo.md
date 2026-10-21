@@ -1,6 +1,5 @@
 # todo 1 [COMPLETED]
 
-
 # todo 2
 
 DEV admin panel to see sats user cmd sats

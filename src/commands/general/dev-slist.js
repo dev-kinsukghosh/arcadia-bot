@@ -169,14 +169,16 @@ module.exports = {
 
     if (allGuilds.length === 0) {
       return interaction.editReply({
-        embeds: [createBaseEmbed().setTitle('Server List').setDescription('The bot is not currently in any servers.')],
+        embeds: [
+          createBaseEmbed()
+            .setTitle('Server List')
+            .setDescription('The bot is not currently in any servers.'),
+        ],
       });
     }
 
     // Sort guilds by member count descending
-    const sortedGuilds = [...allGuilds].sort(
-      (a, b) => (b.memberCount || 0) - (a.memberCount || 0)
-    );
+    const sortedGuilds = [...allGuilds].sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
 
     const totalGuilds = sortedGuilds.length;
     const totalMembers = sortedGuilds.reduce((acc, g) => acc + (g.memberCount || 0), 0);

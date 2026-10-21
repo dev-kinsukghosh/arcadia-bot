@@ -221,7 +221,8 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
       >
         <font-awesome-icon icon="circle-info" class="mt-0.5 shrink-0 text-sm text-amber-400" />
         <span>
-          Other currencies cannot be exchanged back to ARC in-game. As ARC is the base currency, server conversion tax does not apply.
+          Other currencies cannot be exchanged back to ARC in-game. As ARC is the base currency,
+          server conversion tax does not apply.
         </span>
       </div>
 
@@ -231,12 +232,7 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
           class="relative inline-flex items-center select-none"
           :class="isToArc ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'"
         >
-          <input
-            v-model="taxEnabled"
-            type="checkbox"
-            :disabled="isToArc"
-            class="peer sr-only"
-          />
+          <input v-model="taxEnabled" type="checkbox" :disabled="isToArc" class="peer sr-only" />
           <div
             class="h-5 w-9 rounded-full border border-slate-700 bg-slate-800 transition-colors duration-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-600 peer-focus:ring-1 peer-focus:ring-emerald-500 after:absolute after:top-[3px] after:left-[3px] after:size-3.5 after:rounded-full after:bg-slate-400 after:transition-all after:duration-200 after:content-[''] peer-checked:after:translate-x-4 peer-checked:after:bg-white"
           />
@@ -267,7 +263,10 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
             ≈ {{ formattedConvertedAmount }}
             {{ toCurrency ? toCurrency.name.split(' (')[0] : '' }}
           </div>
-          <div v-if="taxEnabled && !isToArc" class="mt-1.5 font-mono text-sm font-medium text-orange-400/90">
+          <div
+            v-if="taxEnabled && !isToArc"
+            class="mt-1.5 font-mono text-sm font-medium text-orange-400/90"
+          >
             🔥 {{ formattedTaxArc }} ARC burned as server tax
           </div>
         </div>

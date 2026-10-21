@@ -2,14 +2,7 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { createBaseEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { isOptionEnabled } = require('../../utils/guildOptionsHelper.js');
 
-const CC_COMMANDS = [
-  'pemoji',
-  'al-nadd',
-  'al-nrm',
-  'al-setseat',
-  'al-seatcalc',
-  'pokemon',
-];
+const CC_COMMANDS = ['pemoji', 'al-nadd', 'al-nrm', 'al-setseat', 'al-seatcalc', 'pokemon'];
 
 const PUBLIC_COMMANDS = [
   {
