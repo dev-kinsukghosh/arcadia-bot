@@ -66,7 +66,14 @@ const rest = new REST({ version: '10' }).setToken(token);
         const command = require(filePath);
         if (command && command.data && typeof command.execute === 'function') {
           const commandName = command.data.name;
-          const DYNAMIC_COMMANDS = ['pemoji', 'al-nadd', 'al-nrm', 'al-setseat', 'al-seatcalc'];
+          const DYNAMIC_COMMANDS = [
+            'pemoji',
+            'al-nadd',
+            'al-nrm',
+            'al-setseat',
+            'al-seatcalc',
+            'pokemon',
+          ];
           if (DYNAMIC_COMMANDS.includes(commandName)) {
             logger.info(
               `Skipping deployment registration for ${commandName} (will be registered dynamically)`

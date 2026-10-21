@@ -14,6 +14,20 @@ const taxEnabled = ref(localStorage.getItem('exchange:tax_enabled') === 'true');
 
 const fromCurrencyId = ref(localStorage.getItem('exchange:from') || 'arc');
 const toCurrencyId = ref(localStorage.getItem('exchange:to') || '');
+const isToArc = computed(() => toCurrencyId.value?.toLowerCase() === 'arc');
+const isConvertingToArc = computed(
+  () => isToArc.value && fromCurrencyId.value?.toLowerCase() !== 'arc'
+);
+
+watch(
+  () => toCurrencyId.value,
+  (newTo) => {
+    if (newTo?.toLowerCase() === 'arc') {
+      taxEnabled.value = false;
+    }
+  },
+  { immediate: true }
+);
 
 import { useRoute } from 'vue-router';
 
@@ -91,7 +105,7 @@ const arcAmount = computed(() => {
 });
 
 const taxArc = computed(() => {
-  if (!taxEnabled.value) return 0;
+  if (!taxEnabled.value || isToArc.value) return 0;
   return arcAmount.value * 0.05;
 });
 
@@ -200,10 +214,29 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
         </div>
       </div>
 
+      <!-- Base ARC Notice -->
+      <div
+        v-if="isConvertingToArc"
+        class="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-300/90"
+      >
+        <font-awesome-icon icon="circle-info" class="mt-0.5 shrink-0 text-sm text-amber-400" />
+        <span>
+          Other currencies cannot be exchanged back to ARC in-game. As ARC is the base currency, server conversion tax does not apply.
+        </span>
+      </div>
+
       <!-- Server Tax Toggle -->
       <div class="mt-1 flex items-center gap-3">
-        <label class="relative inline-flex cursor-pointer items-center select-none">
-          <input v-model="taxEnabled" type="checkbox" class="peer sr-only" />
+        <label
+          class="relative inline-flex items-center select-none"
+          :class="isToArc ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'"
+        >
+          <input
+            v-model="taxEnabled"
+            type="checkbox"
+            :disabled="isToArc"
+            class="peer sr-only"
+          />
           <div
             class="h-5 w-9 rounded-full border border-slate-700 bg-slate-800 transition-colors duration-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-600 peer-focus:ring-1 peer-focus:ring-emerald-500 after:absolute after:top-[3px] after:left-[3px] after:size-3.5 after:rounded-full after:bg-slate-400 after:transition-all after:duration-200 after:content-[''] peer-checked:after:translate-x-4 peer-checked:after:bg-white"
           />
@@ -211,6 +244,9 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
         <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase"
           >Include Server Tax (5%)</span
         >
+        <span v-if="isToArc" class="text-xs font-medium text-slate-500 italic">
+          (Tax not applicable for ARC)
+        </span>
       </div>
 
       <div
@@ -231,7 +267,7 @@ const formattedTaxArc = computed(() => formatPrice(taxArc.value));
             ≈ {{ formattedConvertedAmount }}
             {{ toCurrency ? toCurrency.name.split(' (')[0] : '' }}
           </div>
-          <div v-if="taxEnabled" class="mt-1.5 font-mono text-sm font-medium text-orange-400/90">
+          <div v-if="taxEnabled && !isToArc" class="mt-1.5 font-mono text-sm font-medium text-orange-400/90">
             🔥 {{ formattedTaxArc }} ARC burned as server tax
           </div>
         </div>

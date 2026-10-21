@@ -6,6 +6,8 @@ const logger = require('./logger.js');
 // In-memory cache for guild options: guildId -> Set of enabled option IDs
 const guildOptionsCache = new Map();
 
+const POKEMON_COMMANDS = ['pokemon'];
+
 /**
  * Warm up the guild options cache by loading all rows from the database.
  * This is called once at bot startup to prevent any initial query latencies.
@@ -41,7 +43,11 @@ function isOptionEnabled(guildId, optionId) {
   if (!guildId) return false;
   const cleanOption = optionId.toLowerCase().trim();
   const guildSet = guildOptionsCache.get(guildId);
-  return guildSet ? guildSet.has(cleanOption) : false;
+  if (!guildSet) return false;
+  if (POKEMON_COMMANDS.includes(cleanOption)) {
+    return guildSet.has('pokemon') || guildSet.has(cleanOption);
+  }
+  return guildSet.has(cleanOption);
 }
 
 /**
@@ -141,11 +147,21 @@ async function syncGuildCommands(client, guildId) {
     }
 
     const enabled = getEnabledOptions(guildId);
-    const DYNAMIC_COMMAND_NAMES = ['pemoji', 'al-nadd', 'al-nrm', 'al-setseat', 'al-seatcalc'];
+    const DYNAMIC_COMMAND_NAMES = [
+      'pemoji',
+      'al-nadd',
+      'al-nrm',
+      'al-setseat',
+      'al-seatcalc',
+      'pokemon',
+    ];
 
     const targetPayloads = [];
     for (const cmdName of DYNAMIC_COMMAND_NAMES) {
-      if (enabled.includes(cmdName)) {
+      const isCmdEnabled =
+        enabled.includes(cmdName) ||
+        (POKEMON_COMMANDS.includes(cmdName) && enabled.includes('pokemon'));
+      if (isCmdEnabled) {
         const commandObj = client.commands.get(cmdName);
         if (commandObj && commandObj.data) {
           targetPayloads.push(commandObj.data.toJSON());

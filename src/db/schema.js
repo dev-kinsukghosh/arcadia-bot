@@ -10,6 +10,7 @@ const {
   customType,
   text,
   index,
+  uniqueIndex,
   bigint,
 } = require('drizzle-orm/mysql-core');
 
@@ -221,6 +222,24 @@ const apiEndpoints = mysqlTable('api_endpoints', {
   discoveredAt: timestamp('discovered_at').defaultNow().notNull(),
 });
 
+// Pokemon Captures Table (Custom Command CC Feature)
+const pokemonCaptures = mysqlTable(
+  'pokemon_captures',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    guildId: varchar('guild_id', { length: 255 }).notNull(),
+    trainerId: varchar('trainer_id', { length: 255 }).notNull(),
+    pokemonId: varchar('pokemon_id', { length: 255 }).notNull(),
+    pokemonName: varchar('pokemon_name', { length: 255 }).notNull(),
+    capturedAt: timestamp('captured_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+  },
+  (table) => [
+    index('guild_trainer_idx').on(table.guildId, table.trainerId),
+    uniqueIndex('guild_pokemon_unique_idx').on(table.guildId, table.pokemonId),
+  ]
+);
+
 module.exports = {
   convoyItems,
   blacklist,
@@ -242,4 +261,5 @@ module.exports = {
   sEvents,
   eventNotifications,
   apiEndpoints,
+  pokemonCaptures,
 };

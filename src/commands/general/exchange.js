@@ -43,7 +43,7 @@ module.exports = {
     .addBooleanOption((option) =>
       option
         .setName('include_tax')
-        .setDescription('Include 5% server conversion tax in the calculation')
+        .setDescription('Include 5% server conversion tax (ignored when converting to ARC)')
         .setRequired(false)
     ),
 
@@ -120,7 +120,8 @@ module.exports = {
       toName = found.name || toId;
     }
 
-    const includeTax = interaction.options.getBoolean('include_tax') ?? false;
+    const requestedTax = interaction.options.getBoolean('include_tax') ?? false;
+    const includeTax = toId === 'arc' ? false : requestedTax;
 
     // Calculate math: (amount * fromRate) / toRate
     const arcAmount = amount * fromRate;
@@ -177,6 +178,15 @@ module.exports = {
       embed.addFields({
         name: '🔥 Server Tax (5%)',
         value: `\`${formatPrice(taxArc)} ARC\` burned as conversion tax`,
+        inline: false,
+      });
+    }
+
+    if (toId === 'arc' && fromId !== 'arc') {
+      embed.addFields({
+        name: 'ℹ️ Currency Notice',
+        value:
+          'Other currencies cannot be exchanged back to ARC in-game. As ARC is the base currency, server conversion tax does not apply.',
         inline: false,
       });
     }

@@ -1,6 +1,5 @@
-# todo 1
+# todo 1 [COMPLETED]
 
-Setup pokemon catcher and auto nation members count update AL-sam
 
 # todo 2
 
@@ -12,6 +11,3 @@ CPU time resorce use DB use FLAG controlls and other stuff clear cache view icon
 only allow my discord account and ones in DEV_ID
 
 # Todo 3
-
-IF the To Currency is arc in both website and discord bot force turn off TAX
-and alart user Other currencies cannot be Exchanged back to arcs and as they are base exchange tax does not apply to them

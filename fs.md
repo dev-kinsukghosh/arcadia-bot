@@ -101,6 +101,7 @@ This file serves as a reference guide for the directory structure and file respo
 │   │       ├── pemoji.js
 │   │       ├── ping.js
 │   │       ├── players.js
+│   │       ├── pokemon.js
 │   │       ├── shops.js
 │   │       ├── stats-dev.js
 │   │       ├── suggest.js
@@ -165,6 +166,7 @@ This file serves as a reference guide for the directory structure and file respo
 │       ├── logger.js
 │       ├── maintenanceHelper.js
 │       ├── minecraftWordlist.js
+│       ├── pokemonHelper.js
 │       ├── redis.js
 │       ├── redisOm.js
 │       └── telemetry.js
@@ -303,10 +305,9 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/dealfinder.js](./src/commands/general/dealfinder.js): `/dealfinder` — Calculates instant arbitrage profit deals between Player Shops and Convoy Shop.
       - [src/commands/general/exchange.js](./src/commands/general/exchange.js): `/exchange` — Calculates conversions and exchange rates between nation currencies.
       - [src/commands/general/forcesync.js](./src/commands/general/forcesync.js): `/forcesync` — Forces manual convoy data synchronization from the API (Developer Only).
-      - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Lists all guilds the bot is currently in (Developer Only).
-      - [src/commands/general/devconfig.js](./src/commands/general/devconfig.js): `/devconfig` — Configure dynamic bot features, output channels, and parameters (Developer Only).
       - [src/commands/general/dev-logs.js](./src/commands/general/dev-logs.js): `/dev-logs` — Displays formatted application and system logs with level filters, search, and stats (Developer Only).
-      - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Displays a paginated list of all joined guilds with server name and ID (Developer Only).
+      - [src/commands/general/dev-slist.js](./src/commands/general/dev-slist.js): `/dev-slist` — Displays paginated active server roster with network statistics and deep server metadata inspection (Developer Only).
+      - [src/commands/general/devconfig.js](./src/commands/general/devconfig.js): `/devconfig` — Configure dynamic bot features, output channels, and parameters (Developer Only).
 
       - [src/commands/general/exchange.js](./src/commands/general/exchange.js): `/exchange` — Convert amounts between any two nation currencies or base ARC.
       - [src/commands/general/feedback.js](./src/commands/general/feedback.js): `/feedback` — Submit feedback or reviews about the bot to developers.
@@ -320,6 +321,7 @@ This file serves as a reference guide for the directory structure and file respo
       - [src/commands/general/notifyiic.js](./src/commands/general/notifyiic.js): `/notifyiic` — Subscribe to item stock notifications in a specific channel.
       - [src/commands/general/pemoji.js](./src/commands/general/pemoji.js): `/pemoji` — Download a Minecraft player skin render and upload it as a server emoji.
       - [src/commands/general/ping.js](./src/commands/general/ping.js): Ping/latency check.
+      - [src/commands/general/pokemon.js](./src/commands/general/pokemon.js): `/pokemon` — Master Pokémon command for capture (with interactive fight-back battle mini-game), list, summon, and release subcommands (CC).
       - [src/commands/general/shops.js](./src/commands/general/shops.js): `/shops` — List player shops, view shop listings/coordinates, and search for active item offers.
       - [src/commands/general/stats-dev.js](./src/commands/general/stats-dev.js): `/stats-dev` — Displays command execution telemetry and active servers count (Developer Only).
       - [src/commands/general/suggest.js](./src/commands/general/suggest.js): `/suggest` — Submit feature suggestions for the bot to developers.
@@ -382,6 +384,7 @@ This file serves as a reference guide for the directory structure and file respo
   - [src/utils/logger.js](./src/utils/logger.js): Winston/Picocolors logger integrated with logBuffer.
   - [src/utils/maintenanceHelper.js](./src/utils/maintenanceHelper.js): Central maintenance mode manager, state persistence (Redis + MySQL), dev verification, Express middleware, and 403 HTML generator.
   - [src/utils/minecraftWordlist.js](./src/utils/minecraftWordlist.js): Generates ~10,000 Minecraft and server-related endpoint candidate paths.
+  - [src/utils/pokemonHelper.js](./src/utils/pokemonHelper.js): Central helper module for Pokémon mini-game managing encounters, interactive fight-back refusal battles, summon embeds with user pfp, release workflows, party listings, and user resolution.
   - [src/utils/redis.js](./src/utils/redis.js): Connection client for Redis cache operations.
   - [src/utils/redisOm.js](./src/utils/redisOm.js): Redis-OM client wrapper initialization.
   - [src/utils/telemetry.js](./src/utils/telemetry.js): Central performance & telemetry manager tracking system resources (CPU, RAM, Event Loop), Discord bot metrics, command latencies, sync workers, HTTP API, and web frontend telemetry.

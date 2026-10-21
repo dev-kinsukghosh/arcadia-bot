@@ -2,7 +2,14 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { createBaseEmbed, EMBED_COLORS } = require('../../utils/embedHelper.js');
 const { isOptionEnabled } = require('../../utils/guildOptionsHelper.js');
 
-const CC_COMMANDS = ['pemoji', 'al-nadd', 'al-nrm', 'al-setseat', 'al-seatcalc'];
+const CC_COMMANDS = [
+  'pemoji',
+  'al-nadd',
+  'al-nrm',
+  'al-setseat',
+  'al-seatcalc',
+  'pokemon',
+];
 
 const PUBLIC_COMMANDS = [
   {
@@ -67,7 +74,7 @@ const PUBLIC_COMMANDS = [
     summary: 'Convert amounts between nation currencies',
     usage: '/exchange <amount> <from> <to> [include_tax]',
     details:
-      'Calculates exact conversion rates and output amounts between any two nation currencies or base ARC. Supports optional 5% server conversion tax calculations.',
+      'Calculates exact conversion rates and output amounts between any two nation currencies or base ARC. Supports optional 5% server conversion tax calculations (tax is omitted when converting to ARC).',
   },
   {
     name: 'ncurrency',
@@ -186,6 +193,14 @@ const PUBLIC_COMMANDS = [
     usage: '/al-seatcalc',
     details:
       'Calculates proportional representative seat allocations for all registered Al-Sam nations based on online resident telemetry.',
+  },
+  {
+    name: 'pokemon',
+    category: '🎮 Pokemon (CC)',
+    summary: 'Capture, party list, summon, or release',
+    usage: '/pokemon <capture|list|summon|release>',
+    details:
+      'Master Pokémon command. Capture server members with an interactive fight-back battle mini-game (/pokemon capture), view your party (/pokemon list), summon into battle with user avatars (/pokemon summon), or release Pokémon back to the wild (/pokemon release).',
   },
   {
     name: 'ping',

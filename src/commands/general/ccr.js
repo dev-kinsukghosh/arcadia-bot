@@ -8,6 +8,7 @@ const ALL_OPTIONS = [
   { name: 'Al-Sam Nation Remove (/al-nrm)', value: 'al-nrm' },
   { name: 'Al-Sam Set Seats (/al-setseat)', value: 'al-setseat' },
   { name: 'Al-Sam Seat Calculator (/al-seatcalc)', value: 'al-seatcalc' },
+  { name: 'Pokemon Mini-game (/pokemon)', value: 'pokemon' },
 ];
 
 module.exports = {
