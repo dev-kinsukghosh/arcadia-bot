@@ -153,9 +153,9 @@ const PUBLIC_COMMANDS = [
     name: 'pemoji',
     category: '🛠️ Server & Utilities',
     summary: 'Generate 3D skin render as guild emoji',
-    usage: '/pemoji <username> [facing] [type-icon]',
+    usage: '/pemoji <username> <type> [facing] [type-icon] [provider]',
     details:
-      'Downloads a 3D Minecraft skin render for the specified username and programmatically uploads it as a custom guild emoji or resized 320x320 PNG sticker (requires server feature toggle).',
+      'Downloads a Minecraft skin render (face, 3D head, or full body) using MC-Heads, Crafthead, Minotar, or Crafatar and uploads it as a custom guild emoji or sticker.',
   },
   {
     name: 'al-nadd',

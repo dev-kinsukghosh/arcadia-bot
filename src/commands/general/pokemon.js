@@ -18,7 +18,9 @@ module.exports = {
   cooldown: 3,
   data: new SlashCommandBuilder()
     .setName('pokemon')
-    .setDescription('Capture Pokémon, summon, transfer, break free, release, view party, or opt in/out')
+    .setDescription(
+      'Capture Pokémon, summon, transfer, break free, release, view party, or opt in/out'
+    )
     .setIntegrationTypes(ApplicationIntegrationType.GuildInstall)
     .setContexts(InteractionContextType.Guild)
     .addSubcommand((subcommand) =>

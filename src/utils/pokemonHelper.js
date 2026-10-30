@@ -1201,12 +1201,7 @@ async function handleTransferFlow(interaction, pokemonInput, targetTrainer) {
 
   if (targetTrainer.id === pokemonId) {
     return interaction.reply({
-      embeds: [
-        errorEmbed(
-          'Invalid Recipient',
-          '❌ You cannot transfer a Pokémon to itself!'
-        ),
-      ],
+      embeds: [errorEmbed('Invalid Recipient', '❌ You cannot transfer a Pokémon to itself!')],
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -1216,10 +1211,7 @@ async function handleTransferFlow(interaction, pokemonInput, targetTrainer) {
   if (!recipientMember) {
     return interaction.reply({
       embeds: [
-        errorEmbed(
-          'Member Not Found',
-          `❌ <@${targetTrainer.id}> is not a member of this server.`
-        ),
+        errorEmbed('Member Not Found', `❌ <@${targetTrainer.id}> is not a member of this server.`),
       ],
       flags: MessageFlags.Ephemeral,
     });
@@ -1227,7 +1219,11 @@ async function handleTransferFlow(interaction, pokemonInput, targetTrainer) {
 
   // 3. Mutual capture prevention:
   // If the Pokémon has captured targetTrainer, targetTrainer cannot own the Pokémon
-  const isTargetCapturedByPokemon = await hasTargetCapturedTrainer(guildId, targetTrainer.id, pokemonId);
+  const isTargetCapturedByPokemon = await hasTargetCapturedTrainer(
+    guildId,
+    targetTrainer.id,
+    pokemonId
+  );
   if (isTargetCapturedByPokemon) {
     return interaction.reply({
       embeds: [
@@ -1491,7 +1487,12 @@ async function startCaptiveBreakoutBattle({
         if (!db) {
           return interaction.editReply({
             content: `<@${captiveId}>`,
-            embeds: [errorEmbed('Database Error', 'Could not conclude breakout: Database connection inactive.')],
+            embeds: [
+              errorEmbed(
+                'Database Error',
+                'Could not conclude breakout: Database connection inactive.'
+              ),
+            ],
             components: [],
           });
         }
@@ -1499,10 +1500,7 @@ async function startCaptiveBreakoutBattle({
         await db
           .delete(pokemonCaptures)
           .where(
-            and(
-              eq(pokemonCaptures.guildId, guildId),
-              eq(pokemonCaptures.pokemonId, captiveId)
-            )
+            and(eq(pokemonCaptures.guildId, guildId), eq(pokemonCaptures.pokemonId, captiveId))
           );
 
         // Clear cooldown since they successfully broke free
@@ -1816,7 +1814,9 @@ async function setUserOptStatus(guildId, userId, action, scope = 'server') {
     let releasedCaptures = 0;
     try {
       if (cleanScope === 'global') {
-        const result = await db.delete(pokemonCaptures).where(eq(pokemonCaptures.pokemonId, userId));
+        const result = await db
+          .delete(pokemonCaptures)
+          .where(eq(pokemonCaptures.pokemonId, userId));
         releasedCaptures = result[0]?.affectedRows || 0;
       } else {
         const result = await db

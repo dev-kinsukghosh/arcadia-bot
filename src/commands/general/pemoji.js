@@ -4,6 +4,51 @@ const axios = require('axios');
 const logger = require('../../utils/logger.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 
+const PROVIDERS = [
+  {
+    id: 'mc-heads',
+    name: 'MC-Heads',
+    getUrl: (identifier, type, facing) => {
+      if (type === 'face-2d') return `https://mc-heads.net/avatar/${identifier}/256`;
+      if (type === 'face-3d') return `https://mc-heads.net/head/${identifier}/${facing}`;
+      return `https://mc-heads.net/body/${identifier}/${facing}`;
+    },
+    supportsFacing: true,
+  },
+  {
+    id: 'crafthead',
+    name: 'Crafthead',
+    getUrl: (identifier, type) => {
+      if (type === 'face-2d') return `https://crafthead.net/avatar/${identifier}/256`;
+      if (type === 'face-3d') return `https://crafthead.net/cube/${identifier}/256`;
+      return `https://crafthead.net/body/${identifier}/256`;
+    },
+    supportsFacing: false,
+  },
+  {
+    id: 'minotar',
+    name: 'Minotar',
+    getUrl: (identifier, type) => {
+      if (type === 'face-2d') return `https://minotar.net/helm/${identifier}/256.png`;
+      if (type === 'face-3d') return `https://minotar.net/cube/${identifier}/256.png`;
+      return `https://minotar.net/armor/body/${identifier}/256.png`;
+    },
+    supportsFacing: false,
+  },
+  {
+    id: 'crafatar',
+    name: 'Crafatar',
+    getUrl: (identifier, type) => {
+      if (type === 'face-2d') return `https://crafatar.com/avatars/${identifier}?size=256&overlay`;
+      if (type === 'face-3d')
+        return `https://crafatar.com/renders/head/${identifier}?scale=8&overlay`;
+      return `https://crafatar.com/renders/body/${identifier}?scale=8&overlay`;
+    },
+    requiresUuid: true,
+    supportsFacing: false,
+  },
+];
+
 module.exports = {
   cooldown: 5,
   data: new SlashCommandBuilder()
@@ -41,6 +86,19 @@ module.exports = {
         .setDescription('Upload as a server emoji or custom sticker (Defaults to emoji)')
         .setRequired(false)
         .addChoices({ name: 'Emoji', value: 'emoji' }, { name: 'Sticker', value: 'sticker' })
+    )
+    .addStringOption((option) =>
+      option
+        .setName('provider')
+        .setDescription('Skin render provider (Defaults to Auto fallback)')
+        .setRequired(false)
+        .addChoices(
+          { name: 'Auto (Best available with fallback)', value: 'auto' },
+          { name: 'MC-Heads', value: 'mc-heads' },
+          { name: 'Crafthead', value: 'crafthead' },
+          { name: 'Minotar', value: 'minotar' },
+          { name: 'Crafatar', value: 'crafatar' }
+        )
     ),
 
   async execute(interaction) {
@@ -87,6 +145,7 @@ module.exports = {
     const type = interaction.options.getString('type');
     const facing = interaction.options.getString('facing') || 'right';
     const typeIcon = interaction.options.getString('type-icon') || 'emoji';
+    const preferredProvider = interaction.options.getString('provider') || 'auto';
 
     // Failsafe 1: Username format validation
     if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) {
@@ -123,33 +182,69 @@ module.exports = {
       identifier = username;
     }
 
-    // Build the render URL using MC-Heads API
-    let imageUrl;
-    if (type === 'face-2d') {
-      imageUrl = `https://mc-heads.net/avatar/${identifier}/256`;
-    } else if (type === 'face-3d') {
-      imageUrl = `https://mc-heads.net/head/${identifier}/${facing}`;
-    } else {
-      imageUrl = `https://mc-heads.net/body/${identifier}/${facing}`;
+    // Failsafe 3: Download skin render buffer with provider fallback
+    const isUuid = /^[0-9a-fA-F]{32}$|^[0-9a-fA-F-]{36}$/.test(identifier);
+    let queue = [...PROVIDERS];
+    if (preferredProvider !== 'auto') {
+      const selected = PROVIDERS.find((p) => p.id === preferredProvider);
+      if (selected) {
+        queue = [selected, ...PROVIDERS.filter((p) => p.id !== preferredProvider)];
+      }
     }
 
-    // Failsafe 3: Download skin render buffer
-    let imageBuffer;
-    try {
-      const response = await axios.get(imageUrl, {
-        responseType: 'arraybuffer',
-        timeout: 15000,
-      });
-      imageBuffer = Buffer.from(response.data);
-    } catch (err) {
+    let imageBuffer = null;
+    let usedProvider = null;
+    const downloadErrors = [];
+
+    for (const provider of queue) {
+      if (provider.requiresUuid && !isUuid) {
+        continue;
+      }
+      const url = provider.getUrl(identifier, type, facing);
+      try {
+        const response = await axios.get(url, {
+          responseType: 'arraybuffer',
+          timeout: 10000,
+        });
+        if (response.data && response.data.length > 0) {
+          imageBuffer = Buffer.from(response.data);
+          usedProvider = provider;
+          break;
+        }
+      } catch (err) {
+        logger.warn(
+          `Failed to download render for ${resolvedName} from ${provider.name} (${url}): ${err.message}`
+        );
+        downloadErrors.push(`${provider.name}: ${err.message}`);
+      }
+    }
+
+    if (!imageBuffer || !usedProvider) {
       return interaction.editReply({
         embeds: [
           errorEmbed(
             'Download Failed',
-            `Failed to download player skin render from the API: ${err.message}`
+            `Failed to download player skin render from all providers: ${downloadErrors.join(', ')}`
           ),
         ],
       });
+    }
+
+    // Mirror horizontally if facing is left and provider does not natively support facing
+    if (facing === 'left' && !usedProvider.supportsFacing && type !== 'face-2d') {
+      try {
+        const img = await loadImage(imageBuffer);
+        const canvas = createCanvas(img.width, img.height);
+        const ctx = canvas.getContext('2d');
+        ctx.translate(img.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, 0, 0);
+        imageBuffer = await canvas.toBuffer('image/png');
+      } catch (flipErr) {
+        logger.warn(
+          `Failed to mirror left-facing render for ${resolvedName}: ${flipErr.message}. Using original render.`
+        );
+      }
     }
 
     // Failsafe 4: Image size validation
@@ -179,6 +274,11 @@ module.exports = {
     if (uploadName.length < 2) {
       uploadName = `mc_${uploadName}`;
     }
+
+    const providerDisplay =
+      preferredProvider !== 'auto' && preferredProvider !== usedProvider.id
+        ? `${usedProvider.name} *(Fallback from ${PROVIDERS.find((p) => p.id === preferredProvider)?.name || preferredProvider})*`
+        : usedProvider.name;
 
     if (typeIcon === 'sticker') {
       let stickerBuffer;
@@ -256,7 +356,8 @@ module.exports = {
               `Successfully uploaded skin sticker for **${resolvedName}**!\n\n` +
                 `• **Name:** \`${uploadName}\`\n` +
                 `• **Type:** ${type}\n` +
-                `• **Facing:** ${facing}`
+                `• **Facing:** ${facing}\n` +
+                `• **Provider:** ${providerDisplay}`
             ),
           ],
           stickers: [createdSticker.id],
@@ -323,6 +424,7 @@ module.exports = {
                 `• **Name:** \`:${uploadName}:\`\n` +
                 `• **Type:** ${type}\n` +
                 `• **Facing:** ${facing}\n` +
+                `• **Provider:** ${providerDisplay}\n` +
                 `• **Emoji:** ${emojiFormat}`
             ),
           ],

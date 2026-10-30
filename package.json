@@ -42,7 +42,8 @@
     "test:sql": "vitest run tests/sql.test.js",
     "test:suggest": "vitest run tests/suggestFeedback.test.js",
     "test:telemetry": "vitest run tests/telemetry.test.js",
-    "upload:emojis": "node scripts/upload-emojis.js"
+    "upload:emojis": "node scripts/upload-emojis.js",
+    "deploy:git": "git add . && git commit -m \"Quick Update\" && git push"
   },
   "nodemonConfig": {
     "delay": 2500,

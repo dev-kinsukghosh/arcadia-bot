@@ -179,7 +179,12 @@ async function syncGuildCommands(client, guildId) {
 
     const needsSync =
       existingNames.length !== targetNames.length ||
-      existingNames.some((val, idx) => val !== targetNames[idx]);
+      existingNames.some((val, idx) => val !== targetNames[idx]) ||
+      targetPayloads.some((t) => {
+        const exist = existingGuildCommands.find((c) => c.name === t.name);
+        if (!exist) return true;
+        return (exist.options?.length || 0) !== (t.options?.length || 0);
+      });
 
     if (needsSync) {
       logger.info(
