@@ -83,7 +83,7 @@ const PUBLIC_COMMANDS = [
     summary: 'View Towny stats, residents & top towns',
     usage: '/towny',
     details:
-      'Displays real-time Towny server statistics, total towns and nations count, total online residents, and top 5 leaderboards for town population and claimed land chunks.',
+      'Displays real-time Towny server statistics, total towns/nations count, online residents, leaderboards, interactive profiles, comparisons (2-4 towns or nations), and historical charts.',
   },
   {
     name: 'players',

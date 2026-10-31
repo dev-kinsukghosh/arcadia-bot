@@ -123,19 +123,43 @@ module.exports = {
     .addSubcommand((sub) =>
       sub
         .setName('compare')
-        .setDescription('Compare two towns side-by-side with a graph')
+        .setDescription('Compare 2 to 4 towns or nations side-by-side with a graph')
         .addStringOption((opt) =>
           opt
-            .setName('town1')
-            .setDescription('The first town to compare')
+            .setName('type')
+            .setDescription('Type of comparison (Towns or Nations)')
+            .setRequired(true)
+            .addChoices(
+              { name: 'Towns', value: 'town' },
+              { name: 'Nations', value: 'nation' }
+            )
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('target1')
+            .setDescription('The first town or nation to compare')
             .setRequired(true)
             .setAutocomplete(true)
         )
         .addStringOption((opt) =>
           opt
-            .setName('town2')
-            .setDescription('The second town to compare')
+            .setName('target2')
+            .setDescription('The second town or nation to compare')
             .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('target3')
+            .setDescription('Optional third town or nation to compare')
+            .setRequired(false)
+            .setAutocomplete(true)
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('target4')
+            .setDescription('Optional fourth town or nation to compare')
+            .setRequired(false)
             .setAutocomplete(true)
         )
     )
@@ -197,12 +221,23 @@ module.exports = {
       const type = interaction.options.getString('type') || 'town';
       let choices = [];
 
-      if (
+      const isCompareTarget =
+        subcommand === 'compare' &&
+        (focusedOption.name.startsWith('target') ||
+          focusedOption.name === 'town1' ||
+          focusedOption.name === 'town2');
+
+      const isTownLookup =
         (focusedOption.name === 'name' && subcommand === 'town') ||
-        focusedOption.name === 'town1' ||
-        focusedOption.name === 'town2' ||
-        (focusedOption.name === 'name' && subcommand === 'history' && type === 'town')
-      ) {
+        (isCompareTarget && type === 'town') ||
+        (focusedOption.name === 'name' && subcommand === 'history' && type === 'town');
+
+      const isNationLookup =
+        (focusedOption.name === 'name' && subcommand === 'nation') ||
+        (isCompareTarget && type === 'nation') ||
+        (focusedOption.name === 'name' && subcommand === 'history' && type === 'nation');
+
+      if (isTownLookup) {
         const towns = Array.isArray(data.towns) ? data.towns : [];
         const filtered = towns.filter((t) => {
           if (!t) return false;
@@ -224,10 +259,7 @@ module.exports = {
             value: t.name || t.slug || t.id,
           };
         });
-      } else if (
-        (focusedOption.name === 'name' && subcommand === 'nation') ||
-        (focusedOption.name === 'name' && subcommand === 'history' && type === 'nation')
-      ) {
+      } else if (isNationLookup) {
         const nations = Array.isArray(data.nations) ? data.nations : [];
         const filtered = nations.filter((n) => {
           if (!n) return false;
@@ -1062,80 +1094,143 @@ module.exports = {
 
     // ── Subcommand: Compare ───────────────────────────────────────────
     if (subcommand === 'compare') {
-      const query1 = interaction.options.getString('town1')?.trim() || '';
-      const query2 = interaction.options.getString('town2')?.trim() || '';
-      const q1Lower = query1.toLowerCase();
-      const q2Lower = query2.toLowerCase();
-      const q1Clean = q1Lower.replace(/_/g, ' ');
-      const q2Clean = q2Lower.replace(/_/g, ' ');
+      const type = (interaction.options.getString('type') || 'town').toLowerCase();
+      const isNation = type === 'nation';
+      const entityLabelSingular = isNation ? 'Nation' : 'Town';
+      const entityLabelPlural = isNation ? 'Nations' : 'Towns';
+
+      const rawTargets = [
+        interaction.options.getString('target1') || interaction.options.getString('town1'),
+        interaction.options.getString('target2') || interaction.options.getString('town2'),
+        interaction.options.getString('target3'),
+        interaction.options.getString('target4'),
+      ]
+        .map((t) => (typeof t === 'string' ? t.trim() : ''))
+        .filter((t) => t.length > 0);
+
+      if (rawTargets.length < 2) {
+        return interaction.editReply({
+          embeds: [
+            errorEmbed(
+              'Insufficient Targets',
+              `Please provide at least 2 ${entityLabelPlural.toLowerCase()} to compare (minimum 2, maximum 4).`
+            ),
+          ],
+          flags: MessageFlags.Ephemeral,
+        });
+      }
 
       const towns = Array.isArray(data.towns) ? data.towns : [];
-      const findTown = (ql, qc) =>
-        towns.find((t) => {
-          if (!t) return false;
-          const nameLower = t.name?.toLowerCase() || '';
+      const nations = Array.isArray(data.nations) ? data.nations : [];
+
+      const findEntity = (query) => {
+        const ql = query.toLowerCase();
+        const qc = ql.replace(/_/g, ' ');
+        const pool = isNation ? nations : towns;
+        return pool.find((item) => {
+          if (!item) return false;
+          const nameLower = item.name?.toLowerCase() || '';
           const nameClean = nameLower.replace(/_/g, ' ');
-          const slugLower = t.slug?.toLowerCase() || '';
-          const idLower = t.id?.toLowerCase() || '';
+          const slugLower = item.slug?.toLowerCase() || '';
+          const idLower = item.id ? String(item.id).toLowerCase() : '';
           return nameLower === ql || nameClean === qc || slugLower === ql || idLower === ql;
         });
+      };
 
-      const t1 = findTown(q1Lower, q1Clean);
-      const t2 = findTown(q2Lower, q2Clean);
+      const matched = [];
+      const notFound = [];
+      for (const targetQuery of rawTargets) {
+        const item = findEntity(targetQuery);
+        if (!item) {
+          notFound.push(targetQuery);
+        } else {
+          matched.push(item);
+        }
+      }
 
-      if (!t1 || !t2) {
+      if (notFound.length > 0) {
         return interaction.editReply({
           embeds: [
             errorEmbed(
-              'Towns Not Found',
-              'One or both specified towns could not be found. Please check your query or use autocomplete.'
+              `${entityLabelPlural} Not Found`,
+              `The following ${entityLabelPlural.toLowerCase()} could not be found: ${notFound.map((q) => `\`${q}\``).join(', ')}. Please verify the spelling or select from autocomplete.`
             ),
           ],
           flags: MessageFlags.Ephemeral,
         });
       }
 
-      if (t1.id === t2.id) {
+      const uniqueKeys = new Set(matched.map((m) => m.id || m.name?.toLowerCase()));
+      if (uniqueKeys.size < matched.length) {
         return interaction.editReply({
           embeds: [
             errorEmbed(
-              'Invalid Comparison',
-              'You cannot compare a town with itself. Please select two different towns.'
+              'Duplicate Comparison',
+              `You cannot compare identical ${entityLabelPlural.toLowerCase()}. Please select distinct ${entityLabelPlural.toLowerCase()}.`
             ),
           ],
           flags: MessageFlags.Ephemeral,
         });
       }
 
-      const name1 = t1.name ? t1.name.replace(/_/g, ' ') : 'Town 1';
-      const name2 = t2.name ? t2.name.replace(/_/g, ' ') : 'Town 2';
+      const BADGES = ['🟦', '🟩', '🟪', '🟧'];
+      const HEX_COLORS = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b'];
 
-      // Prepare stats for visual compare card
-      const item1 = {
-        name: name1,
-        leaderTitle: 'Mayor',
-        leaderName: t1.mayor?.name || 'Unknown',
-        residents: t1.residents ?? 0,
-        chunks: t1.claims?.claimedChunks ?? 0,
-        statusTitle: 'NATION',
-        status: t1.nation?.name ? t1.nation.name.replace(/_/g, ' ') : 'Neutral',
-        statusColor: t1.nation?.name ? '#3b82f6' : '#94a3b8',
-      };
+      const items = matched.map((m, idx) => {
+        const cleanName = m.name ? m.name.replace(/_/g, ' ') : `${entityLabelSingular} ${idx + 1}`;
+        if (isNation) {
+          let totalChunks = Number(m.chunks || 0);
+          if (!totalChunks && Array.isArray(data.towns)) {
+            totalChunks = data.towns
+              .filter((t) => t.nation && (t.nation.name === m.name || t.nation.id === m.id))
+              .reduce((sum, t) => sum + (t.claims?.claimedChunks || 0), 0);
+          }
+          return {
+            id: m.id,
+            name: cleanName,
+            rawName: m.name,
+            type: 'nation',
+            tag: `NATION ${idx + 1}`,
+            badge: BADGES[idx],
+            color: HEX_COLORS[idx],
+            leaderTitle: 'King',
+            leaderName: m.king?.name || 'Unknown',
+            residents: Number(m.residents ?? 0),
+            towns: Number(m.towns ?? 0),
+            chunks: totalChunks,
+            statusTitle: 'CAPITAL',
+            status: m.capital?.name ? m.capital.name.replace(/_/g, ' ') : 'N/A',
+            pvp: m.flags?.pvp,
+          };
+        } else {
+          return {
+            id: m.id,
+            name: cleanName,
+            rawName: m.name,
+            type: 'town',
+            tag: `TOWN ${idx + 1}`,
+            badge: BADGES[idx],
+            color: HEX_COLORS[idx],
+            leaderTitle: 'Mayor',
+            leaderName: m.mayor?.name || 'Unknown',
+            residents: Number(m.residents ?? 0),
+            chunks: Number(m.claims?.claimedChunks ?? 0),
+            statusTitle: 'NATION',
+            status: m.nation?.name ? m.nation.name.replace(/_/g, ' ') : 'Neutral',
+            pvp: m.flags?.pvp,
+            spawnWorld: m.spawn?.world || 'N/A',
+          };
+        }
+      });
 
-      const item2 = {
-        name: name2,
-        leaderTitle: 'Mayor',
-        leaderName: t2.mayor?.name || 'Unknown',
-        residents: t2.residents ?? 0,
-        chunks: t2.claims?.claimedChunks ?? 0,
-        statusTitle: 'NATION',
-        status: t2.nation?.name ? t2.nation.name.replace(/_/g, ' ') : 'Neutral',
-        statusColor: t2.nation?.name ? '#10b981' : '#94a3b8',
-      };
+      const chartTitle =
+        items.length === 2
+          ? `Comparing: ${items[0].name} vs ${items[1].name}`
+          : `Comparing ${items.length} ${entityLabelPlural}: ${items.map((it) => it.name).join(' vs ')}`;
 
       let compareBuffer;
       try {
-        compareBuffer = drawCompareChart(item1, item2, `Comparing: ${name1} vs ${name2}`);
+        compareBuffer = drawCompareChart(items, chartTitle);
       } catch (err) {
         return interaction.editReply({
           embeds: [
@@ -1150,81 +1245,132 @@ module.exports = {
       const attachment = new AttachmentBuilder(compareBuffer, { name: 'compare-chart.png' });
 
       // Calculate head-to-head leaders
-      const r1 = t1.residents ?? 0;
-      const r2 = t2.residents ?? 0;
-      let popLeader = 'Tied';
-      if (r1 > r2) {
-        popLeader = `**${name1}** (+${(r1 - r2).toLocaleString()} residents)`;
-      } else if (r2 > r1) {
-        popLeader = `**${name2}** (+${(r2 - r1).toLocaleString()} residents)`;
+      const maxPop = Math.max(...items.map((it) => it.residents));
+      const popLeaders = items.filter((it) => it.residents === maxPop);
+      let popLeaderText = 'Tied';
+      if (popLeaders.length === 1) {
+        if (items.length === 2) {
+          const diff = Math.abs(items[0].residents - items[1].residents);
+          popLeaderText = `**${popLeaders[0].name}** (+${diff.toLocaleString()} residents)`;
+        } else {
+          popLeaderText = `**${popLeaders[0].name}** (${popLeaders[0].residents.toLocaleString()} residents)`;
+        }
+      } else if (popLeaders.length < items.length) {
+        popLeaderText = `${popLeaders.map((it) => `**${it.name}**`).join(', ')} (${maxPop.toLocaleString()} residents)`;
       }
 
-      const c1 = t1.claims?.claimedChunks ?? 0;
-      const c2 = t2.claims?.claimedChunks ?? 0;
-      let chunkLeader = 'Tied';
-      if (c1 > c2) {
-        chunkLeader = `**${name1}** (+${(c1 - c2).toLocaleString()} chunks)`;
-      } else if (c2 > c1) {
-        chunkLeader = `**${name2}** (+${(c2 - c1).toLocaleString()} chunks)`;
+      let territoryLeaderText = 'Tied';
+      if (isNation) {
+        const maxTowns = Math.max(...items.map((it) => it.towns));
+        const townLeaders = items.filter((it) => it.towns === maxTowns);
+        if (townLeaders.length === 1) {
+          if (items.length === 2) {
+            const diff = Math.abs(items[0].towns - items[1].towns);
+            territoryLeaderText = `**${townLeaders[0].name}** (+${diff.toLocaleString()} towns)`;
+          } else {
+            territoryLeaderText = `**${townLeaders[0].name}** (${townLeaders[0].towns.toLocaleString()} towns)`;
+          }
+        } else if (townLeaders.length < items.length) {
+          territoryLeaderText = `${townLeaders.map((it) => `**${it.name}**`).join(', ')} (${maxTowns.toLocaleString()} towns)`;
+        }
+      } else {
+        const maxChunks = Math.max(...items.map((it) => it.chunks));
+        const chunkLeaders = items.filter((it) => it.chunks === maxChunks);
+        if (chunkLeaders.length === 1) {
+          if (items.length === 2) {
+            const diff = Math.abs(items[0].chunks - items[1].chunks);
+            territoryLeaderText = `**${chunkLeaders[0].name}** (+${diff.toLocaleString()} chunks)`;
+          } else {
+            territoryLeaderText = `**${chunkLeaders[0].name}** (${chunkLeaders[0].chunks.toLocaleString()} chunks)`;
+          }
+        } else if (chunkLeaders.length < items.length) {
+          territoryLeaderText = `${chunkLeaders.map((it) => `**${it.name}**`).join(', ')} (${maxChunks.toLocaleString()} chunks)`;
+        }
       }
+
+      const embedFields = items.map((it) => {
+        let valueLines = [];
+        if (isNation) {
+          valueLines = [
+            `• **King:** \`${it.leaderName}\``,
+            `• **Capital:** \`${it.status}\``,
+            `• **Member Towns:** \`${it.towns.toLocaleString()}\``,
+            `• **Residents:** \`${it.residents.toLocaleString()}\``,
+            `• **Total Chunks:** \`${it.chunks.toLocaleString()}\``,
+            `• **PVP Status:** \`${it.pvp ? '🟢 Enabled' : '🔴 Disabled'}\``,
+          ];
+        } else {
+          valueLines = [
+            `• **Mayor:** \`${it.leaderName}\``,
+            `• **Nation:** \`${it.status}\``,
+            `• **Residents:** \`${it.residents.toLocaleString()}\``,
+            `• **Claimed Chunks:** \`${it.chunks.toLocaleString()}\``,
+            `• **PVP Status:** \`${it.pvp ? '🟢 Enabled' : '🔴 Disabled'}\``,
+          ];
+        }
+        return {
+          name: `${it.badge} ${it.name}`,
+          value: valueLines.join('\n'),
+          inline: true,
+        };
+      });
+
+      const leaderSummaryLines = [
+        `• **Population Leader:** ${popLeaderText}`,
+        `• **${isNation ? 'Town Count Leader' : 'Territory Leader'}:** ${territoryLeaderText}`,
+      ];
+      if (!isNation && items.length === 2) {
+        leaderSummaryLines.push(
+          `• **Spawn Worlds:** \`${items[0].spawnWorld}\` vs \`${items[1].spawnWorld}\``
+        );
+      }
+
+      embedFields.push({
+        name: '📊 Head-to-Head Leaders',
+        value: leaderSummaryLines.join('\n'),
+        inline: false,
+      });
 
       const embed = createBaseEmbed()
         .setColor(EMBED_COLORS.CYBER)
-        .setTitle(`⚔️ Town Comparison: ${name1} vs ${name2}`)
-        .setDescription(`Head-to-head profile comparison between **${name1}** and **${name2}**.`)
-        .addFields(
-          {
-            name: `🟦 ${name1}`,
-            value:
-              `• **Mayor:** \`${t1.mayor?.name || 'Unknown'}\`\n` +
-              `• **Nation:** \`${t1.nation?.name ? t1.nation.name.replace(/_/g, ' ') : 'Neutral'}\`\n` +
-              `• **Residents:** \`${Number(r1).toLocaleString()}\`\n` +
-              `• **Claimed Chunks:** \`${Number(c1).toLocaleString()}\`\n` +
-              `• **PVP Status:** \`${t1.flags?.pvp ? '🟢 Enabled' : '🔴 Disabled'}\``,
-            inline: true,
-          },
-          {
-            name: `🟩 ${name2}`,
-            value:
-              `• **Mayor:** \`${t2.mayor?.name || 'Unknown'}\`\n` +
-              `• **Nation:** \`${t2.nation?.name ? t2.nation.name.replace(/_/g, ' ') : 'Neutral'}\`\n` +
-              `• **Residents:** \`${Number(r2).toLocaleString()}\`\n` +
-              `• **Claimed Chunks:** \`${Number(c2).toLocaleString()}\`\n` +
-              `• **PVP Status:** \`${t2.flags?.pvp ? '🟢 Enabled' : '🔴 Disabled'}\``,
-            inline: true,
-          },
-          {
-            name: '📊 Head-to-Head Leaders',
-            value:
-              `• **Population Leader:** ${popLeader}\n` +
-              `• **Territory Leader:** ${chunkLeader}\n` +
-              `• **Spawn Worlds:** \`${t1.spawn?.world || 'N/A'}\` vs \`${t2.spawn?.world || 'N/A'}\``,
-            inline: false,
-          }
+        .setTitle(
+          items.length === 2
+            ? `⚔️ ${entityLabelSingular} Comparison: ${items[0].name} vs ${items[1].name}`
+            : `⚔️ ${entityLabelSingular} Comparison (${items.length} ${entityLabelPlural})`
         )
+        .setDescription(
+          `Side-by-side profile telemetry comparison for **${items.map((it) => it.name).join('**, **')}**.`
+        )
+        .addFields(embedFields)
         .setImage('attachment://compare-chart.png');
 
       const dashboardUrl = process.env.DASHBOARD_URL || 'http://localhost:5173';
-      const label1 = name1.length > 20 ? name1.slice(0, 18) + '…' : name1;
-      const label2 = name2.length > 20 ? name2.slice(0, 18) + '…' : name2;
+      const buttonStyles = [
+        ButtonStyle.Primary,
+        ButtonStyle.Success,
+        ButtonStyle.Secondary,
+        ButtonStyle.Secondary,
+      ];
 
-      const navRow = new ActionRowBuilder().addComponents(
+      const navButtons = items.map((it, idx) => {
+        const shortLabel = it.name.length > 18 ? it.name.slice(0, 16) + '…' : it.name;
+        const navPrefix = isNation ? 'nav_nation' : 'nav_town';
+        return new ButtonBuilder()
+          .setCustomId(`${navPrefix}:${encodeURIComponent(it.rawName)}:u_${interaction.user.id}`)
+          .setLabel(`Inspect ${shortLabel}`)
+          .setEmoji(isNation ? '🏳️' : '🏙️')
+          .setStyle(buttonStyles[idx] || ButtonStyle.Secondary);
+      });
+
+      navButtons.push(
         new ButtonBuilder()
-          .setCustomId(`nav_town:${encodeURIComponent(t1.name)}:u_${interaction.user.id}`)
-          .setLabel(`Inspect ${label1}`)
-          .setEmoji('🏙️')
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId(`nav_town:${encodeURIComponent(t2.name)}:u_${interaction.user.id}`)
-          .setLabel(`Inspect ${label2}`)
-          .setEmoji('🏙️')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setURL(`${dashboardUrl}/towny?tab=towns`)
+          .setURL(`${dashboardUrl}/towny?tab=${isNation ? 'nations' : 'towns'}`)
           .setLabel('Web Dashboard')
           .setEmoji('🌐')
           .setStyle(ButtonStyle.Link)
       );
+
+      const navRow = new ActionRowBuilder().addComponents(navButtons);
 
       const compareResponse = await interaction.editReply({
         embeds: [embed],
@@ -1235,8 +1381,8 @@ module.exports = {
       if (compareResponse?.id) {
         const { initNavState } = require('../../utils/discordNavState.js');
         initNavState(compareResponse.id, interaction.user.id, {
-          type: 'town',
-          name: t1.name,
+          type: isNation ? 'nation' : 'town',
+          name: items[0].rawName,
         });
       }
 

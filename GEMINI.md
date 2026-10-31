@@ -55,5 +55,6 @@ All daily changelog entries have been organized chronologically by month into th
 - [August 2026](./changelogs/08-2026.md) (`changelogs/08-2026.md`)
 - [September 2026](./changelogs/09-2026.md) (`changelogs/09-2026.md`)
 - [October 2026](./changelogs/10-2026.md) (`changelogs/10-2026.md`)
+- [November 2026](./changelogs/11-2026.md) (`changelogs/11-2026.md`)
 
 When completing tasks in future sessions, append new daily change entries to the corresponding month's markdown file (`changelogs/MM-YYYY.md`).

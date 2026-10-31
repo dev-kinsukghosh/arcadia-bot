@@ -17,7 +17,8 @@ This file serves as a reference guide for the directory structure and file respo
 │   ├── 07-2026.md
 │   ├── 08-2026.md
 │   ├── 09-2026.md
-│   └── 10-2026.md
+│   ├── 10-2026.md
+│   └── 11-2026.md
 ├── dashboard/
 
 │   ├── index.html
@@ -242,6 +243,7 @@ This file serves as a reference guide for the directory structure and file respo
 - [changelogs/08-2026.md](./changelogs/08-2026.md): Monthly change log for August 2026 covering testing suites, player heads manager, Towny synchronization, Player Shops monitor, interactive charts, and DoS security shields.
 - [changelogs/09-2026.md](./changelogs/09-2026.md): Monthly change log for September 2026 covering Al-Sam governance commands, developer config management, suggestion/feedback submission streaming, and ESLint flat config tuning.
 - [changelogs/10-2026.md](./changelogs/10-2026.md): Monthly change log for October 2026 covering Node 24 runtime migration, security patching, `/towny compare` fixes, database checker suites, navigation breadcrumbs, and developer telemetry & logging architecture.
+- [changelogs/11-2026.md](./changelogs/11-2026.md): Monthly change log for November 2026 covering multi-entity town and nation comparisons (2-4 entities) with dynamic autocomplete, canvas telemetry cards, and stacked comparative distribution charts.
 
 ### 📂 scripts/
 
