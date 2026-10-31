@@ -129,10 +129,7 @@ module.exports = {
             .setName('type')
             .setDescription('Type of comparison (Towns or Nations)')
             .setRequired(true)
-            .addChoices(
-              { name: 'Towns', value: 'town' },
-              { name: 'Nations', value: 'nation' }
-            )
+            .addChoices({ name: 'Towns', value: 'town' }, { name: 'Nations', value: 'nation' })
         )
         .addStringOption((opt) =>
           opt

@@ -17,6 +17,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "deploy": "node src/deploy-commands.js",
+    "deploy:git": "git add . && git commit -m \"Quick Update\" && git push",
     "dev": "nodemon bot.js",
     "dev:all": "run-p dev dashboard:dev",
     "dev:bot": "nodemon bot.js --bot-only",
@@ -42,8 +43,7 @@
     "test:sql": "vitest run tests/sql.test.js",
     "test:suggest": "vitest run tests/suggestFeedback.test.js",
     "test:telemetry": "vitest run tests/telemetry.test.js",
-    "upload:emojis": "node scripts/upload-emojis.js",
-    "deploy:git": "git add . && git commit -m \"Quick Update\" && git push"
+    "upload:emojis": "node scripts/upload-emojis.js"
   },
   "nodemonConfig": {
     "delay": 2500,
