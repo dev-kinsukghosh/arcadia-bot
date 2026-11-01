@@ -46,6 +46,7 @@ This file serves as a reference guide for the directory structure and file respo
 │       │   ├── MarketMonitor.vue
 │       │   ├── PlayerMonitor.vue
 │       │   ├── ShopsMonitor.vue
+│       │   ├── ToolsMonitor.vue
 │       │   └── TownyMonitor.vue
 │       └── stores/
 │           ├── convoyStore.js
@@ -276,6 +277,7 @@ This file serves as a reference guide for the directory structure and file respo
     - [dashboard/src/components/MaintenanceView.vue](./dashboard/src/components/MaintenanceView.vue): Real-time maintenance and infrastructure health monitor displaying active reasons, status badges, operational services grid, and developer access unlock gateway.
     - [dashboard/src/components/MarketMonitor.vue](./dashboard/src/components/MarketMonitor.vue): Unified market table view displaying pinned favorites and category filters.
     - [dashboard/src/components/ShopsMonitor.vue](./dashboard/src/components/ShopsMonitor.vue): Player Shops directory with searching, item filtering, coordinates copy tool, and detail modal.
+    - [dashboard/src/components/ToolsMonitor.vue](./dashboard/src/components/ToolsMonitor.vue): Interactive tools and telemetry suite featuring Town & Nation Comparator (matching /towny compare with 2-4 target entities, head avatars, and distribution bars) and National Currency Comparator (matching /ccompare with live rates, 24h change formatted to max 3 decimals, and cross-currency exchange matrix).
     - [dashboard/src/components/TownyMonitor.vue](./dashboard/src/components/TownyMonitor.vue): Towny monitor displaying overview counts, towns, and nations with detail modals.
   - 📂 **dashboard/src/stores/**: Pinia global state management stores.
     - [dashboard/src/stores/convoyStore.js](./dashboard/src/stores/convoyStore.js): Manages convoy shop stock trades, search queries, and filters.

@@ -7,6 +7,7 @@ import TownyMonitor from './components/TownyMonitor.vue';
 import ShopsMonitor from './components/ShopsMonitor.vue';
 import EventsWarsMonitor from './components/EventsWarsMonitor.vue';
 import PlayerMonitor from './components/PlayerMonitor.vue';
+import ToolsMonitor from './components/ToolsMonitor.vue';
 
 const routes = [
   {
@@ -48,6 +49,11 @@ const routes = [
     path: '/towny',
     name: 'towny',
     component: TownyMonitor,
+  },
+  {
+    path: '/tools',
+    name: 'tools',
+    component: ToolsMonitor,
   },
   {
     path: '/players',

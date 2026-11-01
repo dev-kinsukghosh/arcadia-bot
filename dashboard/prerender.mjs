@@ -40,7 +40,15 @@ async function prerender() {
   const template = fs.readFileSync(templatePath, 'utf-8');
 
   // 5. Define routes to prerender
-  const routes = ['/live-market', '/currency-history', '/exchange', '/convoy', '/towny', '/shops'];
+  const routes = [
+    '/live-market',
+    '/currency-history',
+    '/exchange',
+    '/convoy',
+    '/towny',
+    '/shops',
+    '/tools',
+  ];
 
   console.log('Prerendering routes...');
   for (const route of routes) {

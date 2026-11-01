@@ -378,6 +378,18 @@ onUnmounted(() => {
             <font-awesome-icon icon="globe" />
             Towny
           </button>
+          <button
+            :class="
+              route.path === '/tools'
+                ? 'bg-slate-900 text-white shadow-md'
+                : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+            "
+            class="hover:scale-1.03 flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-95 lg:gap-2 lg:px-3 lg:text-xs"
+            @click.prevent="navigate('/tools')"
+          >
+            <font-awesome-icon icon="wrench" />
+            Tools
+          </button>
           <!-- Monitors Dropdown Menu (Players, Shops, Events & Wars) -->
           <div ref="dropdownRef" class="relative">
             <button
@@ -541,6 +553,18 @@ onUnmounted(() => {
             >
               <font-awesome-icon icon="globe" />
               Towny
+            </button>
+            <button
+              :class="
+                route.path === '/tools'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              "
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95"
+              @click.prevent="navigate('/tools')"
+            >
+              <font-awesome-icon icon="wrench" />
+              Tools
             </button>
             <button
               :class="

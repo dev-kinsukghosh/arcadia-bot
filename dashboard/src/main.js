@@ -50,6 +50,14 @@ import {
   faCrown,
   faPlusCircle,
   faTrashAlt,
+  faWrench,
+  faCodeCompare,
+  faBuildingColumns,
+  faChartPie,
+  faTags,
+  faHourglassHalf,
+  faCopy,
+  faArrowRight,
 } from '@fortawesome/free-solid-svg-icons';
 
 // Add icons to library
@@ -95,7 +103,15 @@ library.add(
   faList,
   faCrown,
   faPlusCircle,
-  faTrashAlt
+  faTrashAlt,
+  faWrench,
+  faCodeCompare,
+  faBuildingColumns,
+  faChartPie,
+  faTags,
+  faHourglassHalf,
+  faCopy,
+  faArrowRight
 );
 
 export function createSSRApplication() {

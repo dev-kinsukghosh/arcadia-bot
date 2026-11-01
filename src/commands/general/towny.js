@@ -1000,6 +1000,7 @@ module.exports = {
     if (subcommand === 'top') {
       const metric = interaction.options.getString('metric');
       let title = '';
+      let chartTitle = '';
       let subtitle = '';
       let labels = [];
       let values = [];
@@ -1012,13 +1013,18 @@ module.exports = {
           .sort((a, b) => (b.residents ?? 0) - (a.residents ?? 0))
           .slice(0, 10);
         title = '🏘️ Top Towns by Population';
+        chartTitle = 'Top Towns by Population';
         subtitle = 'Ranked by total resident population on ArcadiaMC';
         suffix = ' Residents';
         labels = sorted.map((t) => t.name);
         values = sorted.map((t) => t.residents ?? 0);
+        const maxLen = Math.min(
+          20,
+          Math.max(...sorted.map((t) => t.name.replace(/_/g, ' ').length), 12)
+        );
         listLines = sorted.map(
           (t, idx) =>
-            `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(t.residents ?? 0).toLocaleString()}** residents`
+            `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(maxLen)}\` — **${Number(t.residents ?? 0).toLocaleString()}** residents`
         );
       } else if (metric === 'towns_chunks') {
         const sorted = [...(data.towns || [])]
@@ -1026,13 +1032,18 @@ module.exports = {
           .sort((a, b) => (b.claims?.claimedChunks ?? 0) - (a.claims?.claimedChunks ?? 0))
           .slice(0, 10);
         title = '📦 Top Towns by Territory size';
+        chartTitle = 'Top Towns by Territory Size';
         subtitle = 'Ranked by total claimed chunks count on ArcadiaMC';
         suffix = ' Chunks';
         labels = sorted.map((t) => t.name);
         values = sorted.map((t) => t.claims?.claimedChunks ?? 0);
+        const maxLen = Math.min(
+          20,
+          Math.max(...sorted.map((t) => t.name.replace(/_/g, ' ').length), 12)
+        );
         listLines = sorted.map(
           (t, idx) =>
-            `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(t.claims?.claimedChunks ?? 0).toLocaleString()}** chunks`
+            `**#${idx + 1}** \`${t.name.replace(/_/g, ' ').padEnd(maxLen)}\` — **${Number(t.claims?.claimedChunks ?? 0).toLocaleString()}** chunks`
         );
       } else if (metric === 'nations_population') {
         const sorted = [...(data.nations || [])]
@@ -1040,13 +1051,18 @@ module.exports = {
           .sort((a, b) => (b.residents ?? 0) - (a.residents ?? 0))
           .slice(0, 10);
         title = '🏳️ Top Nations by Population';
+        chartTitle = 'Top Nations by Population';
         subtitle = 'Ranked by combined resident population on ArcadiaMC';
         suffix = ' Residents';
         labels = sorted.map((n) => n.name);
         values = sorted.map((n) => n.residents ?? 0);
+        const maxLen = Math.min(
+          20,
+          Math.max(...sorted.map((n) => n.name.replace(/_/g, ' ').length), 12)
+        );
         listLines = sorted.map(
           (n, idx) =>
-            `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(n.residents ?? 0).toLocaleString()}** residents`
+            `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(maxLen)}\` — **${Number(n.residents ?? 0).toLocaleString()}** residents`
         );
       } else if (metric === 'nations_towns') {
         const sorted = [...(data.nations || [])]
@@ -1054,20 +1070,37 @@ module.exports = {
           .sort((a, b) => (b.towns ?? 0) - (a.towns ?? 0))
           .slice(0, 10);
         title = '🏘️ Top Nations by Town Count';
+        chartTitle = 'Top Nations by Town Count';
         subtitle = 'Ranked by total member towns count on ArcadiaMC';
         suffix = ' Towns';
         labels = sorted.map((n) => n.name);
         values = sorted.map((n) => n.towns ?? 0);
+        const maxLen = Math.min(
+          20,
+          Math.max(...sorted.map((n) => n.name.replace(/_/g, ' ').length), 12)
+        );
         listLines = sorted.map(
           (n, idx) =>
-            `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(16)}\` — **${Number(n.towns ?? 0).toLocaleString()}** towns`
+            `**#${idx + 1}** \`${n.name.replace(/_/g, ' ').padEnd(maxLen)}\` — **${Number(n.towns ?? 0).toLocaleString()}** towns`
         );
+      }
+
+      if (labels.length === 0) {
+        return interaction.editReply({
+          embeds: [
+            errorEmbed(
+              'No Ranking Data',
+              'No town or nation telemetry matching this criteria is currently available.'
+            ),
+          ],
+          flags: MessageFlags.Ephemeral,
+        });
       }
 
       // Generate the visual bar chart
       let chartBuffer;
       try {
-        chartBuffer = drawTopChart(labels, values, title.substring(3), subtitle, suffix);
+        chartBuffer = drawTopChart(labels, values, chartTitle, subtitle, suffix);
       } catch (err) {
         return interaction.editReply({
           embeds: [
@@ -1086,7 +1119,16 @@ module.exports = {
         )
         .setImage('attachment://top-chart.png');
 
-      return interaction.editReply({ embeds: [embed], files: [attachment] });
+      const dashboardUrl = process.env.DASHBOARD_URL || 'http://localhost:5173';
+      const isNationMetric = metric.startsWith('nations_');
+      const dashRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setLabel(`Open Towny ${isNationMetric ? 'Nations' : 'Towns'} Web Monitor`)
+          .setStyle(ButtonStyle.Link)
+          .setURL(`${dashboardUrl}/towny?tab=${isNationMetric ? 'nations' : 'towns'}`)
+      );
+
+      return interaction.editReply({ embeds: [embed], files: [attachment], components: [dashRow] });
     }
 
     // ── Subcommand: Compare ───────────────────────────────────────────

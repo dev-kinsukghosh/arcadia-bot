@@ -8,141 +8,6 @@ function formatNumber(num) {
 }
 
 /**
- * Renders a premium horizontal bar chart comparing top items (towns or nations)
- * @param {Array<string>} labels - Names of the items
- * @param {Array<number>} values - Values corresponding to each item
- * @param {string} title - Title of the chart
- * @param {string} subtitle - Subtitle describing the data
- * @param {string} valueSuffix - Suffix for values (e.g., " Residents", " Chunks")
- * @returns {Buffer} - PNG buffer of the rendered chart
- */
-function drawTopChart(labels, values, title, subtitle, valueSuffix = '') {
-  const width = 800;
-  const height = 500;
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
-
-  // 1. Sleek dark background
-  ctx.fillStyle = '#090b11';
-  ctx.fillRect(0, 0, width, height);
-
-  // Gradient background accents
-  const bgGrad = ctx.createRadialGradient(width / 2, height / 2, 50, width / 2, height / 2, width);
-  bgGrad.addColorStop(0, '#0f1322');
-  bgGrad.addColorStop(1, '#07080c');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, width, height);
-
-  // 2. Draw Title & Header
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 24px sans-serif';
-  ctx.fillText(title, 40, 45);
-
-  ctx.fillStyle = '#64748b';
-  ctx.font = '13px sans-serif';
-  ctx.fillText(subtitle, 40, 68);
-
-  // Divider line
-  ctx.strokeStyle = '#1e293b';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(40, 85);
-  ctx.lineTo(width - 40, 85);
-  ctx.stroke();
-
-  // 3. Layout Constants
-  const startX = 220; // Margin for names
-  const chartWidth = width - startX - 80;
-  const startY = 110;
-  const rowHeight = 34;
-  const barHeight = 20;
-  const gap = 14;
-
-  const maxVal = Math.max(...values, 1);
-
-  // 4. Draw Bars
-  for (let i = 0; i < labels.length; i++) {
-    const val = values[i];
-    const label = labels[i].replace(/_/g, ' ');
-    const barY = startY + i * (rowHeight + gap);
-
-    // Draw label
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(label, startX - 15, barY + barHeight - 4);
-
-    // Draw row background guide line
-    ctx.strokeStyle = 'rgba(30, 41, 59, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(startX, barY + barHeight / 2);
-    ctx.lineTo(startX + chartWidth, barY + barHeight / 2);
-    ctx.stroke();
-
-    // Calculate bar width
-    const pct = val / maxVal;
-    const barWidth = Math.max(8, Math.round(pct * chartWidth));
-
-    // Draw rounded background bar
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.roundRect(startX, barY, chartWidth, barHeight, 4);
-    ctx.fill();
-
-    // Create gradient fill for active bar
-    const barGrad = ctx.createLinearGradient(startX, barY, startX + barWidth, barY);
-    // Alternate color profiles based on index for variety
-    if (i === 0) {
-      barGrad.addColorStop(0, '#3b82f6'); // Top 1: Blue to Violet
-      barGrad.addColorStop(1, '#8b5cf6');
-    } else if (i < 3) {
-      barGrad.addColorStop(0, '#6366f1'); // Top 3: Indigo to Purple
-      barGrad.addColorStop(1, '#a855f7');
-    } else {
-      barGrad.addColorStop(0, '#1d4ed8'); // Other: Blue-indigo gradient
-      barGrad.addColorStop(1, '#4f46e5');
-    }
-
-    // Draw rounded active bar
-    ctx.fillStyle = barGrad;
-    ctx.beginPath();
-    ctx.roundRect(startX, barY, barWidth, barHeight, 4);
-    ctx.fill();
-
-    // Draw active bar border highlight
-    ctx.strokeStyle = i === 0 ? '#60a5fa' : 'rgba(99, 102, 241, 0.4)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Draw value text
-    ctx.fillStyle = '#f1f5f9';
-    ctx.font = 'bold 12px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(
-      `${formatNumber(val)}${valueSuffix}`,
-      startX + Math.min(barWidth + 10, chartWidth - 80),
-      barY + barHeight - 5
-    );
-  }
-
-  // Footer / Branding
-  ctx.fillStyle = '#334155';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'right';
-  ctx.fillText('ARCADIA COMMUNITY DATABASE PANEL', width - 40, height - 20);
-
-  return canvas.toBuffer('image/png');
-}
-
-/**
- * Renders a side-by-side visual comparison card comparing two towns/nations
- * @param {Object} item1 - Telemetry for item 1
- * @param {Object} item2 - Telemetry for item 2
- * @param {string} title - Comparison header
- * @returns {Buffer} - PNG buffer
- */
-/**
  * Truncates and draws text safely within maxWidth
  */
 function drawFittedText(
@@ -169,6 +34,204 @@ function drawFittedText(
     rendered = rendered + '…';
   }
   ctx.fillText(rendered, x, y);
+}
+
+/**
+ * Renders a premium horizontal bar chart comparing top items (towns or nations)
+ * @param {Array<string>} labels - Names of the items
+ * @param {Array<number>} values - Values corresponding to each item
+ * @param {string} title - Title of the chart
+ * @param {string} subtitle - Subtitle describing the data
+ * @param {string} valueSuffix - Suffix for values (e.g., " Residents", " Chunks")
+ * @returns {Buffer} - PNG buffer of the rendered chart
+ */
+function drawTopChart(labels, values, title, subtitle, valueSuffix = '') {
+  const count = labels ? labels.length : 0;
+  const width = 840;
+  // Dynamically calculate height to comfortably fit all items without clipping
+  const startY = 104;
+  const barHeight = 22;
+  const gap = 14;
+  const rowPitch = barHeight + gap; // 36px pitch
+  const contentHeight = count > 0 ? startY + count * rowPitch : startY + 80;
+  const height = Math.max(520, contentHeight + 50);
+
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+
+  // 1. Sleek dark background
+  ctx.fillStyle = '#090b11';
+  ctx.fillRect(0, 0, width, height);
+
+  // Gradient background accents
+  const bgGrad = ctx.createRadialGradient(width / 2, height / 2, 50, width / 2, height / 2, width);
+  bgGrad.addColorStop(0, '#0f1322');
+  bgGrad.addColorStop(1, '#07080c');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, width, height);
+
+  // Border highlight
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0, 0, width, height);
+
+  // 2. Draw Title & Header (strip any leading emoji or whitespace)
+  const cleanTitle = String(title || 'Top Rankings')
+    .replace(/^[\p{Extended_Pictographic}\uFE0F\s]+/u, '')
+    .trim();
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(cleanTitle, 40, 45);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '13px sans-serif';
+  ctx.fillText(subtitle || 'Ranked by ArcadiaMC telemetry', 40, 68);
+
+  // Divider line
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(40, 84);
+  ctx.lineTo(width - 40, 84);
+  ctx.stroke();
+
+  // If no items
+  if (count === 0) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No rankings data available to display.', width / 2, 200);
+    return canvas.toBuffer('image/png');
+  }
+
+  // 3. Layout Constants
+  const startX = 250; // Margin for Rank Badge + Town/Nation Names
+  const chartWidth = 440; // Max track width leaving 150px on right for value labels
+  const maxVal = Math.max(...values.map((v) => Number(v) || 0), 1);
+
+  // 4. Draw Bars
+  for (let i = 0; i < count; i++) {
+    const val = Number(values[i]) || 0;
+    const label = String(labels[i] || 'Unknown').replace(/_/g, ' ');
+    const barY = startY + i * rowPitch;
+
+    // Draw Rank Badge Pill
+    const isTop1 = i === 0;
+    const isTop2 = i === 1;
+    const isTop3 = i === 2;
+
+    const rankPillW = 32;
+    const rankPillH = 20;
+    const rankX = 40;
+    const rankY = barY + 1;
+
+    let rankBg = 'rgba(30, 41, 59, 0.45)';
+    let rankBorder = '#334155';
+    let rankTextColor = '#64748b';
+
+    if (isTop1) {
+      rankBg = 'rgba(245, 158, 11, 0.2)';
+      rankBorder = '#f59e0b';
+      rankTextColor = '#fbbf24';
+    } else if (isTop2) {
+      rankBg = 'rgba(203, 213, 225, 0.15)';
+      rankBorder = '#94a3b8';
+      rankTextColor = '#e2e8f0';
+    } else if (isTop3) {
+      rankBg = 'rgba(217, 119, 6, 0.18)';
+      rankBorder = '#d97706';
+      rankTextColor = '#f97316';
+    }
+
+    ctx.fillStyle = rankBg;
+    ctx.beginPath();
+    ctx.roundRect(rankX, rankY, rankPillW, rankPillH, 4);
+    ctx.fill();
+
+    ctx.strokeStyle = rankBorder;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = rankTextColor;
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`#${i + 1}`, rankX + rankPillW / 2, rankY + 14);
+
+    // Draw Entity Label (safely fitted between rank and track)
+    ctx.fillStyle = isTop1 ? '#ffffff' : i < 3 ? '#f1f5f9' : '#cbd5e1';
+    ctx.textAlign = 'left';
+    drawFittedText(ctx, label, 80, barY + barHeight - 6, startX - 95, 13, 'bold', 'sans-serif');
+
+    // Draw track background bar
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect(startX, barY, chartWidth, barHeight, 5);
+    ctx.fill();
+
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Calculate active bar width
+    const pct = val / maxVal;
+    const barWidth = Math.max(pct > 0 ? 8 : 0, Math.round(pct * chartWidth));
+
+    if (barWidth > 0) {
+      // Create gradient fill for active bar
+      const barGrad = ctx.createLinearGradient(startX, barY, startX + barWidth, barY);
+      if (isTop1) {
+        barGrad.addColorStop(0, '#3b82f6');
+        barGrad.addColorStop(1, '#8b5cf6');
+      } else if (i < 3) {
+        barGrad.addColorStop(0, '#6366f1');
+        barGrad.addColorStop(1, '#a855f7');
+      } else {
+        barGrad.addColorStop(0, '#1d4ed8');
+        barGrad.addColorStop(1, '#4f46e5');
+      }
+
+      ctx.fillStyle = barGrad;
+      ctx.beginPath();
+      ctx.roundRect(startX, barY, barWidth, barHeight, 5);
+      ctx.fill();
+
+      // Active bar border highlight
+      ctx.strokeStyle = isTop1
+        ? '#60a5fa'
+        : i < 3
+          ? 'rgba(168, 85, 247, 0.5)'
+          : 'rgba(99, 102, 241, 0.4)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+
+    // Format & Draw Value text
+    const valText = `${formatNumber(val)}${valueSuffix}`;
+    ctx.font = 'bold 12px monospace';
+    const textW = ctx.measureText(valText).width;
+
+    if (barWidth >= textW + 22) {
+      // Draw inside bar, right-aligned
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'right';
+      ctx.fillText(valText, startX + barWidth - 8, barY + barHeight - 6);
+    } else {
+      // Draw outside bar, left-aligned
+      ctx.fillStyle = '#94a3b8';
+      ctx.textAlign = 'left';
+      ctx.fillText(valText, startX + barWidth + 8, barY + barHeight - 6);
+    }
+  }
+
+  // Footer / Branding
+  ctx.fillStyle = '#334155';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('ARCADIA COMMUNITY DATABASE PANEL', width - 40, height - 18);
+
+  return canvas.toBuffer('image/png');
 }
 
 const COMPARE_PALETTE = [
@@ -367,6 +430,13 @@ function drawCompareChart(itemsOrItem1, item2OrTitle, maybeTitle) {
         'bold',
         'sans-serif'
       );
+
+      if (item.pvp !== undefined) {
+        ctx.fillStyle = item.pvp ? '#4ade80' : '#f87171';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.pvp ? '🟢 PVP ON' : '🔴 PVP OFF', x + panelW / 2, yStart + 282);
+      }
     };
 
     // Draw Left and Right Panels
@@ -737,12 +807,6 @@ function drawHistoryLineChart(dates, datasets, title) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, width, height);
 
-  // Title
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 20px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(title, 40, 40);
-
   // Legend (dynamic side-by-side positioning)
   let legendX = width - 40;
   ctx.font = 'bold 12px sans-serif';
@@ -764,6 +828,12 @@ function drawHistoryLineChart(dates, datasets, title) {
 
     legendX -= textWidth + 24; // dynamic spacing gap
   }
+
+  // Title (safely fitted so it never collides with the legend)
+  ctx.fillStyle = '#f8fafc';
+  ctx.textAlign = 'left';
+  const maxTitleW = Math.max(220, legendX - 60);
+  drawFittedText(ctx, title, 40, 40, maxTitleW, 20, 'bold', 'sans-serif');
 
   // Divider border highlight
   ctx.strokeStyle = '#1e293b';
@@ -813,7 +883,13 @@ function drawHistoryLineChart(dates, datasets, title) {
     ctx.stroke();
 
     // Draw Y labels
-    const labelStr = isIntegerChart ? Math.round(yVal).toLocaleString() : yVal.toFixed(3);
+    const stepVal = range / gridLines;
+    const labelStr =
+      isIntegerChart && stepVal >= 1
+        ? Math.round(yVal).toLocaleString()
+        : isIntegerChart
+          ? yVal.toFixed(1)
+          : yVal.toFixed(3);
     ctx.fillText(labelStr, startX - 10, y + 4);
   }
 
