@@ -3,10 +3,10 @@ node_modules/
 
 # Local env files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+dashboard/.env
+dashboard/.env.*
+!**/.env.example
 
 # Log files
 logs/
@@ -39,7 +39,5 @@ components.d.ts
 stats.html*
 .eslintrc-auto-import.json
 
-# my Custom script
-
-## calc line count and some other stats
+# Custom script
 loc-temp.js

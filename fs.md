@@ -55,12 +55,16 @@ This file serves as a reference guide for the directory structure and file respo
 │           ├── playersStore.js
 │           ├── shopsStore.js
 │           └── townyStore.js
+├── data/
+│   └── latest-db-dump.sql
 ├── scripts/
 │   ├── setup.js
+│   ├── keygen.js
+│   ├── validate-env.js
+│   ├── dump-database.js
+│   ├── import-database.js
 │   ├── migrate-safe.js
-│   ├── export-wiki-table.js
 │   ├── upload-emojis.js
-│   ├── scan-endpoints-fast.js
 │   └── sync-missing-shop-icons.js
 ├── src/
 │   ├── app.js
@@ -206,8 +210,9 @@ This file serves as a reference guide for the directory structure and file respo
 ├── Api.enpoints.md
 ├── fs.md
 ├── GEMINI.md
-├── .agents/AGENTS.md
-└── wiki_table.md
+├── LICENSE
+├── README.md
+└── .agents/AGENTS.md
 ```
 
 ## Directory & File Details
@@ -215,12 +220,14 @@ This file serves as a reference guide for the directory structure and file respo
 ### 📂 Root Directory
 
 - [bot.js](./bot.js): Main application entry point. Loads configuration, starts the logger, initializes DB/Redis clients, and boots up the Discord client.
+- [README.md](./README.md): Comprehensive project guide, dual architecture documentation, self-hosting steps, features breakdown, and commands index.
+- [LICENSE](./LICENSE): Open source ISC License.
 - [architecture.md](./architecture.md): Complete Mermaid system architecture diagram and component overview.
 - [drizzle.config.js](./drizzle.config.js): Database configurations mapping Drizzle schema generation to the MySQL server environment.
 - [eslint.config.js](./eslint.config.js): ESLint static analysis configuration provided by the user.
 - [vitest.config.js](./vitest.config.js): Vitest compiler and runner configuration options for executing sequentially.
 - [.prettierrc](./.prettierrc): Settings for the Prettier formatter.
-- [package.json](./package.json): Workspace script targets (`npm start`, `npm run dev`, `npm run deploy`, `npm run lint`, etc.) and dependencies listing.
+- [package.json](./package.json): Workspace script targets (`npm start`, `npm run dev`, `npm run setup`, `npm run keygen`, `npm run env:validate`, etc.) and dependencies listing.
 - [.env.example](./.env.example): Template configuration containing environment variable keys.
 - [.dockerignore](./.dockerignore): Excludes non-essential files (node_modules, tests, docs, logs, git) from Docker build context.
 - [.nvmrc](./.nvmrc): Specifies Node.js version 24 for Node Version Manager.
@@ -230,7 +237,6 @@ This file serves as a reference guide for the directory structure and file respo
 - [fs.md](./fs.md): _(This file)_ File system reference guide.
 - [GEMINI.md](./GEMINI.md): Development rule book, project context, and daily change-log repository.
 - [.agents/AGENTS.md](./.agents/AGENTS.md): Project-scoped customization rules for Antigravity developer agent.
-- [wiki_table.md](./wiki_table.md): Exported MediaWiki format table containing convoy items.
 
 ### 📂 .github/
 
@@ -246,13 +252,19 @@ This file serves as a reference guide for the directory structure and file respo
 - [changelogs/10-2026.md](./changelogs/10-2026.md): Monthly change log for October 2026 covering Node 24 runtime migration, security patching, `/towny compare` fixes, database checker suites, navigation breadcrumbs, and developer telemetry & logging architecture.
 - [changelogs/11-2026.md](./changelogs/11-2026.md): Monthly change log for November 2026 covering multi-entity town and nation comparisons (2-4 entities) with dynamic autocomplete, canvas telemetry cards, and stacked comparative distribution charts.
 
+### 📂 data/
+
+- [data/latest-db-dump.sql](./data/latest-db-dump.sql): Complete SQL data dump containing 17,450 rows across all tables (Towny history, convoy items, currencies, player heads, and shops).
+
 ### 📂 scripts/
 
-- [scripts/setup.js](./scripts/setup.js): Assistant script to bootstrap directories and setup the `.env` template config.
+- [scripts/setup.js](./scripts/setup.js): Automated cyber-styled setup wizard with live Discord token verification, MySQL connection and database auto-creation, Redis ping tests, repeat-if-wrong validator loops, and express/inactive unattended modes.
+- [scripts/keygen.js](./scripts/keygen.js): Cryptographic key generator and Shannon entropy validator for DEV_SECRET, tokens, and API credentials.
+- [scripts/validate-env.js](./scripts/validate-env.js): Diagnostic environment validator probing Discord API, MySQL connection pools, Redis cache, and external APIs.
+- [scripts/dump-database.js](./scripts/dump-database.js): Automated exporter dumping all MySQL table schemas and records into a unified SQL seed backup.
+- [scripts/import-database.js](./scripts/import-database.js): Importer executing SQL statement batches from latest-db-dump.sql into MySQL.
 - [scripts/migrate-safe.js](./scripts/migrate-safe.js): Programmatic schema migrator for Drizzle ORM.
-- [scripts/export-wiki-table.js](./scripts/export-wiki-table.js): Utility script to fetch and export all convoy items to a MediaWiki-formatted table in a markdown file.
 - [scripts/upload-emojis.js](./scripts/upload-emojis.js): Utility script to upload cached item icon PNGs to Discord Application Emojis.
-- [scripts/scan-endpoints-fast.js](./scripts/scan-endpoints-fast.js): Fast standalone scanner script probing 5,000 candidate API endpoints concurrently over ~5 minutes.
 - [scripts/sync-missing-shop-icons.js](./scripts/sync-missing-shop-icons.js): Script to dynamically identify active player shop trade items, download any missing textures from Mojang/mcasset APIs, and upload them to Discord.
 
 ### 📂 dashboard/
